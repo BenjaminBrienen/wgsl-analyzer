@@ -1,9 +1,11 @@
-use std::{hash::Hash, marker::PhantomData};
+use std::marker::PhantomData;
 
-use parser::{SyntaxKind, SyntaxNode};
-use rowan::TextRange;
+use crate::{AstNode, SyntaxNode, WgslLanguage};
 
 use crate::AstNode;
+
+/// A "pointer" to a [`SyntaxNode`], via location in the source code.
+pub type SyntaxNodePointer = rowan::ast::SyntaxNodePtr<WgslLanguage>;
 
 /// A pointer to a syntax node inside a file. It can be used to remember a
 /// specific node across reparses of the same file.
@@ -126,7 +128,7 @@ impl<Node: AstNode> AstPointer<Node> {
     }
 
     pub fn cast<TargetNode: AstNode>(self) -> Option<AstPointer<TargetNode>> {
-        if !TargetNode::can_cast(self.raw.kind) {
+        if !TargetNode::can_cast(self.raw.kind()) {
             return None;
         }
         Some(AstPointer {
