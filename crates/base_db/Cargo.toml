@@ -13,14 +13,17 @@ rust-version.workspace = true
 doctest = false
 
 [dependencies]
-salsa.workspace = true
+salsa = "0.20.0"
 rowan.workspace = true
+query-group.workspace = true
 rustc-hash.workspace = true
 syntax.workspace = true
 regex = { version = "1.11.1", default-features = false, features = ["std"] }
+tracing.workspace = true
 
 line-index.workspace = true
 vfs.workspace = true
+span.workspace = true
 
 [dev-dependencies]
 pretty_assertions = "1.4.1"

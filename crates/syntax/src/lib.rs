@@ -6,10 +6,14 @@ use std::{marker::PhantomData, ops::Deref, sync::Arc};
 
 use either::Either;
 pub use parser::{
-    ParseEntryPoint, ParseError, SyntaxElement, SyntaxKind, SyntaxNode, SyntaxNodeChildren,
-    SyntaxToken,
+    Edition, ParseEntryPoint, ParseError, SyntaxElement, SyntaxKind, SyntaxNode,
+    SyntaxNodeChildren, SyntaxToken,
 };
-pub use rowan::Direction;
+
+pub use rowan::{
+    Direction, GreenNode, NodeOrToken, SyntaxText, TextRange, TextSize, TokenAtOffset, WalkEvent,
+    api::Preorder,
+};
 
 #[derive(Clone, Debug)]
 pub struct Parse {

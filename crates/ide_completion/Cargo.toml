@@ -20,8 +20,8 @@ hir-def.workspace = true
 syntax.workspace = true
 tracing.workspace = true
 stdx.workspace = true
+ide-db.workspace = true
 
-text-edit.workspace = true
 itertools.workspace = true
 either.workspace = true
 rowan.workspace = true

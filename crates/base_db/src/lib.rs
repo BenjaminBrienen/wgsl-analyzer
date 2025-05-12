@@ -6,6 +6,7 @@ pub mod change;
 mod util_types;
 use input::{SourceRoot, SourceRootId};
 use line_index::LineIndex;
+pub use query_group::{self};
 pub use util_types::*;
 use vfs::{AnchoredPath, VfsPath};
 
@@ -26,71 +27,60 @@ pub trait FileLoader {
     ) -> Option<FileId>;
 }
 
-#[salsa::query_group(SourceDatabaseStorage)]
-pub trait SourceDatabase: FileLoader {
-    #[salsa::input]
+#[salsa::db]
+pub trait SourceDatabase: salsa::Database {
     fn file_text(
         &self,
         file_id: FileId,
     ) -> Arc<String>;
 
-    #[salsa::input]
     fn file_path(
         &self,
         file_id: FileId,
     ) -> VfsPath;
 
-    #[salsa::input]
     fn file_id(
         &self,
         path: VfsPath,
     ) -> FileId;
 
-    #[salsa::input]
     fn custom_imports(&self) -> Arc<FxHashMap<String, String>>;
 
-    #[salsa::input]
     fn shader_defs(&self) -> Arc<FxHashSet<String>>;
 
     /// Path to a file, relative to the root of its source root.
     /// Source root of the file.
-    #[salsa::input]
     fn file_source_root(
         &self,
         file_id: FileId,
     ) -> SourceRootId;
+
     /// Contents of the source root.
-    #[salsa::input]
     fn source_root(
         &self,
         id: SourceRootId,
     ) -> Arc<SourceRoot>;
 
-    #[salsa::invoke(parse_no_preprocessor_query)]
     fn parse_no_preprocessor(
         &self,
         file_id: FileId,
     ) -> syntax::Parse;
 
-    #[salsa::invoke(parse_with_unconfigured_query)]
     fn parse_with_unconfigured(
         &self,
         file_id: FileId,
     ) -> (Parse, Arc<Vec<UnconfiguredCode>>);
 
-    #[salsa::invoke(parse_query)]
     fn parse(
         &self,
         file_id: FileId,
     ) -> Parse;
 
-    #[salsa::invoke(parse_import_no_preprocessor_query)]
     fn parse_import_no_preprocessor(
         &self,
         key: String,
     ) -> Result<syntax::Parse, ()>;
 
-    #[salsa::invoke(parse_import_query)]
     fn parse_import(
         &self,
         key: String,
@@ -195,4 +185,70 @@ impl<T: SourceDatabase> FileLoader for FileLoaderDelegate<&'_ T> {
         let source_root = self.0.source_root(source_root);
         source_root.resolve_path(path)
     }
+}
+
+/// Database which stores all significant input facts: source code and project
+/// model. Everything else in rust-analyzer is derived from these queries.
+#[query_group::query_group]
+pub trait RootQueryDb: SourceDatabase + salsa::Database {
+    /// Parses the file into the syntax tree.
+    #[salsa::invoke(parse)]
+    #[salsa::lru(128)]
+    fn parse(
+        &self,
+        file_id: EditionedFileId,
+    ) -> Parse<ast::SourceFile>;
+
+    /// Returns the set of errors obtained from parsing the file including validation errors.
+    #[salsa::transparent]
+    fn parse_errors(
+        &self,
+        file_id: EditionedFileId,
+    ) -> Option<&[SyntaxError]>;
+
+    #[salsa::transparent]
+    fn toolchain_channel(
+        &self,
+        krate: Package,
+    ) -> Option<ReleaseChannel>;
+
+    /// Packages whose root file is in `id`.
+    #[salsa::invoke_interned(source_root_packages)]
+    fn source_root_packages(
+        &self,
+        id: SourceRootId,
+    ) -> Arc<[Package]>;
+
+    #[salsa::transparent]
+    fn relevant_packages(
+        &self,
+        file_id: FileId,
+    ) -> Arc<[Package]>;
+
+    /// Returns the packages in topological order.
+    ///
+    /// **Warning**: do not use this query in `hir-*` packages! It kills incrementality across package metadata modifications.
+    #[salsa::input]
+    fn all_packages(&self) -> Arc<Box<[Package]>>;
+
+    /// Returns an iterator over all transitive dependencies of the given package,
+    /// including the package itself.
+    ///
+    /// **Warning**: do not use this query in `hir-*` packages! It kills incrementality across package metadata modifications.
+    #[salsa::transparent]
+    fn transitive_dependencies(
+        &self,
+        package_id: Package,
+    ) -> FxHashSet<Package>;
+
+    /// Returns all transitive reverse dependencies of the given package,
+    /// including the package itself.
+    ///
+    /// **Warning**: do not use this query in `hir-*` packages! It kills incrementality across package metadata modifications.
+    #[salsa::invoke(input::transitive_rev_dependencies)]
+    #[salsa::transparent]
+    fn transitive_rev_dependencies(
+        &self,
+        of: Package,
+    ) -> FxHashSet<Package>;
 }

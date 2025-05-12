@@ -1,6 +1,6 @@
 use base_db::TextRange;
+use ide_db::text_edit::TextEdit;
 use stdx::never;
-use text_edit::TextEdit;
 
 /// `CompletionItem` describes a single completion variant in the editor pop-up.
 /// It is basically a POD with various properties. To construct a

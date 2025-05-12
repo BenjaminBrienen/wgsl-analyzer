@@ -74,7 +74,6 @@ vfs.workspace = true
 paths.workspace = true
 camino = "1.1.9"
 base-db.workspace = true
-text-edit.workspace = true
 line-index.workspace = true
 
 [target.'cfg(windows)'.dependencies]

@@ -515,7 +515,7 @@ impl GlobalState {
 
         if let Some(diagnostic_changes) = self.diagnostics.take_changes() {
             for file_id in diagnostic_changes {
-                let uri = file_id_to_url(&self.vfs.read().unwrap().0, file_id);
+                let uri = file_id_to_url(&self.vfs.read().0, file_id);
                 let version = from_proto::vfs_path(&uri)
                     .ok()
                     .and_then(|path| self.mem_docs.get(&path).map(|it| it.version));
@@ -602,21 +602,22 @@ impl GlobalState {
         let db = self.analysis_host.raw_database();
         let generation = self.diagnostics.next_generation();
         let subscriptions = {
-            let vfs = &self.vfs.read().unwrap().0;
+            let vfs = &self.vfs.read().0;
             self.mem_docs
                 .iter()
                 .map(|path| vfs.file_id(path).unwrap())
-                // .filter_map(|(file_id, excluded)| {
-                //     (excluded == vfs::FileExcluded::No).then_some(file_id)
-                // })
+                .filter_map(|(file_id, excluded)| {
+                    (excluded == vfs::FileExcluded::No).then_some(file_id)
+                })
                 .filter(|&file_id| {
-                    let source_root = db.file_source_root(file_id);
+                    let source_root_id = db.file_source_root(file_id).source_root_id(db);
+                    let source_root = db.source_root(source_root_id).source_root(db);
                     // Only publish diagnostics for files in the workspace, not from crates.io deps
                     // or the sysroot.
                     // While theoretically these should never have errors, we have quite a few false
                     // positives particularly in the stdlib, and those diagnostics would stay around
                     // forever if we emitted them here.
-                    !db.source_root(source_root).is_library
+                    !source_root.is_library
                 })
                 .collect::<std::sync::Arc<_>>()
         };

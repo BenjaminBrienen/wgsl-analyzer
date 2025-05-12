@@ -1,8 +1,10 @@
+use std::sync::Arc;
+
 use vfs::{AnchoredPath, FileId, VfsPath, file_set::FileSet};
 
 /// Files are grouped into source roots. A source root is a directory on the
 /// file systems which is watched for changes. Typically it corresponds to a
-/// Rust crate. Source roots *might* be nested: in this case, a file belongs to
+/// WGSL package. Source roots *might* be nested: in this case, a file belongs to
 /// the nearest enclosing source root. Paths to files are always relative to a
 /// source root, and the analyzer does not know the root path of the source root at
 /// all. So, a file from one source root cannot refer to a file in another source
@@ -59,4 +61,20 @@ impl SourceRoot {
     pub fn iter(&self) -> impl Iterator<Item = FileId> + '_ {
         self.file_set.iter()
     }
+}
+
+#[salsa::input(debug)]
+pub struct FileText {
+    pub text: Arc<str>,
+    pub file_id: vfs::FileId,
+}
+
+#[salsa::input(debug)]
+pub struct FileSourceRootInput {
+    pub source_root_id: SourceRootId,
+}
+
+#[salsa::input(debug)]
+pub struct SourceRootInput {
+    pub source_root: Arc<SourceRoot>,
 }

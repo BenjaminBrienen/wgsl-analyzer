@@ -7,7 +7,7 @@ use crate::AstNode;
 
 /// A pointer to a syntax node inside a file. It can be used to remember a
 /// specific node across reparses of the same file.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct SyntaxNodePointer {
     // Do not expose this field further. At some point, we might want to replace
     // range with node id.
@@ -131,6 +131,14 @@ impl<Node: AstNode> AstPointer<Node> {
         }
         Some(AstPointer {
             raw: self.raw,
+            _ty: PhantomData,
+        })
+    }
+
+    /// Like `SyntaxNodePtr::cast` but the trait bounds work out.
+    pub fn try_from_raw(raw: SyntaxNodePointer) -> Option<AstPointer<Node>> {
+        Node::can_cast(raw.kind).then_some(AstPointer {
+            raw,
             _ty: PhantomData,
         })
     }
