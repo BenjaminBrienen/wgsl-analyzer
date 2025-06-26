@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use triomphe::Arc;
 
 use la_arena::{Arena, Idx};
 

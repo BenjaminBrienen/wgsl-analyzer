@@ -552,12 +552,14 @@ impl TryFrom<ast::ArrayType> for ArrayType {
             Some(ast::GenericArg::Type(r#type)) => {
                 ArraySize::Path(Name::from(r#type.as_name().ok_or(())?))
             },
-            Some(ast::GenericArg::Literal(literal)) => match parse_literal(literal.kind()) {
-                crate::expression::Literal::Int(value, _) => ArraySize::Int(value),
-                crate::expression::Literal::Uint(value, _) => ArraySize::Uint(value),
-                crate::expression::Literal::Float(..) | crate::expression::Literal::Bool(_) => {
-                    return Err(());
-                },
+            Some(ast::GenericArg::Literal(literal)) => {
+                match parse_literal(literal.literal_kind()) {
+                    crate::expression::Literal::Int(value, _) => ArraySize::Int(value),
+                    crate::expression::Literal::Uint(value, _) => ArraySize::Uint(value),
+                    crate::expression::Literal::Float(..) | crate::expression::Literal::Bool(_) => {
+                        return Err(());
+                    },
+                }
             },
             None => ArraySize::Dynamic,
             _ => return Err(()),
@@ -580,12 +582,14 @@ impl TryFrom<ast::BindingArrayType> for ArrayType {
             Some(ast::GenericArg::Type(r#type)) => {
                 ArraySize::Path(Name::from(r#type.as_name().ok_or(())?))
             },
-            Some(ast::GenericArg::Literal(literal)) => match parse_literal(literal.kind()) {
-                crate::expression::Literal::Int(value, _) => ArraySize::Int(value),
-                crate::expression::Literal::Uint(value, _) => ArraySize::Uint(value),
-                crate::expression::Literal::Float(..) | crate::expression::Literal::Bool(_) => {
-                    return Err(());
-                },
+            Some(ast::GenericArg::Literal(literal)) => {
+                match parse_literal(literal.literal_kind()) {
+                    crate::expression::Literal::Int(value, _) => ArraySize::Int(value),
+                    crate::expression::Literal::Uint(value, _) => ArraySize::Uint(value),
+                    crate::expression::Literal::Float(..) | crate::expression::Literal::Bool(_) => {
+                        return Err(());
+                    },
+                }
             },
             None => ArraySize::Dynamic,
             _ => return Err(()),

@@ -3,7 +3,8 @@
 //! The home of `HirDatabase`, which is the Salsa database containing all the
 //! type inference-related queries.
 
-use std::{fmt, sync::Arc};
+use std::fmt;
+use triomphe::Arc;
 
 use crate::builtins::{Builtin, BuiltinId};
 use crate::function::{FunctionDetails, ResolvedFunctionId};

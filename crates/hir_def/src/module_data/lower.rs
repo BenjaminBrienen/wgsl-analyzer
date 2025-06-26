@@ -1,9 +1,10 @@
 use crate::HirFileId;
 use crate::hir_file_id::relative_file;
 use crate::module_data::{Function, ModuleData, ModuleItem, ModuleItemId, Parameter};
-use crate::{ast_id::AstIdMap, database::DefDatabase, type_ref::TypeReference};
+use crate::{database::DefDatabase, type_ref::TypeReference};
 use la_arena::{Idx, IdxRange};
-use std::sync::Arc;
+use span::AstIdMap;
+use triomphe::Arc;
 
 use syntax::{
     AstNode as _, HasName as _,
@@ -30,7 +31,7 @@ impl<'database> Ctx<'database> {
         Self {
             database,
             file_id,
-            source_ast_id_map: database.ast_id_map(file_id),
+            source_ast_id_map: database.ast_id_map(file_id).unwrap(),
             module_data: ModuleData::default(),
             items: vec![],
         }

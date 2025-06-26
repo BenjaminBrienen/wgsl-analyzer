@@ -4,20 +4,20 @@ use std::{
     fmt::{self, Debug},
     hash,
     marker::PhantomData,
-    sync::Arc,
 };
 
 use base_db::{FileId, SourceDatabase, TextRange, TextSize};
 use salsa::InternKey;
+use span::AstIdMap;
 use syntax::{
-    AstNode as _, Parse,
+    AstNode as _, Parse, SyntaxNode,
     ast::{self, Item},
 };
+use triomphe::Arc;
 use vfs::VfsPath;
 
 use crate::{
     HirFileId, InFile,
-    ast_id::AstIdMap,
     attributes::{Attribute, AttributeDefId, AttributesWithOwner},
     body::{Body, BodySourceMap, scope::ExprScopes},
     data::{
@@ -38,7 +38,7 @@ pub trait DefDatabase: InternDatabase + SourceDatabase {
     fn parse_or_resolve(
         &self,
         key: HirFileId,
-    ) -> Result<Parse, ()>;
+    ) -> Result<Parse<SyntaxNode>, ()>;
 
     fn get_path(
         &self,
@@ -52,8 +52,8 @@ pub trait DefDatabase: InternDatabase + SourceDatabase {
 
     fn ast_id_map(
         &self,
-        key: HirFileId,
-    ) -> Arc<AstIdMap>;
+        file_id: HirFileId,
+    ) -> Result<Arc<AstIdMap>, ()>;
 
     fn resolve_full_source(
         &self,
@@ -154,7 +154,7 @@ fn get_file_id(
 fn parse_or_resolve(
     database: &dyn DefDatabase,
     file_id: HirFileId,
-) -> Result<Parse, ()> {
+) -> Result<Parse<SyntaxNode>, ()> {
     match file_id.0 {
         HirFileIdRepr::FileId(file_id) => Ok(database.parse(file_id)),
         HirFileIdRepr::MacroFile(import_file) => {
@@ -287,14 +287,12 @@ fn text_range_from_full(
 }
 
 fn ast_id_map(
-    database: &dyn DefDatabase,
+    db: &dyn DefDatabase,
     file_id: HirFileId,
-) -> Arc<AstIdMap> {
-    let map = database
-        .parse_or_resolve(file_id)
-        .map(|source| AstIdMap::from_source(&source.tree()))
-        .unwrap_or_default();
-    Arc::new(map)
+) -> Result<Arc<AstIdMap>, ()> {
+    Ok(Arc::new(AstIdMap::from_source(
+        &db.parse_or_resolve(file_id)?.syntax(),
+    )))
 }
 
 #[salsa::query_group(InternDatabaseStorage)]

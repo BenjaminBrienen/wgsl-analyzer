@@ -1,9 +1,4 @@
-#![expect(clippy::print_stderr, reason = "CLI program")]
 #![expect(clippy::print_stdout, reason = "CLI program")]
-#![allow(
-    unfulfilled_lint_expectations,
-    reason = "https://github.com/rust-lang/rust-clippy/issues/15107"
-)]
 
 use std::{io::Read as _, path::PathBuf};
 
@@ -49,7 +44,6 @@ fn parse_arguments() -> Result<Arguments, lexopt::Error> {
     Ok(arguments)
 }
 
-#[expect(clippy::exit, reason = "TODO: use clap")]
 fn main() -> Result<(), anyhow::Error> {
     let mut arguments = parse_arguments()?;
 

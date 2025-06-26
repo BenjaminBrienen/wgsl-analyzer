@@ -110,8 +110,8 @@ impl rowan::Language for WgslLanguage {
     type Kind = SyntaxKind;
 
     fn kind_from_raw(raw: rowan::SyntaxKind) -> Self::Kind {
-        debug_assert!(raw.0 <= SyntaxKind::Error.as_u16());
-        SyntaxKind::from_u16(raw.0)
+        debug_assert!(raw.0 <= SyntaxKind::Error.into());
+        raw.0.into()
     }
 
     fn kind_to_raw(kind: Self::Kind) -> rowan::SyntaxKind {

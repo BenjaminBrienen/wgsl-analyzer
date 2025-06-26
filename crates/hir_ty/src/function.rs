@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use triomphe::Arc;
 
 use hir_def::module_data::Name;
 

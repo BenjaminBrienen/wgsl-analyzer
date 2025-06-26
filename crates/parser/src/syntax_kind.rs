@@ -474,15 +474,15 @@ pub enum SyntaxKind {
 
 impl From<SyntaxKind> for rowan::SyntaxKind {
     fn from(kind: SyntaxKind) -> Self {
-        Self(kind.as_u16())
+        Self(kind.into())
     }
 }
 
 impl From<rowan::SyntaxKind> for SyntaxKind {
     fn from(kind: rowan::SyntaxKind) -> Self {
-        let max_element = Self::Error.as_u16();
+        let max_element = Self::Error.into();
         assert!(kind.0 < max_element);
-        Self::from_u16(kind.0)
+        kind.0.into()
     }
 }
 
@@ -493,8 +493,8 @@ impl rowan::Language for WgslLanguage {
     type Kind = SyntaxKind;
 
     fn kind_from_raw(raw: rowan::SyntaxKind) -> Self::Kind {
-        assert!(raw.0 <= SyntaxKind::Error.as_u16());
-        SyntaxKind::from_u16(raw.0)
+        assert!(raw.0 <= SyntaxKind::Error.into());
+        raw.0.into()
     }
 
     fn kind_to_raw(kind: Self::Kind) -> rowan::SyntaxKind {
@@ -533,6 +533,20 @@ impl SyntaxKind {
     pub const fn from_u16(value: u16) -> Self {
         // Safety: SyntaxKind is #[repr(u16)] and in range
         unsafe { mem::transmute::<u16, Self>(value) }
+    }
+}
+
+impl From<u16> for SyntaxKind {
+    fn from(value: u16) -> Self {
+        // Safety: SyntaxKind is #[repr(u16)] and in range
+        unsafe { mem::transmute::<u16, Self>(value) }
+    }
+}
+
+impl From<SyntaxKind> for u16 {
+    #[expect(clippy::as_conversions, reason = "repr(u16)")]
+    fn from(value: SyntaxKind) -> Self {
+        value as Self
     }
 }
 

@@ -1,7 +1,7 @@
 pub mod definition;
 pub mod diagnostics;
 
-use std::sync::Arc;
+use triomphe::Arc;
 
 use base_db::FileId;
 use definition::Definition;
@@ -618,7 +618,7 @@ impl Module {
                 let import_loc = import.id.lookup(database);
 
                 let module_info = self.module_info(database);
-                let def_map = database.ast_id_map(import_loc.file_id);
+                let def_map = database.ast_id_map(import_loc.file_id).unwrap();
 
                 let source = import_loc.map(|id| def_map.get(module_info.get(id).ast_id));
 

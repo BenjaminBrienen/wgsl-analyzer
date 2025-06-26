@@ -1,43 +1,77 @@
 pub mod algorithms;
 pub mod ast;
 pub mod pointer;
+pub mod syntax_error;
+pub mod syntax_node;
 
-use std::{marker::PhantomData, ops::Deref, sync::Arc};
+use std::{marker::PhantomData, ops::Deref};
+use triomphe::Arc;
 
 use either::Either;
 pub use parser::{
-    ParseEntryPoint, ParseError, SyntaxElement, SyntaxKind, SyntaxNode, SyntaxNodeChildren,
-    SyntaxToken,
+    Edition, ParseEntryPoint, ParseError, SyntaxElement, SyntaxKind, SyntaxNode,
+    SyntaxNodeChildren, SyntaxToken,
 };
-pub use rowan::Direction;
+pub use pointer::SyntaxNodePointer;
+pub use rowan::{
+    Direction, GreenNode, NodeOrToken, SyntaxText, TextRange, TextSize, TokenAtOffset, WalkEvent,
+    api::Preorder,
+};
 use smol_str::SmolStr;
 
-#[derive(Clone, Debug)]
-pub struct Parse {
-    green_node: rowan::GreenNode,
-    errors: Arc<[ParseError]>,
+use crate::syntax_error::SyntaxError;
+
+/// `Parse` is the result of the parsing: a syntax tree and a collection of
+/// errors.
+///
+/// Note that we always produce a syntax tree, even for completely invalid
+/// files.
+#[derive(Debug, PartialEq, Eq)]
+pub struct Parse<T> {
+    green: GreenNode,
+    errors: Option<Arc<[ParseError]>>,
+    _ty: PhantomData<fn() -> T>,
 }
 
-impl PartialEq for Parse {
-    fn eq(
-        &self,
-        other: &Self,
-    ) -> bool {
-        self.green_node == other.green_node
+impl<T> Clone for Parse<T> {
+    fn clone(&self) -> Self {
+        Self {
+            green: self.green.clone(),
+            errors: self.errors.clone(),
+            _ty: PhantomData,
+        }
     }
 }
 
-impl Eq for Parse {}
+impl<T> Parse<T> {
+    fn new(
+        green: GreenNode,
+        errors: Vec<ParseError>,
+    ) -> Self {
+        Self {
+            green,
+            errors: if errors.is_empty() {
+                None
+            } else {
+                Some(errors.into())
+            },
+            _ty: PhantomData,
+        }
+    }
 
-impl Parse {
     #[must_use]
     pub fn syntax(&self) -> SyntaxNode {
-        SyntaxNode::new_root(self.green_node.clone())
+        SyntaxNode::new_root(self.green.clone())
     }
 
     #[must_use]
-    pub fn errors(&self) -> &[ParseError] {
-        &self.errors
+    pub fn errors(&self) -> Vec<ParseError> {
+        if let Some(error) = self.errors.as_deref() {
+            error.to_vec()
+        } else {
+            vec![]
+        }
+        // validation::validate(&self.syntax(), &mut errors);
     }
 
     /// Returns the syntax tree as a file.
@@ -52,7 +86,7 @@ impl Parse {
 }
 
 #[must_use]
-pub fn parse(input: &str) -> Parse {
+pub fn parse(input: &str) -> Parse<SyntaxNode> {
     parse_entrypoint(input, ParseEntryPoint::File)
 }
 
@@ -60,16 +94,22 @@ pub fn parse(input: &str) -> Parse {
 pub fn parse_entrypoint(
     input: &str,
     parse_entrypoint: ParseEntryPoint,
-) -> Parse {
-    let (green_node, errors) = parser::parse_entrypoint(input, parse_entrypoint).into_parts();
-    Parse {
-        green_node,
-        errors: Arc::from(errors),
-    }
+) -> Parse<SyntaxNode> {
+    let (green, errors) = parser::parse_entrypoint(input, parse_entrypoint).into_parts();
+    Parse::new(green, errors)
 }
 
 /// Conversion from `SyntaxNode` to typed AST
 pub trait AstNode {
+    /// This panics if the `SyntaxKind` is not statically known.
+    #[must_use]
+    fn kind() -> SyntaxKind
+    where
+        Self: Sized,
+    {
+        panic!("dynamic `SyntaxKind` for `AstNode::kind()`")
+    }
+
     fn can_cast(kind: SyntaxKind) -> bool
     where
         Self: Sized;
@@ -79,6 +119,28 @@ pub trait AstNode {
         Self: Sized;
 
     fn syntax(&self) -> &SyntaxNode;
+
+    /// # Panics
+    ///
+    /// Panics if the cast fails.
+    #[must_use]
+    fn clone_for_update(&self) -> Self
+    where
+        Self: Sized,
+    {
+        Self::cast(self.syntax().clone_for_update()).unwrap()
+    }
+
+    /// # Panics
+    ///
+    /// Panics if the cast fails.
+    #[must_use]
+    fn clone_subtree(&self) -> Self
+    where
+        Self: Sized,
+    {
+        Self::cast(self.syntax().clone_subtree()).unwrap()
+    }
 }
 
 pub trait AstToken {

@@ -1,4 +1,5 @@
-use std::{collections::hash_map::Entry, fmt, sync::Arc};
+use std::{collections::hash_map::Entry, fmt};
+use triomphe::Arc;
 
 use either::Either;
 use hir_def::{

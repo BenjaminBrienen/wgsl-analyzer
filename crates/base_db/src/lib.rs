@@ -10,12 +10,11 @@ mod util_types;
 use input::{SourceRoot, SourceRootId};
 use line_index::LineIndex;
 pub use util_types::*;
-use vfs::{AnchoredPath, VfsPath};
+pub use vfs::{AnchoredPath, AnchoredPathBuf, FileId, VfsPath, file_set::FileSet};
 
 use rustc_hash::{FxHashMap, FxHashSet};
 use syntax::{Parse, ParseEntryPoint};
 use triomphe::Arc;
-pub use vfs::FileId;
 
 pub trait FileLoader {
     fn resolve_path(
@@ -68,32 +67,32 @@ pub trait SourceDatabase: FileLoader {
     fn parse_no_preprocessor(
         &self,
         key: FileId,
-    ) -> syntax::Parse;
+    ) -> syntax::Parse<syntax::SyntaxNode>;
 
     #[salsa::invoke(parse_with_unconfigured_query)]
     fn parse_with_unconfigured(
         &self,
         key: FileId,
-    ) -> (Parse, Arc<Vec<UnconfiguredCode>>);
+    ) -> (Parse<syntax::SyntaxNode>, Arc<Vec<UnconfiguredCode>>);
 
     #[salsa::invoke(parse_query)]
     fn parse(
         &self,
         key: FileId,
-    ) -> Parse;
+    ) -> Parse<syntax::SyntaxNode>;
 
     #[salsa::invoke(parse_import_no_preprocessor_query)]
     fn parse_import_no_preprocessor(
         &self,
         key: String,
-    ) -> Result<syntax::Parse, ()>;
+    ) -> Result<syntax::Parse<syntax::SyntaxNode>, ()>;
 
     #[salsa::invoke(parse_import_query)]
     fn parse_import(
         &self,
         key: String,
         parse_entrypoint: ParseEntryPoint,
-    ) -> Result<Parse, ()>;
+    ) -> Result<Parse<syntax::SyntaxNode>, ()>;
 
     fn line_index(
         &self,
@@ -112,7 +111,7 @@ fn line_index(
 fn parse_no_preprocessor_query(
     database: &dyn SourceDatabase,
     file_id: FileId,
-) -> syntax::Parse {
+) -> syntax::Parse<syntax::SyntaxNode> {
     let source = database.file_text(file_id);
     syntax::parse(&source)
 }
@@ -121,7 +120,7 @@ fn parse_no_preprocessor_query(
 fn parse_import_no_preprocessor_query(
     database: &dyn SourceDatabase,
     key: String,
-) -> Result<syntax::Parse, ()> {
+) -> Result<syntax::Parse<syntax::SyntaxNode>, ()> {
     let imports = database.custom_imports();
     let source = imports.get(&key).ok_or(())?;
     Ok(syntax::parse(source))
@@ -136,7 +135,7 @@ pub struct UnconfiguredCode {
 fn parse_with_unconfigured_query(
     database: &dyn SourceDatabase,
     file_id: FileId,
-) -> (Parse, Arc<Vec<UnconfiguredCode>>) {
+) -> (Parse<syntax::SyntaxNode>, Arc<Vec<UnconfiguredCode>>) {
     let shader_defs = database.shader_defs();
     let source = database.file_text(file_id);
 
@@ -160,7 +159,7 @@ fn parse_with_unconfigured_query(
 fn parse_query(
     database: &dyn SourceDatabase,
     file_id: FileId,
-) -> Parse {
+) -> Parse<syntax::SyntaxNode> {
     database.parse_with_unconfigured(file_id).0
 }
 
@@ -169,7 +168,7 @@ fn parse_import_query(
     database: &dyn SourceDatabase,
     key: String,
     parse_entrypoint: ParseEntryPoint,
-) -> Result<Parse, ()> {
+) -> Result<Parse<syntax::SyntaxNode>, ()> {
     let imports = database.custom_imports();
     let shader_defs = database.shader_defs();
     let source = imports.get(&key).ok_or(())?;

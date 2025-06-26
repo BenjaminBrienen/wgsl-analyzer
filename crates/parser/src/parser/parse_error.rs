@@ -4,6 +4,7 @@ use rowan::TextRange;
 
 use crate::SyntaxKind;
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ParseError {
     pub expected: Vec<SyntaxKind>,
     pub found: Option<SyntaxKind>,
@@ -35,28 +36,6 @@ impl ParseError {
         }
 
         message
-    }
-}
-
-impl fmt::Debug for ParseError {
-    fn fmt(
-        &self,
-        #[expect(clippy::min_ident_chars, reason = "trait impl")] f: &mut fmt::Formatter<'_>,
-    ) -> fmt::Result {
-        f.debug_struct("ParseError")
-            .field("expected", &self.expected)
-            .field("found", &self.found)
-            .field("range", &self.range)
-            .finish()
-    }
-}
-
-impl PartialEq for ParseError {
-    fn eq(
-        &self,
-        other: &Self,
-    ) -> bool {
-        self.expected == other.expected && self.found == other.found && self.range == other.range
     }
 }
 

@@ -169,6 +169,16 @@ impl Analysis {
         self.with_db(|database| database.file_source_root(file_id))
     }
 
+    pub fn is_local_source_root(
+        &self,
+        source_root_id: SourceRootId,
+    ) -> Cancellable<bool> {
+        self.with_db(|db| {
+            let source_root = db.source_root(source_root_id);
+            !source_root.is_library()
+        })
+    }
+
     /// Computes the set of parser level diagnostics for the given file.
     pub fn syntax_diagnostics(
         &self,
@@ -218,7 +228,7 @@ impl Analysis {
     pub fn parse(
         &self,
         file_id: FileId,
-    ) -> Cancellable<Parse> {
+    ) -> Cancellable<Parse<SyntaxNode>> {
         self.with_db(|database| database.parse(file_id))
     }
 

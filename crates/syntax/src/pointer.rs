@@ -1,71 +1,27 @@
-use std::{hash::Hash, iter, marker::PhantomData};
+//! In wgsl-analyzer, syntax trees are transient objects.
+//!
+//! That means that we create trees when we need them, and tear them down to
+//! save memory. In this architecture, hanging on to a particular syntax node
+//! for a long time is ill-advisable, as that keeps the whole tree resident.
+//!
+//! Instead, we provide a [`SyntaxNodePointer`] type, which stores information about
+//! *location* of a particular syntax node in a tree. Its a small type which can
+//! be cheaply stored, and which can be resolved to a real [`SyntaxNode`] when
+//! necessary.
 
-use parser::{SyntaxKind, SyntaxNode};
+use std::{
+    hash::{Hash, Hasher},
+    marker::PhantomData,
+};
+
+use crate::{AstNode, SyntaxNode};
+use parser::WgslLanguage;
 use rowan::TextRange;
 
-use crate::AstNode;
+/// A "pointer" to a [`SyntaxNode`], via location in the source code.
+pub type SyntaxNodePointer = rowan::ast::SyntaxNodePtr<WgslLanguage>;
 
-/// A pointer to a syntax node inside a file. It can be used to remember a
-/// specific node across reparses of the same file.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct SyntaxNodePointer {
-    // Do not expose this field further. At some point, we might want to replace
-    // range with node id.
-    pub(crate) range: TextRange,
-    kind: SyntaxKind,
-}
-
-impl SyntaxNodePointer {
-    #[must_use]
-    pub fn new(node: &SyntaxNode) -> Self {
-        Self {
-            range: node.text_range(),
-            kind: node.kind(),
-        }
-    }
-
-    /// "Dereference" the pointer to get the node it points to.
-    ///
-    /// Panics if node is not found, so make sure that `root` syntax tree is
-    /// equivalent (is build from the same text) to the tree which was
-    /// originally used to get this [`SyntaxNodePointer`].
-    ///
-    /// The complexity is linear in the depth of the tree and logarithmic in
-    /// tree width. Because most trees are shallow, thinking about this as
-    /// `O(log(N))` in the size of the tree is not too wrong!
-    ///
-    /// ## Panics
-    ///
-    /// Panics if the node could not be found.
-    #[track_caller]
-    #[must_use]
-    pub fn to_node(
-        &self,
-        root: &SyntaxNode,
-    ) -> SyntaxNode {
-        debug_assert!(root.parent().is_none());
-        iter::successors(Some(root.clone()), |node| {
-            let node_or_token = node.child_or_token_at_range(self.range)?;
-            node_or_token.into_node()
-        })
-        .find(|node| node.text_range() == self.range && node.kind() == self.kind)
-        .ok_or_else(|| format!("cannot resolve local pointer to SyntaxNode: {self:?}"))
-        .unwrap()
-    }
-
-    #[must_use]
-    pub fn cast<N: AstNode>(self) -> Option<AstPointer<N>> {
-        if !N::can_cast(self.kind) {
-            return None;
-        }
-        Some(AstPointer {
-            raw: self,
-            _ty: PhantomData,
-        })
-    }
-}
-
-/// Like `SyntaxNodePointer`, but remembers the type of node
+/// Like `SyntaxNodePointer`, but remembers the type of node.
 pub struct AstPointer<N: AstNode> {
     raw: SyntaxNodePointer,
     _ty: PhantomData<fn() -> N>,
@@ -76,18 +32,14 @@ impl<N: AstNode> std::fmt::Debug for AstPointer<N> {
         &self,
         #[expect(clippy::min_ident_chars, reason = "trait impl")] f: &mut std::fmt::Formatter<'_>,
     ) -> std::fmt::Result {
-        f.debug_struct("AstPointer")
-            .field("raw", &self.raw)
-            .finish()
+        f.debug_tuple("AstPtr").field(&self.raw).finish()
     }
 }
 
+impl<N: AstNode> Copy for AstPointer<N> {}
 impl<N: AstNode> Clone for AstPointer<N> {
     fn clone(&self) -> Self {
-        Self {
-            raw: self.raw.clone(),
-            _ty: PhantomData,
-        }
+        *self
     }
 }
 
@@ -102,8 +54,8 @@ impl<N: AstNode> PartialEq for AstPointer<N> {
     }
 }
 
-impl<Node: AstNode> std::hash::Hash for AstPointer<Node> {
-    fn hash<H: std::hash::Hasher>(
+impl<N: AstNode> Hash for AstPointer<N> {
+    fn hash<H: Hasher>(
         &self,
         state: &mut H,
     ) {
@@ -111,35 +63,39 @@ impl<Node: AstNode> std::hash::Hash for AstPointer<Node> {
     }
 }
 
-impl<Node: AstNode> AstPointer<Node> {
-    pub fn new(node: &Node) -> Self {
+impl<N: AstNode> AstPointer<N> {
+    pub fn new(node: &N) -> Self {
         Self {
             raw: SyntaxNodePointer::new(node.syntax()),
             _ty: PhantomData,
         }
     }
 
-    /// ## Panics
+    /// # Panics
     ///
     /// Panics if the cast failed.
-    #[track_caller]
     #[must_use]
     pub fn to_node(
         &self,
         root: &SyntaxNode,
-    ) -> Node {
+    ) -> N {
         let syntax_node = self.raw.to_node(root);
-        Node::cast(syntax_node).unwrap()
+        N::cast(syntax_node).unwrap()
     }
 
     #[must_use]
-    pub fn syntax_node_pointer(&self) -> SyntaxNodePointer {
-        self.raw.clone()
+    pub const fn syntax_node_pointer(&self) -> SyntaxNodePointer {
+        self.raw
     }
 
     #[must_use]
-    pub fn cast<TargetNode: AstNode>(self) -> Option<AstPointer<TargetNode>> {
-        if !TargetNode::can_cast(self.raw.kind) {
+    pub fn text_range(&self) -> TextRange {
+        self.raw.text_range()
+    }
+
+    #[must_use]
+    pub fn cast<U: AstNode>(self) -> Option<AstPointer<U>> {
+        if !U::can_cast(self.raw.kind()) {
             return None;
         }
         Some(AstPointer {
@@ -147,10 +103,57 @@ impl<Node: AstNode> AstPointer<Node> {
             _ty: PhantomData,
         })
     }
+
+    #[must_use]
+    pub fn kind(&self) -> parser::SyntaxKind {
+        self.raw.kind()
+    }
+
+    #[must_use]
+    pub fn upcast<M: AstNode>(self) -> AstPointer<M>
+    where
+        N: Into<M>,
+    {
+        AstPointer {
+            raw: self.raw,
+            _ty: PhantomData,
+        }
+    }
+
+    /// Like `SyntaxNodePointer::cast` but the trait bounds work out.
+    #[must_use]
+    pub fn try_from_raw(raw: SyntaxNodePointer) -> Option<Self> {
+        N::can_cast(raw.kind()).then_some(Self {
+            raw,
+            _ty: PhantomData,
+        })
+    }
+
+    #[must_use]
+    pub fn wrap_left<R>(self) -> AstPointer<either::Either<N, R>>
+    where
+        either::Either<N, R>: AstNode,
+    {
+        AstPointer {
+            raw: self.raw,
+            _ty: PhantomData,
+        }
+    }
+
+    #[must_use]
+    pub fn wrap_right<L>(self) -> AstPointer<either::Either<L, N>>
+    where
+        either::Either<L, N>: AstNode,
+    {
+        AstPointer {
+            raw: self.raw,
+            _ty: PhantomData,
+        }
+    }
 }
 
-impl<Node: AstNode> From<AstPointer<Node>> for SyntaxNodePointer {
-    fn from(pointer: AstPointer<Node>) -> Self {
-        pointer.raw
+impl<N: AstNode> From<AstPointer<N>> for SyntaxNodePointer {
+    fn from(ptr: AstPointer<N>) -> Self {
+        ptr.raw
     }
 }

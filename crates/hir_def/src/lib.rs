@@ -1,4 +1,3 @@
-mod ast_id;
 pub mod attributes;
 pub mod body;
 pub mod data;
@@ -9,13 +8,13 @@ pub mod module_data;
 pub mod resolver;
 pub mod type_ref;
 
-pub use ast_id::*;
 use base_db::{FileRange, TextRange};
 use database::DefDatabase;
 pub use hir_file_id::HirFileId;
 use hir_file_id::HirFileIdRepr;
 use module_data::{ModuleDataNode, ModuleItemId};
 use rowan::NodeOrToken;
+use span::AstIdNode;
 use syntax::{AstNode, SyntaxNode, SyntaxToken};
 
 use crate::{database::ImportId, module_data::Import};
@@ -138,7 +137,7 @@ fn import_location(
 ) -> InFile<TextRange> {
     let import_loc = database.lookup_intern_import(import_id);
     let module_info = database.module_info(import_loc.file_id);
-    let def_map = database.ast_id_map(import_loc.file_id);
+    let def_map = database.ast_id_map(import_loc.file_id).unwrap();
     let root = database
         .parse_or_resolve(import_loc.file_id)
         .unwrap()
@@ -173,6 +172,7 @@ impl<N: ModuleDataNode> HasSource for InFile<ModuleItemId<N>> {
         InFile::new(
             self.file_id,
             ast_id_map
+                .unwrap()
                 .get(node.ast_id())
                 .to_node(&root.unwrap().syntax()),
         )

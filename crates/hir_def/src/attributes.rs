@@ -1,4 +1,5 @@
-use std::{iter, sync::Arc};
+use std::iter;
+use triomphe::Arc;
 
 use either::Either;
 use syntax::{
@@ -65,7 +66,7 @@ impl AttributeList {
                                 AttributeValue::Name(Name::from(identifier))
                             },
                             IdentOrLiteral::Literal(literal) => {
-                                AttributeValue::Literal(parse_literal(literal.kind()))
+                                AttributeValue::Literal(parse_literal(literal.literal_kind()))
                             },
                         })
                     })

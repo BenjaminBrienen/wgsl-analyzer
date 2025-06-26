@@ -505,7 +505,7 @@ impl Literal {
     ///
     /// Panics if the literal is invalid.
     #[must_use]
-    pub fn kind(&self) -> LiteralKind {
+    pub fn literal_kind(&self) -> LiteralKind {
         support::child_token(self.syntax()).expect("invalid literal parsed")
     }
 }
@@ -748,7 +748,7 @@ ast_node!(VariableStatement:
 
 impl VariableStatement {
     #[must_use]
-    pub fn kind(&self) -> Option<VariableStatementKind> {
+    pub fn variable_statement_kind(&self) -> Option<VariableStatementKind> {
         #[expect(clippy::wildcard_enum_match_arm, reason = "not readable")]
         self.syntax()
             .children_with_tokens()

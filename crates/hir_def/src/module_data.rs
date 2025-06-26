@@ -1,15 +1,15 @@
 mod lower;
 pub mod pretty;
 
-use std::{hash, marker::PhantomData, ops, sync::Arc};
-
 use la_arena::{Arena, Idx, IdxRange};
 use smol_str::SmolStr;
+use span::{AstIdNode, FileAstId};
+use std::{hash, marker::PhantomData, ops};
 use syntax::{AstNode, TokenText, ast};
+use triomphe::Arc;
 
 use crate::{
     HirFileId,
-    ast_id::FileAstId,
     database::{DefDatabase, Interned},
     type_ref::{AccessMode, AddressSpace, TypeReference},
 };
@@ -247,7 +247,7 @@ impl<N> Clone for ModuleItemId<N> {
 impl<N: ModuleDataNode> Copy for ModuleItemId<N> {}
 
 pub trait ModuleDataNode: Clone {
-    type Source: AstNode + Into<ast::Item>;
+    type Source: AstIdNode + Into<ast::Item>;
 
     fn ast_id(&self) -> FileAstId<Self::Source>;
 
@@ -355,7 +355,7 @@ pub fn find_item<M: ModuleDataNode>(
     module_info.items().iter().find_map(|item| {
         let id = M::id_from_mod_item(item)?;
         let data = M::lookup(&module_info.data, id.index);
-        let def_map = database.ast_id_map(file_id);
+        let def_map = database.ast_id_map(file_id).unwrap();
 
         let source_ast_id = def_map.ast_id(source);
         let item_ast_id = M::ast_id(data);
@@ -374,7 +374,7 @@ pub fn find_import(
 
     module_info.data.imports.iter().find_map(|(index, data)| {
         let id = ModuleItemId::from(index);
-        let def_map = database.ast_id_map(file_id);
+        let def_map = database.ast_id_map(file_id).unwrap();
 
         let source_ast_id = def_map.ast_id(source);
         let item_ast_id = Import::ast_id(data);

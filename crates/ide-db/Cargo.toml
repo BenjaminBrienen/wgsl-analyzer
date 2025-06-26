@@ -27,6 +27,7 @@ nohash-hasher.workspace = true
 smol_str.workspace = true
 smallvec.workspace = true
 
+stdx.workspace = true
 base-db.workspace = true
 hir-def.workspace = true
 hir-ty.workspace = true
@@ -34,6 +35,7 @@ syntax.workspace = true
 rowan.workspace = true
 vfs.workspace = true
 line-index.workspace = true
+span.workspace = true
 
 [dev-dependencies]
 expect-test = "1.5.1"

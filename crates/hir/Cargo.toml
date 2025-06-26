@@ -23,6 +23,7 @@ la-arena.workspace = true
 smallvec.workspace = true
 vfs.workspace = true
 serde.workspace = true
+triomphe.workspace = true
 
 [lints]
 workspace = true

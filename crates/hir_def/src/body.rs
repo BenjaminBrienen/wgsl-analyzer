@@ -1,7 +1,7 @@
 mod lower;
 pub mod scope;
 
-use std::sync::Arc;
+use triomphe::Arc;
 
 use either::Either;
 use la_arena::{Arena, ArenaMap, Idx};

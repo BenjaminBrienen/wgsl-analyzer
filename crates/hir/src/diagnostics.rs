@@ -187,7 +187,7 @@ pub(crate) fn any_diag_from_infer_diagnostic(
 ) -> Option<AnyDiagnostic> {
     Some(match infer_diagnostic {
         InferenceDiagnostic::AssignmentNotAReference { left_side, actual } => {
-            let pointer = source_map.expression_to_source(*left_side).ok()?.clone();
+            let pointer = *source_map.expression_to_source(*left_side).ok()?;
             let source = InFile::new(file_id, pointer);
             AnyDiagnostic::AssignmentNotAReference {
                 left_side: source,
@@ -199,7 +199,7 @@ pub(crate) fn any_diag_from_infer_diagnostic(
             expected,
             actual,
         } => {
-            let pointer = source_map.expression_to_source(*expression).ok()?.clone();
+            let pointer = *source_map.expression_to_source(*expression).ok()?;
             let source = InFile::new(file_id, pointer);
             AnyDiagnostic::TypeMismatch {
                 expression: source,
@@ -212,7 +212,7 @@ pub(crate) fn any_diag_from_infer_diagnostic(
             name,
             r#type,
         } => {
-            let pointer = source_map.expression_to_source(*expression).ok()?.clone();
+            let pointer = *source_map.expression_to_source(*expression).ok()?;
             let source = InFile::new(file_id, pointer);
 
             AnyDiagnostic::NoSuchField {
@@ -222,7 +222,7 @@ pub(crate) fn any_diag_from_infer_diagnostic(
             }
         },
         InferenceDiagnostic::ArrayAccessInvalidType { expression, r#type } => {
-            let pointer = source_map.expression_to_source(*expression).ok()?.clone();
+            let pointer = *source_map.expression_to_source(*expression).ok()?;
             let source = InFile::new(file_id, pointer);
 
             AnyDiagnostic::ArrayAccessInvalidType {
@@ -231,7 +231,7 @@ pub(crate) fn any_diag_from_infer_diagnostic(
             }
         },
         InferenceDiagnostic::UnresolvedName { expression, name } => {
-            let pointer = source_map.expression_to_source(*expression).ok()?.clone();
+            let pointer = *source_map.expression_to_source(*expression).ok()?;
             let source = InFile::new(file_id, pointer);
 
             AnyDiagnostic::UnresolvedName {
@@ -240,7 +240,7 @@ pub(crate) fn any_diag_from_infer_diagnostic(
             }
         },
         InferenceDiagnostic::InvalidConstructionType { expression, r#type } => {
-            let pointer = source_map.expression_to_source(*expression).ok()?.clone();
+            let pointer = *source_map.expression_to_source(*expression).ok()?;
             let source = InFile::new(file_id, pointer);
 
             AnyDiagnostic::InvalidConstructionType {
@@ -254,7 +254,7 @@ pub(crate) fn any_diag_from_infer_diagnostic(
             builtins,
             parameters,
         } => {
-            let pointer = source_map.expression_to_source(*expression).ok()?.clone();
+            let pointer = *source_map.expression_to_source(*expression).ok()?;
             let source = InFile::new(file_id, pointer);
 
             AnyDiagnostic::NoConstructor {
@@ -269,7 +269,7 @@ pub(crate) fn any_diag_from_infer_diagnostic(
             n_expected,
             n_actual,
         } => {
-            let pointer = source_map.expression_to_source(*expression).ok()?.clone();
+            let pointer = *source_map.expression_to_source(*expression).ok()?;
             let source = InFile::new(file_id, pointer);
 
             AnyDiagnostic::FunctionCallArgCountMismatch {
@@ -284,7 +284,7 @@ pub(crate) fn any_diag_from_infer_diagnostic(
             parameters,
             name,
         } => {
-            let pointer = source_map.expression_to_source(*expression).ok()?.clone();
+            let pointer = *source_map.expression_to_source(*expression).ok()?;
             let source = InFile::new(file_id, pointer);
 
             AnyDiagnostic::NoBuiltinOverload {
@@ -295,7 +295,7 @@ pub(crate) fn any_diag_from_infer_diagnostic(
             }
         },
         InferenceDiagnostic::AddressOfNotReference { expression, actual } => {
-            let pointer = source_map.expression_to_source(*expression).ok()?.clone();
+            let pointer = *source_map.expression_to_source(*expression).ok()?;
             let source = InFile::new(file_id, pointer);
 
             AnyDiagnostic::AddressOfNotReference {
@@ -304,7 +304,7 @@ pub(crate) fn any_diag_from_infer_diagnostic(
             }
         },
         InferenceDiagnostic::DerefNotAPointer { expression, actual } => {
-            let pointer = source_map.expression_to_source(*expression).ok()?.clone();
+            let pointer = *source_map.expression_to_source(*expression).ok()?;
             let source = InFile::new(file_id, pointer);
 
             AnyDiagnostic::DerefNotPointer {
@@ -375,7 +375,7 @@ pub(crate) fn any_diag_from_shift(
 ) -> Option<AnyDiagnostic> {
     match error {
         PrecedenceDiagnostic::NeverNested(expression, op) => {
-            let pointer = source_map.expression_to_source(*expression).ok()?.clone();
+            let pointer = *source_map.expression_to_source(*expression).ok()?;
             let source = InFile::new(file_id, pointer);
             Some(AnyDiagnostic::PrecedenceParensRequired {
                 expression: source,
@@ -384,7 +384,7 @@ pub(crate) fn any_diag_from_shift(
             })
         },
         PrecedenceDiagnostic::SequencesAllowed(expression, op) => {
-            let pointer = source_map.expression_to_source(*expression).ok()?.clone();
+            let pointer = *source_map.expression_to_source(*expression).ok()?;
             let source = InFile::new(file_id, pointer);
             Some(AnyDiagnostic::PrecedenceParensRequired {
                 expression: source,

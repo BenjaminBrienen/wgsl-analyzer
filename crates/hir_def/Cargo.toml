@@ -24,6 +24,9 @@ either.workspace = true
 smallvec.workspace = true
 rowan.workspace = true
 tracing.workspace = true
+hashbrown.workspace = true
+span.workspace = true
+triomphe.workspace = true
 
 [lints]
 workspace = true

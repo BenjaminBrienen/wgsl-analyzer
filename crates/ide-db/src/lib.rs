@@ -5,6 +5,8 @@ use triomphe::Arc;
 use base_db::{FileId, FileLoader, FileLoaderDelegate, SourceDatabase as _, change::Change};
 use vfs::AnchoredPath;
 
+mod assists;
+mod label;
 pub mod source_change;
 pub mod text_edit;
 

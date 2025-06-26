@@ -243,7 +243,7 @@ impl Collector<'_> {
                     .and_then(|typo| TypeReference::try_from(typo).ok())
                     .map(|type_ref| self.database.intern_type_ref(type_ref));
 
-                match variable_statement.kind()? {
+                match variable_statement.variable_statement_kind()? {
                     ast::VariableStatementKind::Let => Statement::LetStatement {
                         binding_id,
                         type_ref,
@@ -433,7 +433,7 @@ impl Collector<'_> {
                     })
             },
             ast::Expression::Literal(literal) => {
-                let literal = literal.kind();
+                let literal = literal.literal_kind();
                 Expression::Literal(parse_literal(literal))
             },
             ast::Expression::ParenthesisExpression(expression) => {
@@ -552,7 +552,7 @@ impl Collector<'_> {
         expression: Expression,
         source: AstPointer<ast::Expression>,
     ) -> ExpressionId {
-        let id = self.make_expression(expression, Ok(source.clone()));
+        let id = self.make_expression(expression, Ok(source));
         self.source_map.expression_map.insert(source, id);
         id
     }
@@ -572,7 +572,7 @@ impl Collector<'_> {
         statement: Statement,
         source: AstPointer<ast::Statement>,
     ) -> StatementId {
-        let id = self.make_statement(statement, Ok(source.clone()));
+        let id = self.make_statement(statement, Ok(source));
         self.source_map.statement_map.insert(source, id);
         id
     }
@@ -592,7 +592,7 @@ impl Collector<'_> {
         binding: Binding,
         source: AstPointer<ast::Binding>,
     ) -> BindingId {
-        let id = self.make_binding(binding, Ok(source.clone()));
+        let id = self.make_binding(binding, Ok(source));
         self.source_map.binding_map.insert(source, id);
         id
     }
