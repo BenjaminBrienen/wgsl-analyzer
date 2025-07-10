@@ -117,13 +117,8 @@
 		"names": [
 			// Add proper nouns here
 			"mdBook",
-			"rust-analyzer",
-			"wgsl-formatter",
-			"wgsl-analyzer",
 			"Rust",
 			"WGSL",
-			"wgsl-src",
-			"wgsl-bin",
 			"WESL"
 		]
 	},
