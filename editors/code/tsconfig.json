@@ -22,6 +22,7 @@
 		"exactOptionalPropertyTypes": false,
 		"erasableSyntaxOnly": false,
 		"verbatimModuleSyntax": false,
+		"allowSyntheticDefaultImports": true,
 		"noEmit": false,
 		"types": ["@types/node"]
 	},

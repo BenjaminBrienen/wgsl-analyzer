@@ -6,11 +6,10 @@ import * as wa from "./lsp_ext";
 import { isWeslEditor, setContextValue } from "./utilities";
 
 export class SyntaxTreeProvider implements vscode.TreeDataProvider<SyntaxElement> {
-	private _onDidChangeTreeData: vscode.EventEmitter<SyntaxElement | undefined> =
-		new vscode.EventEmitter<SyntaxElement | undefined>();
+	private _onDidChangeTreeData: vscode.EventEmitter<SyntaxElement | undefined> = new vscode
+		.EventEmitter<SyntaxElement | undefined>();
 
-	readonly onDidChangeTreeData: vscode.Event<SyntaxElement | undefined> =
-		this._onDidChangeTreeData.event;
+	readonly onDidChangeTreeData: vscode.Event<SyntaxElement | undefined> = this._onDidChangeTreeData.event;
 
 	ctx: CtxInit;
 	root: SyntaxNode | undefined;
@@ -309,7 +308,10 @@ const iconTable: Record<string, vscode.ThemeIcon> = {
 		"symbol-number",
 		new vscode.ThemeColor("symbolIcon.numberForeground"),
 	),
-	LITERAL: new vscode.ThemeIcon("symbol-misc", new vscode.ThemeColor("symbolIcon.miscForeground")),
+	LITERAL: new vscode.ThemeIcon(
+		"symbol-misc",
+		new vscode.ThemeColor("symbolIcon.miscForeground"),
+	),
 	MODULE: new vscode.ThemeIcon(
 		"symbol-module",
 		new vscode.ThemeColor("symbolIcon.moduleForeground"),

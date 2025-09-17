@@ -1,3 +1,4 @@
+import process from "node:process";
 import * as assert from "assert";
 import { substituteVariablesInEnv } from "../../src/config";
 import type { Context } from ".";

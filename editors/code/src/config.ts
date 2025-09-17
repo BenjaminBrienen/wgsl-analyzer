@@ -69,9 +69,7 @@ export class Config {
 
 		this.configureLanguage();
 
-		const requiresServerReloadOpt = this.requiresServerReloadOpts.find((opt) =>
-			event.affectsConfiguration(opt),
-		);
+		const requiresServerReloadOpt = this.requiresServerReloadOpts.find((opt) => event.affectsConfiguration(opt));
 
 		if (!requiresServerReloadOpt) return;
 
@@ -221,10 +219,13 @@ export class Config {
 	}
 
 	get serverExtraEnv(): Env {
-		const extraEnv = this.get<{ [key: string]: string | number } | null>("server.extraEnv") ?? {};
+		const extraEnv = this.get<{ [key: string]: string | number } | null>("server.extraEnv") ??
+			{};
 		return substituteVariablesInEnv(
 			Object.fromEntries(
-				Object.entries(extraEnv).map(([k, v]) => [k, typeof v !== "string" ? v.toString() : v]),
+				Object.entries(extraEnv).map((
+					[k, v],
+				) => [k, typeof v !== "string" ? v.toString() : v]),
 			),
 		);
 	}
@@ -241,13 +242,15 @@ export class Config {
 		let target;
 		let value;
 		if (
-			config.workspaceFolderValue !== undefined
-			|| config.workspaceFolderLanguageValue !== undefined
+			config.workspaceFolderValue !== undefined ||
+			config.workspaceFolderLanguageValue !== undefined
 		) {
 			target = vscode.ConfigurationTarget.WorkspaceFolder;
 			overrideInLanguage = config.workspaceFolderLanguageValue;
 			value = config.workspaceFolderValue || config.workspaceFolderLanguageValue;
-		} else if (config.workspaceValue !== undefined || config.workspaceLanguageValue !== undefined) {
+		} else if (
+			config.workspaceValue !== undefined || config.workspaceLanguageValue !== undefined
+		) {
 			target = vscode.ConfigurationTarget.Workspace;
 			overrideInLanguage = config.workspaceLanguageValue;
 			value = config.workspaceValue || config.workspaceLanguageValue;
@@ -282,8 +285,7 @@ export class Config {
 		let sourceFileMap = this.get<Record<string, string> | "auto">("debug.sourceFileMap");
 		if (sourceFileMap !== "auto") {
 			// "/wesl/<id>" used by suggestions only.
-			const { ["/wesl/<id>"]: _, ...trimmed } =
-				this.get<Record<string, string>>("debug.sourceFileMap") ?? {};
+			const { ["/wesl/<id>"]: _, ...trimmed } = this.get<Record<string, string>>("debug.sourceFileMap") ?? {};
 			sourceFileMap = trimmed;
 		}
 
@@ -425,10 +427,13 @@ export function substituteVariablesInEnv(env: Env): Env {
 		for (const key of toResolve) {
 			const item = unwrapUndefinable(envWithDeps[key]);
 			if (item.deps.every((dep) => resolved.has(dep))) {
-				item.value = item.value.replace(/\$\{(?<depName>.+?)\}/g, (_wholeMatch, depName) => {
-					const item = unwrapUndefinable(envWithDeps[depName]);
-					return item.value;
-				});
+				item.value = item.value.replace(
+					/\$\{(?<depName>.+?)\}/g,
+					(_wholeMatch, depName) => {
+						const item = unwrapUndefinable(envWithDeps[depName]);
+						return item.value;
+					},
+				);
 				resolved.add(key);
 				toResolve.delete(key);
 			}
@@ -460,15 +465,14 @@ function computeVscodeVar(varName: string): string | null {
 		const folders = vscode.workspace.workspaceFolders ?? [];
 		const folder = folders[0];
 		// TODO: support for remote workspaces?
-		const fsPath: string =
-			folder === undefined
-				? "" // no workspace opened
-				: // could use currently opened document to detect the correct
-					// workspace. However, that would be determined by the document
-					// user has opened on Editor startup. Could lead to
-					// unpredictable workspace selection in practice.
-					// It is better to pick the first one
-					folder.uri.fsPath;
+		const fsPath: string = folder === undefined
+			? "" // no workspace opened
+			// could use currently opened document to detect the correct
+			// workspace. However, that would be determined by the document
+			// user has opened on Editor startup. Could lead to
+			// unpredictable workspace selection in practice.
+			// It is better to pick the first one
+			: folder.uri.fsPath;
 		return fsPath;
 	};
 	// https://code.visualstudio.com/docs/editor/variables-reference

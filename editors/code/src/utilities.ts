@@ -1,10 +1,5 @@
 import { strict as nativeAssert } from "assert";
-import {
-	type ExecOptionsWithStringEncoding,
-	exec,
-	type SpawnOptionsWithoutStdio,
-	spawn,
-} from "child_process";
+import { exec, type ExecOptionsWithStringEncoding, spawn, type SpawnOptionsWithoutStdio } from "child_process";
 import { inspect } from "util";
 import * as vscode from "vscode";
 
@@ -79,8 +74,8 @@ export function isWeslDocument(document: vscode.TextDocument): document is WeslD
 	// to something different than "file".
 	// See: https://github.com/rust-lang/rust-analyzer/issues/4608
 	return (
-		(document.languageId === "wgsl" || document.languageId === "wesl")
-		&& document.uri.scheme === "file"
+		(document.languageId === "wgsl" || document.languageId === "wesl") &&
+		document.uri.scheme === "file"
 	);
 }
 

@@ -52,18 +52,15 @@ export function createClient(
 			const preview = config.previewWeslRsOutput;
 			const errorCode = config.useWeslRsErrorCode;
 			diagnosticList.forEach((diagnostic, index) => {
-				const value =
-					typeof diagnostic.code === "string" || typeof diagnostic.code === "number"
-						? diagnostic.code
-						: diagnostic.code?.value;
+				const value = typeof diagnostic.code === "string" || typeof diagnostic.code === "number" ? diagnostic.code : diagnostic.code?.value;
 				if (
 					// FIXME: We currently emit this diagnostic way too early, before we have
 					// loaded the project fully
 					// value === "unlinked-file" &&
-					value === "temporary-disabled"
-					&& !unlinkedFiles.includes(uri)
-					&& (diagnostic.message === "file not included in crate hierarchy"
-						|| diagnostic.message.startsWith("This file is not included in any crates"))
+					value === "temporary-disabled" &&
+					!unlinkedFiles.includes(uri) &&
+					(diagnostic.message === "file not included in crate hierarchy" ||
+						diagnostic.message.startsWith("This file is not included in any crates"))
 				) {
 					const config = vscode.workspace.getConfiguration("wgsl-analyzer");
 					if (config.get("showUnlinkedFileNotification")) {
@@ -88,8 +85,9 @@ export function createClient(
 										case "No":
 											break;
 										case "Yes": {
-											const pathToInsert =
-												"." + parent.substring(folder.length) + pathSeparator + "Cargo.toml";
+											const pathToInsert = "." +
+												parent.substring(folder.length) + pathSeparator +
+												"Cargo.toml";
 											const value = config
 												// biome-ignore lint/suspicious/noExplicitAny: Signature comes from upstream
 												.get<any[]>("linkedProjects")
@@ -98,7 +96,11 @@ export function createClient(
 											break;
 										}
 										case "Do not show this again":
-											await config.update("showUnlinkedFileNotification", false, false);
+											await config.update(
+												"showUnlinkedFileNotification",
+												false,
+												false,
+											);
 											break;
 									}
 								});
@@ -115,12 +117,17 @@ export function createClient(
 				// the data payload of the lsp diagnostic. If that field exists, overwrite the
 				// diagnostic code such that clicking it opens the diagnostic in a readonly
 				// text editor for easy inspection
-				const rendered = (diagnostic as unknown as { data?: { rendered?: string } }).data?.rendered;
+				const rendered = (diagnostic as unknown as { data?: { rendered?: string } }).data
+					?.rendered;
 				if (rendered) {
 					if (preview) {
 						const decolorized = anser.ansiToText(rendered);
-						const index = decolorized.match(/^(?:note|help):/m)?.index || rendered.length;
-						diagnostic.message = decolorized.substring(0, index).replace(/^ -->[^\n]+\n/m, "");
+						const index = decolorized.match(/^(?:note|help):/m)?.index ||
+							rendered.length;
+						diagnostic.message = decolorized.substring(0, index).replace(
+							/^ -->[^\n]+\n/m,
+							"",
+						);
 					}
 					diagnostic.code = {
 						target: vscode.Uri.from({
@@ -142,9 +149,7 @@ export function createClient(
 			_next: lc.ProvideHoverSignature,
 		) {
 			const editor = vscode.window.activeTextEditor;
-			const positionOrRange = editor?.selection?.contains(position)
-				? client.code2ProtocolConverter.asRange(editor.selection)
-				: client.code2ProtocolConverter.asPosition(position);
+			const positionOrRange = editor?.selection?.contains(position) ? client.code2ProtocolConverter.asRange(editor.selection) : client.code2ProtocolConverter.asPosition(position);
 			const parameters = {
 				textDocument: client.code2ProtocolConverter.asTextDocumentIdentifier(document),
 				position: positionOrRange,
@@ -188,7 +193,10 @@ export function createClient(
 					// In our case we expect to get code edits only from diagnostics
 					if (lc.CodeAction.is(item)) {
 						assert(!item.command, "We don't expect to receive commands in CodeActions");
-						const action = await client.protocol2CodeConverter.asCodeAction(item, token);
+						const action = await client.protocol2CodeConverter.asCodeAction(
+							item,
+							token,
+						);
 						result.push(action);
 						continue;
 					}
@@ -371,12 +379,13 @@ class OverrideFeatures implements lc.StaticFeature {
 function isCodeActionWithoutEditsAndCommands(value: any): boolean {
 	const candidate: lc.CodeAction = value;
 	return (
-		candidate
-		&& Is.string(candidate.title)
-		&& (candidate.diagnostics === void 0 || Is.typedArray(candidate.diagnostics, lc.Diagnostic.is))
-		&& (candidate.kind === void 0 || Is.string(candidate.kind))
-		&& candidate.edit === void 0
-		&& candidate.command === void 0
+		candidate &&
+		Is.string(candidate.title) &&
+		(candidate.diagnostics === void 0 ||
+			Is.typedArray(candidate.diagnostics, lc.Diagnostic.is)) &&
+		(candidate.kind === void 0 || Is.string(candidate.kind)) &&
+		candidate.edit === void 0 &&
+		candidate.command === void 0
 	);
 }
 
@@ -401,7 +410,8 @@ function renderHoverActions(actions: wa.CommandLinkGroup[]): vscode.MarkdownStri
 	const text = actions
 		.map(
 			(group) =>
-				(group.title ? group.title + " " : "") + group.commands.map(renderCommand).join(" | "),
+				(group.title ? group.title + " " : "") +
+				group.commands.map(renderCommand).join(" | "),
 		)
 		.join(" | ");
 

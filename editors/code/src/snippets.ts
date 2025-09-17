@@ -63,7 +63,10 @@ function toSnippetTextEdits(
 		// being wrapped in a SnippetTextEdit, as otherwise it would be
 		// treated as if it had a tab stop at the end.
 		if (hasSnippet(textEdit.newText)) {
-			return new vscode.SnippetTextEdit(textEdit.range, new vscode.SnippetString(textEdit.newText));
+			return new vscode.SnippetTextEdit(
+				textEdit.range,
+				new vscode.SnippetString(textEdit.newText),
+			);
 		} else {
 			return textEdit;
 		}

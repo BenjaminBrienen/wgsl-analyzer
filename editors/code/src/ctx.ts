@@ -4,26 +4,13 @@ import * as vscode from "vscode";
 import type * as lc from "vscode-languageclient/node";
 import { bootstrap } from "./bootstrap";
 import { createClient } from "./client";
-import {
-	Config,
-	DiagnosticsConfig,
-	InlayHintsConfig,
-	prepareVSCodeConfig,
-	TraceConfig,
-} from "./config";
+import { Config, DiagnosticsConfig, InlayHintsConfig, prepareVSCodeConfig, TraceConfig } from "./config";
 import type { ServerStatusParameters } from "./lsp_ext";
 import * as wa from "./lsp_ext";
 import type { WgslAnalyzerExtensionApi } from "./main";
 import { PersistentState } from "./persistent_state";
 import { type SyntaxElement, SyntaxTreeProvider } from "./syntax_tree_provider";
-import {
-	expectNotUndefined,
-	isWeslDocument,
-	isWeslEditor,
-	LazyOutputChannel,
-	log,
-	type WeslEditor,
-} from "./utilities";
+import { expectNotUndefined, isWeslDocument, isWeslEditor, LazyOutputChannel, log, type WeslEditor } from "./utilities";
 
 // We only support local folders, not eg. Live Share (`vlsl:` scheme), so do not activate if
 // only those are in use. We use "Empty" to represent these scenarios.
@@ -38,15 +25,9 @@ export function fetchWorkspace(): Workspace {
 	const folders = (vscode.workspace.workspaceFolders || []).filter(
 		(folder) => folder.uri.scheme === "file",
 	);
-	const weslDocuments = vscode.workspace.textDocuments.filter((document) =>
-		isWeslDocument(document),
-	);
+	const weslDocuments = vscode.workspace.textDocuments.filter((document) => isWeslDocument(document));
 
-	return folders.length === 0
-		? weslDocuments.length === 0
-			? { kind: "Empty" }
-			: { kind: "Detached Files", files: weslDocuments }
-		: { kind: "Workspace Folder" };
+	return folders.length === 0 ? weslDocuments.length === 0 ? { kind: "Empty" } : { kind: "Detached Files", files: weslDocuments } : { kind: "Workspace Folder" };
 }
 
 export type CommandFactory = {
@@ -198,7 +179,8 @@ export class Ctx implements WgslAnalyzerExtensionApi {
 			text(spawn(this._serverPath, ["--version"]).stdout.setEncoding("utf-8")).then(
 				(data) => {
 					const prefix = `wgsl-analyzer `;
-					this._serverVersion = data.slice(data.startsWith(prefix) ? prefix.length : 0).trim();
+					this._serverVersion = data.slice(data.startsWith(prefix) ? prefix.length : 0)
+						.trim();
 					this.refreshServerStatus();
 				},
 				(exception: unknown) => {
@@ -271,8 +253,7 @@ export class Ctx implements WgslAnalyzerExtensionApi {
 			let message = "bootstrap error. ";
 
 			message += 'See the logs in "OUTPUT > wgsl-analyzer Client" (should open automatically). ';
-			message +=
-				'To enable verbose logs, click the gear icon in the "OUTPUT" tab and select "Debug".';
+			message += 'To enable verbose logs, click the gear icon in the "OUTPUT" tab and select "Debug".';
 
 			log.error("Bootstrap error", exception);
 			throw new Error(message);
@@ -320,8 +301,8 @@ export class Ctx implements WgslAnalyzerExtensionApi {
 
 		vscode.workspace.onDidChangeTextDocument(async (e) => {
 			if (
-				vscode.window.activeTextEditor?.document !== e.document
-				|| e.contentChanges.length === 0
+				vscode.window.activeTextEditor?.document !== e.document ||
+				e.contentChanges.length === 0
 			) {
 				return;
 			}
@@ -464,7 +445,9 @@ export class Ctx implements WgslAnalyzerExtensionApi {
 				break;
 			case "warning":
 				statusBar.color = new vscode.ThemeColor("statusBarItem.warningForeground");
-				statusBar.backgroundColor = new vscode.ThemeColor("statusBarItem.warningBackground");
+				statusBar.backgroundColor = new vscode.ThemeColor(
+					"statusBarItem.warningBackground",
+				);
 				statusBar.command = "wgsl-analyzer.openLogs";
 				icon = "$(warning) ";
 				break;
@@ -476,9 +459,13 @@ export class Ctx implements WgslAnalyzerExtensionApi {
 				break;
 			case "stopped":
 				statusBar.tooltip.appendText("Server is stopped");
-				statusBar.tooltip.appendMarkdown("\n\n[Start server](command:wgsl-analyzer.startServer)");
+				statusBar.tooltip.appendMarkdown(
+					"\n\n[Start server](command:wgsl-analyzer.startServer)",
+				);
 				statusBar.color = new vscode.ThemeColor("statusBarItem.warningForeground");
-				statusBar.backgroundColor = new vscode.ThemeColor("statusBarItem.warningBackground");
+				statusBar.backgroundColor = new vscode.ThemeColor(
+					"statusBarItem.warningBackground",
+				);
 				statusBar.command = "wgsl-analyzer.startServer";
 				statusBar.text = "$(stop-circle) wgsl-analyzer";
 				return;
@@ -492,15 +479,15 @@ export class Ctx implements WgslAnalyzerExtensionApi {
 
 		const toggleCheckOnSave = this.config.checkOnSave ? "Disable" : "Enable";
 		statusBar.tooltip.appendMarkdown(
-			`[Extension Info](command:wgsl-analyzer.serverVersion "Show version and server binary info"): Version ${this.version}, Server Version ${this._serverVersion}`
-				+ "\n\n---\n\n"
-				+ '[$(terminal) Open Logs](command:wgsl-analyzer.openLogs "Open the server logs")'
-				+ "\n\n"
-				+ `[$(settings) ${toggleCheckOnSave} Check on Save](command:wgsl-analyzer.toggleCheckOnSave "Temporarily ${toggleCheckOnSave.toLowerCase()} check on save functionality")`
-				+ "\n\n"
-				+ '[$(stop-circle) Stop server](command:wgsl-analyzer.stopServer "Stop the server")'
-				+ "\n\n"
-				+ '[$(debug-restart) Restart server](command:wgsl-analyzer.restartServer "Restart the server")',
+			`[Extension Info](command:wgsl-analyzer.serverVersion "Show version and server binary info"): Version ${this.version}, Server Version ${this._serverVersion}` +
+				"\n\n---\n\n" +
+				'[$(terminal) Open Logs](command:wgsl-analyzer.openLogs "Open the server logs")' +
+				"\n\n" +
+				`[$(settings) ${toggleCheckOnSave} Check on Save](command:wgsl-analyzer.toggleCheckOnSave "Temporarily ${toggleCheckOnSave.toLowerCase()} check on save functionality")` +
+				"\n\n" +
+				'[$(stop-circle) Stop server](command:wgsl-analyzer.stopServer "Stop the server")' +
+				"\n\n" +
+				'[$(debug-restart) Restart server](command:wgsl-analyzer.restartServer "Restart the server")',
 		);
 		if (!status.quiescent) icon = "$(loading~spin) ";
 		statusBar.text = `${icon}wgsl-analyzer`;

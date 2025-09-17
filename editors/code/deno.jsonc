@@ -1,0 +1,47 @@
+{
+	"compilerOptions": {
+		"allowJs": true,
+		"lib": ["deno.window"],
+		"strict": true
+	},
+	"permissions": {
+		"default": {
+			"read": "./src/testdata/"
+		}
+	},
+	"lint": {
+		"include": ["src/"],
+		"exclude": ["src/testdata/", "src/fixtures/**/*.ts"],
+		"rules": {
+			"tags": ["recommended"],
+			"include": ["ban-untagged-todo"],
+			"exclude": ["no-unused-vars"]
+		}
+	},
+	"fmt": {
+		"useTabs": true,
+		"lineWidth": 200,
+		"indentWidth": 4,
+		"semiColons": true,
+		"singleQuote": false,
+		"proseWrap": "preserve",
+		"include": ["src/"],
+		"exclude": ["src/testdata/", "src/fixtures/**/*.ts"]
+	},
+	"lock": false,
+	"nodeModulesDir": "auto",
+	"unstable": ["webgpu"],
+	"test": {
+		"include": ["src/"],
+		"exclude": ["src/testdata/", "src/fixtures/**/*.ts"]
+	},
+	"tasks": {
+		"start": "deno run --allow-read main.ts"
+	},
+	"imports": {
+		"oak": "jsr:@oak/oak"
+	},
+	"exclude": [
+		"dist/"
+	]
+}

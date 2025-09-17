@@ -90,7 +90,13 @@ class WeslTaskProvider implements vscode.TaskProvider {
 			const exec = await targetToExecution(task.definition, {
 				env: task.definition.env,
 			});
-			return buildWeslTask(task.scope, task.definition, task.name, task.problemMatchers, exec);
+			return buildWeslTask(
+				task.scope,
+				task.definition,
+				task.name,
+				task.problemMatchers,
+				exec,
+			);
 		}
 		return undefined;
 	}

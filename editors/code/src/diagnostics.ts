@@ -1,12 +1,6 @@
 import anser from "anser";
 import * as vscode from "vscode";
-import {
-	type ProviderResult,
-	Range,
-	type TextEditorDecorationType,
-	ThemeColor,
-	window,
-} from "vscode";
+import { type ProviderResult, Range, type TextEditorDecorationType, ThemeColor, window } from "vscode";
 
 import type { Ctx } from "./ctx";
 
@@ -90,7 +84,9 @@ export class AnsiDecorationProvider implements vscode.Disposable {
 		}
 	}
 
-	private _getDecorations(uri: vscode.Uri): ProviderResult<[TextEditorDecorationType, Range[]][]> {
+	private _getDecorations(
+		uri: vscode.Uri,
+	): ProviderResult<[TextEditorDecorationType, Range[]][]> {
 		const stringContents = getRenderedDiagnostic(this.ctx, uri);
 		const lines = stringContents.split("\n");
 

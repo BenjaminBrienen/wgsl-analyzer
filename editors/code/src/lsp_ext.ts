@@ -9,10 +9,12 @@ export const hover = new lc.RequestType<
 	void
 >(lc.HoverRequest.method);
 
-export type HoverParameters = { position: lc.Position | lc.Range } & Omit<
-	lc.HoverParams,
-	"position"
->;
+export type HoverParameters =
+	& { position: lc.Position | lc.Range }
+	& Omit<
+		lc.HoverParams,
+		"position"
+	>;
 
 export type CommandLink = {
 	/**

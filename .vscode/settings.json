@@ -1,13 +1,13 @@
 // Do not put anything here unless it should apply to everyone!
 {
 	"[json]": {
-		"editor.defaultFormatter": "biomejs.biome"
+		"editor.defaultFormatter": "denoland.vscode-deno"
 	},
 	"[json-textmate]": {
 		"editor.defaultFormatter": "biomejs.biome"
 	},
 	"[jsonc]": {
-		"editor.defaultFormatter": "biomejs.biome"
+		"editor.defaultFormatter": "denoland.vscode-deno"
 	},
 	"[markdown]": {
 		"diffEditor.ignoreTrimWhitespace": false,
@@ -24,5 +24,7 @@
 	"editor.codeActionsOnSave": {
 		"source.organizeImports.biome": "explicit",
 		"source.fixAll.biome": "explicit"
-	}
+	},
+	"deno.enable": true,
+	"deno.config": "./editors/code/deno.json"
 }
