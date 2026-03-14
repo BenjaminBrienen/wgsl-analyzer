@@ -122,6 +122,7 @@ token
 	First='first'
 	Either='either'
 ;
+token Reserved='<reserved word>';
 
 token Blankspace LineEndingComment BlockComment;
 
@@ -136,10 +137,12 @@ part statement;
 part type_specifier;
 
 // WESL: Import statements
+// import_name accepts both identifiers and reserved words (e.g. `shared`) as valid path segments.
+import_name: Identifier | Reserved;
 import_statement: 'import' [import_package_relative | import_super_relative] (import_collection | import_path) ';';
 import_package_relative: 'package' '::';
 import_super_relative: ('super' '::')+;
-import_path: name (
+import_path: import_name (
 	'::' (import_collection | import_path)
 	| ['as' name] @import_item
 );

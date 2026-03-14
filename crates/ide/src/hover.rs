@@ -136,7 +136,7 @@ pub(crate) fn hover(
         if let Some(builtin) = Builtin::for_name(database, &name) {
             // Try to resolve the specific overload if this is a call site
             if let Some(markup_text) =
-                try_resolve_call_at_token(semantics, file_id, &token, database)
+                try_resolve_call_at_token(semantics, file_id.into(), &token, database)
             {
                 return Some(RangeInfo::new(
                     range,

@@ -1909,447 +1909,301 @@ fn reserved_words_do_not_parse() {
                 Semicolon@3625..3626 ";"
               Blankspace@3626..3635 "\n        "
 
-            error at 13..17: 'NULL' is a reserved word in WGSL
-            error at 35..39: 'Self' is a reserved word in WGSL
-            error at 57..65: 'abstract' is a reserved word in WGSL
-            error at 83..89: 'active' is a reserved word in WGSL
-            error at 107..114: 'alignas' is a reserved word in WGSL
-            error at 132..139: 'alignof' is a reserved word in WGSL
-            error at 157..159: 'as' is a reserved word in WGSL
             error at 156..159: import statements are not allowed in WGSL mode
-            error at 177..180: 'asm' is a reserved word in WGSL
-            error at 198..210: 'asm_fragment' is a reserved word in WGSL
-            error at 228..233: 'async' is a reserved word in WGSL
-            error at 251..260: 'attribute' is a reserved word in WGSL
-            error at 278..282: 'auto' is a reserved word in WGSL
-            error at 300..305: 'await' is a reserved word in WGSL
-            error at 323..329: 'become' is a reserved word in WGSL
-            error at 347..351: 'cast' is a reserved word in WGSL
-            error at 369..374: 'catch' is a reserved word in WGSL
-            error at 392..397: 'class' is a reserved word in WGSL
-            error at 415..423: 'co_await' is a reserved word in WGSL
-            error at 441..450: 'co_return' is a reserved word in WGSL
-            error at 468..476: 'co_yield' is a reserved word in WGSL
-            error at 494..502: 'coherent' is a reserved word in WGSL
-            error at 520..532: 'column_major' is a reserved word in WGSL
-            error at 550..556: 'common' is a reserved word in WGSL
-            error at 574..581: 'compile' is a reserved word in WGSL
-            error at 599..615: 'compile_fragment' is a reserved word in WGSL
-            error at 633..640: 'concept' is a reserved word in WGSL
-            error at 658..668: 'const_cast' is a reserved word in WGSL
-            error at 686..695: 'consteval' is a reserved word in WGSL
-            error at 713..722: 'constexpr' is a reserved word in WGSL
-            error at 740..749: 'constinit' is a reserved word in WGSL
-            error at 767..772: 'crate' is a reserved word in WGSL
-            error at 790..798: 'debugger' is a reserved word in WGSL
-            error at 816..824: 'decltype' is a reserved word in WGSL
-            error at 842..848: 'delete' is a reserved word in WGSL
-            error at 866..872: 'demote' is a reserved word in WGSL
-            error at 890..906: 'demote_to_helper' is a reserved word in WGSL
-            error at 924..926: 'do' is a reserved word in WGSL
-            error at 944..956: 'dynamic_cast' is a reserved word in WGSL
-            error at 974..978: 'enum' is a reserved word in WGSL
-            error at 996..1004: 'explicit' is a reserved word in WGSL
-            error at 1022..1028: 'export' is a reserved word in WGSL
-            error at 1046..1053: 'extends' is a reserved word in WGSL
-            error at 1071..1077: 'extern' is a reserved word in WGSL
-            error at 1095..1103: 'external' is a reserved word in WGSL
-            error at 1121..1132: 'fallthrough' is a reserved word in WGSL
-            error at 1150..1156: 'filter' is a reserved word in WGSL
-            error at 1174..1179: 'final' is a reserved word in WGSL
-            error at 1197..1204: 'finally' is a reserved word in WGSL
-            error at 1222..1228: 'friend' is a reserved word in WGSL
-            error at 1246..1250: 'from' is a reserved word in WGSL
-            error at 1268..1275: 'fxgroup' is a reserved word in WGSL
-            error at 1293..1296: 'get' is a reserved word in WGSL
-            error at 1314..1318: 'goto' is a reserved word in WGSL
-            error at 1336..1347: 'groupshared' is a reserved word in WGSL
-            error at 1365..1370: 'highp' is a reserved word in WGSL
-            error at 1388..1392: 'impl' is a reserved word in WGSL
-            error at 1410..1420: 'implements' is a reserved word in WGSL
-            error at 1438..1444: 'import' is a reserved word in WGSL
             error at 1437..1444: import statements are not allowed in WGSL mode
-            error at 1462..1468: 'inline' is a reserved word in WGSL
-            error at 1486..1496: 'instanceof' is a reserved word in WGSL
-            error at 1514..1523: 'interface' is a reserved word in WGSL
-            error at 1541..1547: 'layout' is a reserved word in WGSL
-            error at 1565..1569: 'lowp' is a reserved word in WGSL
-            error at 1587..1592: 'macro' is a reserved word in WGSL
-            error at 1610..1621: 'macro_rules' is a reserved word in WGSL
-            error at 1639..1644: 'match' is a reserved word in WGSL
-            error at 1662..1669: 'mediump' is a reserved word in WGSL
-            error at 1687..1691: 'meta' is a reserved word in WGSL
-            error at 1709..1712: 'mod' is a reserved word in WGSL
-            error at 1730..1736: 'module' is a reserved word in WGSL
-            error at 1754..1758: 'move' is a reserved word in WGSL
-            error at 1776..1779: 'mut' is a reserved word in WGSL
-            error at 1797..1804: 'mutable' is a reserved word in WGSL
-            error at 1822..1831: 'namespace' is a reserved word in WGSL
-            error at 1849..1852: 'new' is a reserved word in WGSL
-            error at 1870..1873: 'nil' is a reserved word in WGSL
-            error at 1891..1899: 'noexcept' is a reserved word in WGSL
-            error at 1917..1925: 'noinline' is a reserved word in WGSL
-            error at 1943..1958: 'nointerpolation' is a reserved word in WGSL
-            error at 1976..1988: 'non_coherent' is a reserved word in WGSL
-            error at 2006..2017: 'noncoherent' is a reserved word in WGSL
-            error at 2035..2048: 'noperspective' is a reserved word in WGSL
-            error at 2066..2070: 'null' is a reserved word in WGSL
-            error at 2088..2095: 'nullptr' is a reserved word in WGSL
-            error at 2113..2115: 'of' is a reserved word in WGSL
-            error at 2133..2141: 'operator' is a reserved word in WGSL
-            error at 2159..2166: 'package' is a reserved word in WGSL
             error at 2158..2166: import statements are not allowed in WGSL mode
-            error at 2184..2194: 'packoffset' is a reserved word in WGSL
-            error at 2212..2221: 'partition' is a reserved word in WGSL
-            error at 2239..2243: 'pass' is a reserved word in WGSL
-            error at 2261..2266: 'patch' is a reserved word in WGSL
-            error at 2284..2297: 'pixelfragment' is a reserved word in WGSL
-            error at 2315..2322: 'precise' is a reserved word in WGSL
-            error at 2340..2349: 'precision' is a reserved word in WGSL
-            error at 2367..2375: 'premerge' is a reserved word in WGSL
-            error at 2393..2397: 'priv' is a reserved word in WGSL
-            error at 2415..2424: 'protected' is a reserved word in WGSL
-            error at 2442..2445: 'pub' is a reserved word in WGSL
-            error at 2463..2469: 'public' is a reserved word in WGSL
-            error at 2487..2495: 'readonly' is a reserved word in WGSL
-            error at 2513..2516: 'ref' is a reserved word in WGSL
-            error at 2534..2544: 'regardless' is a reserved word in WGSL
-            error at 2562..2570: 'register' is a reserved word in WGSL
-            error at 2588..2604: 'reinterpret_cast' is a reserved word in WGSL
-            error at 2622..2629: 'require' is a reserved word in WGSL
-            error at 2647..2655: 'resource' is a reserved word in WGSL
-            error at 2673..2681: 'restrict' is a reserved word in WGSL
-            error at 2699..2703: 'self' is a reserved word in WGSL
-            error at 2721..2724: 'set' is a reserved word in WGSL
-            error at 2742..2748: 'shared' is a reserved word in WGSL
-            error at 2766..2772: 'sizeof' is a reserved word in WGSL
-            error at 2790..2796: 'smooth' is a reserved word in WGSL
-            error at 2814..2819: 'snorm' is a reserved word in WGSL
-            error at 2837..2843: 'static' is a reserved word in WGSL
-            error at 2861..2874: 'static_assert' is a reserved word in WGSL
-            error at 2892..2903: 'static_cast' is a reserved word in WGSL
-            error at 2921..2924: 'std' is a reserved word in WGSL
-            error at 2942..2952: 'subroutine' is a reserved word in WGSL
-            error at 2970..2975: 'super' is a reserved word in WGSL
             error at 2969..2975: import statements are not allowed in WGSL mode
-            error at 2993..2999: 'target' is a reserved word in WGSL
-            error at 3017..3025: 'template' is a reserved word in WGSL
-            error at 3043..3047: 'this' is a reserved word in WGSL
-            error at 3065..3077: 'thread_local' is a reserved word in WGSL
-            error at 3095..3100: 'throw' is a reserved word in WGSL
-            error at 3118..3123: 'trait' is a reserved word in WGSL
-            error at 3141..3144: 'try' is a reserved word in WGSL
-            error at 3162..3166: 'type' is a reserved word in WGSL
-            error at 3184..3191: 'typedef' is a reserved word in WGSL
-            error at 3209..3215: 'typeid' is a reserved word in WGSL
-            error at 3233..3241: 'typename' is a reserved word in WGSL
-            error at 3259..3265: 'typeof' is a reserved word in WGSL
-            error at 3283..3288: 'union' is a reserved word in WGSL
-            error at 3306..3312: 'unless' is a reserved word in WGSL
-            error at 3330..3335: 'unorm' is a reserved word in WGSL
-            error at 3353..3359: 'unsafe' is a reserved word in WGSL
-            error at 3377..3384: 'unsized' is a reserved word in WGSL
-            error at 3402..3405: 'use' is a reserved word in WGSL
-            error at 3423..3428: 'using' is a reserved word in WGSL
-            error at 3446..3453: 'varying' is a reserved word in WGSL
-            error at 3471..3478: 'virtual' is a reserved word in WGSL
-            error at 3496..3504: 'volatile' is a reserved word in WGSL
-            error at 3522..3526: 'wgsl' is a reserved word in WGSL
-            error at 3544..3549: 'where' is a reserved word in WGSL
-            error at 3567..3571: 'with' is a reserved word in WGSL
-            error at 3589..3598: 'writeonly' is a reserved word in WGSL
-            error at 3616..3621: 'yield' is a reserved word in WGSL
-            error at 13..17: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 13..17: 'NULL' is a reserved word in WGSL
             error at 18..19: invalid syntax, expected: <identifier>
-            error at 35..39: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 35..39: 'Self' is a reserved word in WGSL
             error at 40..41: invalid syntax, expected: <identifier>
-            error at 57..65: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 57..65: 'abstract' is a reserved word in WGSL
             error at 66..67: invalid syntax, expected: <identifier>
-            error at 83..89: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 83..89: 'active' is a reserved word in WGSL
             error at 90..91: invalid syntax, expected: <identifier>
-            error at 107..114: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 107..114: 'alignas' is a reserved word in WGSL
             error at 115..116: invalid syntax, expected: <identifier>
-            error at 132..139: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 132..139: 'alignof' is a reserved word in WGSL
             error at 140..141: invalid syntax, expected: <identifier>
-            error at 157..159: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 157..159: 'as' is a reserved word in WGSL
             error at 160..161: invalid syntax, expected: <identifier>
-            error at 177..180: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 177..180: 'asm' is a reserved word in WGSL
             error at 181..182: invalid syntax, expected: <identifier>
-            error at 198..210: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 198..210: 'asm_fragment' is a reserved word in WGSL
             error at 211..212: invalid syntax, expected: <identifier>
-            error at 228..233: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 228..233: 'async' is a reserved word in WGSL
             error at 234..235: invalid syntax, expected: <identifier>
-            error at 251..260: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 251..260: 'attribute' is a reserved word in WGSL
             error at 261..262: invalid syntax, expected: <identifier>
-            error at 278..282: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 278..282: 'auto' is a reserved word in WGSL
             error at 283..284: invalid syntax, expected: <identifier>
-            error at 300..305: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 300..305: 'await' is a reserved word in WGSL
             error at 306..307: invalid syntax, expected: <identifier>
-            error at 323..329: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 323..329: 'become' is a reserved word in WGSL
             error at 330..331: invalid syntax, expected: <identifier>
-            error at 347..351: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 347..351: 'cast' is a reserved word in WGSL
             error at 352..353: invalid syntax, expected: <identifier>
-            error at 369..374: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 369..374: 'catch' is a reserved word in WGSL
             error at 375..376: invalid syntax, expected: <identifier>
-            error at 392..397: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 392..397: 'class' is a reserved word in WGSL
             error at 398..399: invalid syntax, expected: <identifier>
-            error at 415..423: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 415..423: 'co_await' is a reserved word in WGSL
             error at 424..425: invalid syntax, expected: <identifier>
-            error at 441..450: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 441..450: 'co_return' is a reserved word in WGSL
             error at 451..452: invalid syntax, expected: <identifier>
-            error at 468..476: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 468..476: 'co_yield' is a reserved word in WGSL
             error at 477..478: invalid syntax, expected: <identifier>
-            error at 494..502: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 494..502: 'coherent' is a reserved word in WGSL
             error at 503..504: invalid syntax, expected: <identifier>
-            error at 520..532: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 520..532: 'column_major' is a reserved word in WGSL
             error at 533..534: invalid syntax, expected: <identifier>
-            error at 550..556: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 550..556: 'common' is a reserved word in WGSL
             error at 557..558: invalid syntax, expected: <identifier>
-            error at 574..581: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 574..581: 'compile' is a reserved word in WGSL
             error at 582..583: invalid syntax, expected: <identifier>
-            error at 599..615: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 599..615: 'compile_fragment' is a reserved word in WGSL
             error at 616..617: invalid syntax, expected: <identifier>
-            error at 633..640: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 633..640: 'concept' is a reserved word in WGSL
             error at 641..642: invalid syntax, expected: <identifier>
-            error at 658..668: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 658..668: 'const_cast' is a reserved word in WGSL
             error at 669..670: invalid syntax, expected: <identifier>
-            error at 686..695: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 686..695: 'consteval' is a reserved word in WGSL
             error at 696..697: invalid syntax, expected: <identifier>
-            error at 713..722: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 713..722: 'constexpr' is a reserved word in WGSL
             error at 723..724: invalid syntax, expected: <identifier>
-            error at 740..749: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 740..749: 'constinit' is a reserved word in WGSL
             error at 750..751: invalid syntax, expected: <identifier>
-            error at 767..772: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 767..772: 'crate' is a reserved word in WGSL
             error at 773..774: invalid syntax, expected: <identifier>
-            error at 790..798: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 790..798: 'debugger' is a reserved word in WGSL
             error at 799..800: invalid syntax, expected: <identifier>
-            error at 816..824: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 816..824: 'decltype' is a reserved word in WGSL
             error at 825..826: invalid syntax, expected: <identifier>
-            error at 842..848: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 842..848: 'delete' is a reserved word in WGSL
             error at 849..850: invalid syntax, expected: <identifier>
-            error at 866..872: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 866..872: 'demote' is a reserved word in WGSL
             error at 873..874: invalid syntax, expected: <identifier>
-            error at 890..906: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 890..906: 'demote_to_helper' is a reserved word in WGSL
             error at 907..908: invalid syntax, expected: <identifier>
-            error at 924..926: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 924..926: 'do' is a reserved word in WGSL
             error at 927..928: invalid syntax, expected: <identifier>
-            error at 944..956: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 944..956: 'dynamic_cast' is a reserved word in WGSL
             error at 957..958: invalid syntax, expected: <identifier>
-            error at 974..978: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 974..978: 'enum' is a reserved word in WGSL
             error at 979..980: invalid syntax, expected: <identifier>
-            error at 996..1004: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 996..1004: 'explicit' is a reserved word in WGSL
             error at 1005..1006: invalid syntax, expected: <identifier>
-            error at 1022..1028: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1022..1028: 'export' is a reserved word in WGSL
             error at 1029..1030: invalid syntax, expected: <identifier>
-            error at 1046..1053: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1046..1053: 'extends' is a reserved word in WGSL
             error at 1054..1055: invalid syntax, expected: <identifier>
-            error at 1071..1077: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1071..1077: 'extern' is a reserved word in WGSL
             error at 1078..1079: invalid syntax, expected: <identifier>
-            error at 1095..1103: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1095..1103: 'external' is a reserved word in WGSL
             error at 1104..1105: invalid syntax, expected: <identifier>
-            error at 1121..1132: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1121..1132: 'fallthrough' is a reserved word in WGSL
             error at 1133..1134: invalid syntax, expected: <identifier>
-            error at 1150..1156: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1150..1156: 'filter' is a reserved word in WGSL
             error at 1157..1158: invalid syntax, expected: <identifier>
-            error at 1174..1179: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1174..1179: 'final' is a reserved word in WGSL
             error at 1180..1181: invalid syntax, expected: <identifier>
-            error at 1197..1204: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1197..1204: 'finally' is a reserved word in WGSL
             error at 1205..1206: invalid syntax, expected: <identifier>
-            error at 1222..1228: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1222..1228: 'friend' is a reserved word in WGSL
             error at 1229..1230: invalid syntax, expected: <identifier>
-            error at 1246..1250: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1246..1250: 'from' is a reserved word in WGSL
             error at 1251..1252: invalid syntax, expected: <identifier>
-            error at 1268..1275: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1268..1275: 'fxgroup' is a reserved word in WGSL
             error at 1276..1277: invalid syntax, expected: <identifier>
-            error at 1293..1296: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1293..1296: 'get' is a reserved word in WGSL
             error at 1297..1298: invalid syntax, expected: <identifier>
-            error at 1314..1318: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1314..1318: 'goto' is a reserved word in WGSL
             error at 1319..1320: invalid syntax, expected: <identifier>
-            error at 1336..1347: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1336..1347: 'groupshared' is a reserved word in WGSL
             error at 1348..1349: invalid syntax, expected: <identifier>
-            error at 1365..1370: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1365..1370: 'highp' is a reserved word in WGSL
             error at 1371..1372: invalid syntax, expected: <identifier>
-            error at 1388..1392: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1388..1392: 'impl' is a reserved word in WGSL
             error at 1393..1394: invalid syntax, expected: <identifier>
-            error at 1410..1420: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1410..1420: 'implements' is a reserved word in WGSL
             error at 1421..1422: invalid syntax, expected: <identifier>
-            error at 1438..1444: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1438..1444: 'import' is a reserved word in WGSL
             error at 1445..1446: invalid syntax, expected: <identifier>
-            error at 1462..1468: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1462..1468: 'inline' is a reserved word in WGSL
             error at 1469..1470: invalid syntax, expected: <identifier>
-            error at 1486..1496: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1486..1496: 'instanceof' is a reserved word in WGSL
             error at 1497..1498: invalid syntax, expected: <identifier>
-            error at 1514..1523: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1514..1523: 'interface' is a reserved word in WGSL
             error at 1524..1525: invalid syntax, expected: <identifier>
-            error at 1541..1547: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1541..1547: 'layout' is a reserved word in WGSL
             error at 1548..1549: invalid syntax, expected: <identifier>
-            error at 1565..1569: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1565..1569: 'lowp' is a reserved word in WGSL
             error at 1570..1571: invalid syntax, expected: <identifier>
-            error at 1587..1592: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1587..1592: 'macro' is a reserved word in WGSL
             error at 1593..1594: invalid syntax, expected: <identifier>
-            error at 1610..1621: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1610..1621: 'macro_rules' is a reserved word in WGSL
             error at 1622..1623: invalid syntax, expected: <identifier>
-            error at 1639..1644: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1639..1644: 'match' is a reserved word in WGSL
             error at 1645..1646: invalid syntax, expected: <identifier>
-            error at 1662..1669: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1662..1669: 'mediump' is a reserved word in WGSL
             error at 1670..1671: invalid syntax, expected: <identifier>
-            error at 1687..1691: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1687..1691: 'meta' is a reserved word in WGSL
             error at 1692..1693: invalid syntax, expected: <identifier>
-            error at 1709..1712: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1709..1712: 'mod' is a reserved word in WGSL
             error at 1713..1714: invalid syntax, expected: <identifier>
-            error at 1730..1736: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1730..1736: 'module' is a reserved word in WGSL
             error at 1737..1738: invalid syntax, expected: <identifier>
-            error at 1754..1758: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1754..1758: 'move' is a reserved word in WGSL
             error at 1759..1760: invalid syntax, expected: <identifier>
-            error at 1776..1779: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1776..1779: 'mut' is a reserved word in WGSL
             error at 1780..1781: invalid syntax, expected: <identifier>
-            error at 1797..1804: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1797..1804: 'mutable' is a reserved word in WGSL
             error at 1805..1806: invalid syntax, expected: <identifier>
-            error at 1822..1831: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1822..1831: 'namespace' is a reserved word in WGSL
             error at 1832..1833: invalid syntax, expected: <identifier>
-            error at 1849..1852: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1849..1852: 'new' is a reserved word in WGSL
             error at 1853..1854: invalid syntax, expected: <identifier>
-            error at 1870..1873: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1870..1873: 'nil' is a reserved word in WGSL
             error at 1874..1875: invalid syntax, expected: <identifier>
-            error at 1891..1899: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1891..1899: 'noexcept' is a reserved word in WGSL
             error at 1900..1901: invalid syntax, expected: <identifier>
-            error at 1917..1925: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1917..1925: 'noinline' is a reserved word in WGSL
             error at 1926..1927: invalid syntax, expected: <identifier>
-            error at 1943..1958: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1943..1958: 'nointerpolation' is a reserved word in WGSL
             error at 1959..1960: invalid syntax, expected: <identifier>
-            error at 1976..1988: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 1976..1988: 'non_coherent' is a reserved word in WGSL
             error at 1989..1990: invalid syntax, expected: <identifier>
-            error at 2006..2017: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2006..2017: 'noncoherent' is a reserved word in WGSL
             error at 2018..2019: invalid syntax, expected: <identifier>
-            error at 2035..2048: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2035..2048: 'noperspective' is a reserved word in WGSL
             error at 2049..2050: invalid syntax, expected: <identifier>
-            error at 2066..2070: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2066..2070: 'null' is a reserved word in WGSL
             error at 2071..2072: invalid syntax, expected: <identifier>
-            error at 2088..2095: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2088..2095: 'nullptr' is a reserved word in WGSL
             error at 2096..2097: invalid syntax, expected: <identifier>
-            error at 2113..2115: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2113..2115: 'of' is a reserved word in WGSL
             error at 2116..2117: invalid syntax, expected: <identifier>
-            error at 2133..2141: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2133..2141: 'operator' is a reserved word in WGSL
             error at 2142..2143: invalid syntax, expected: <identifier>
-            error at 2159..2166: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2159..2166: 'package' is a reserved word in WGSL
             error at 2167..2168: invalid syntax, expected: <identifier>
-            error at 2184..2194: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2184..2194: 'packoffset' is a reserved word in WGSL
             error at 2195..2196: invalid syntax, expected: <identifier>
-            error at 2212..2221: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2212..2221: 'partition' is a reserved word in WGSL
             error at 2222..2223: invalid syntax, expected: <identifier>
-            error at 2239..2243: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2239..2243: 'pass' is a reserved word in WGSL
             error at 2244..2245: invalid syntax, expected: <identifier>
-            error at 2261..2266: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2261..2266: 'patch' is a reserved word in WGSL
             error at 2267..2268: invalid syntax, expected: <identifier>
-            error at 2284..2297: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2284..2297: 'pixelfragment' is a reserved word in WGSL
             error at 2298..2299: invalid syntax, expected: <identifier>
-            error at 2315..2322: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2315..2322: 'precise' is a reserved word in WGSL
             error at 2323..2324: invalid syntax, expected: <identifier>
-            error at 2340..2349: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2340..2349: 'precision' is a reserved word in WGSL
             error at 2350..2351: invalid syntax, expected: <identifier>
-            error at 2367..2375: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2367..2375: 'premerge' is a reserved word in WGSL
             error at 2376..2377: invalid syntax, expected: <identifier>
-            error at 2393..2397: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2393..2397: 'priv' is a reserved word in WGSL
             error at 2398..2399: invalid syntax, expected: <identifier>
-            error at 2415..2424: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2415..2424: 'protected' is a reserved word in WGSL
             error at 2425..2426: invalid syntax, expected: <identifier>
-            error at 2442..2445: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2442..2445: 'pub' is a reserved word in WGSL
             error at 2446..2447: invalid syntax, expected: <identifier>
-            error at 2463..2469: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2463..2469: 'public' is a reserved word in WGSL
             error at 2470..2471: invalid syntax, expected: <identifier>
-            error at 2487..2495: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2487..2495: 'readonly' is a reserved word in WGSL
             error at 2496..2497: invalid syntax, expected: <identifier>
-            error at 2513..2516: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2513..2516: 'ref' is a reserved word in WGSL
             error at 2517..2518: invalid syntax, expected: <identifier>
-            error at 2534..2544: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2534..2544: 'regardless' is a reserved word in WGSL
             error at 2545..2546: invalid syntax, expected: <identifier>
-            error at 2562..2570: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2562..2570: 'register' is a reserved word in WGSL
             error at 2571..2572: invalid syntax, expected: <identifier>
-            error at 2588..2604: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2588..2604: 'reinterpret_cast' is a reserved word in WGSL
             error at 2605..2606: invalid syntax, expected: <identifier>
-            error at 2622..2629: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2622..2629: 'require' is a reserved word in WGSL
             error at 2630..2631: invalid syntax, expected: <identifier>
-            error at 2647..2655: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2647..2655: 'resource' is a reserved word in WGSL
             error at 2656..2657: invalid syntax, expected: <identifier>
-            error at 2673..2681: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2673..2681: 'restrict' is a reserved word in WGSL
             error at 2682..2683: invalid syntax, expected: <identifier>
-            error at 2699..2703: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2699..2703: 'self' is a reserved word in WGSL
             error at 2704..2705: invalid syntax, expected: <identifier>
-            error at 2721..2724: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2721..2724: 'set' is a reserved word in WGSL
             error at 2725..2726: invalid syntax, expected: <identifier>
-            error at 2742..2748: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2742..2748: 'shared' is a reserved word in WGSL
             error at 2749..2750: invalid syntax, expected: <identifier>
-            error at 2766..2772: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2766..2772: 'sizeof' is a reserved word in WGSL
             error at 2773..2774: invalid syntax, expected: <identifier>
-            error at 2790..2796: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2790..2796: 'smooth' is a reserved word in WGSL
             error at 2797..2798: invalid syntax, expected: <identifier>
-            error at 2814..2819: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2814..2819: 'snorm' is a reserved word in WGSL
             error at 2820..2821: invalid syntax, expected: <identifier>
-            error at 2837..2843: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2837..2843: 'static' is a reserved word in WGSL
             error at 2844..2845: invalid syntax, expected: <identifier>
-            error at 2861..2874: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2861..2874: 'static_assert' is a reserved word in WGSL
             error at 2875..2876: invalid syntax, expected: <identifier>
-            error at 2892..2903: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2892..2903: 'static_cast' is a reserved word in WGSL
             error at 2904..2905: invalid syntax, expected: <identifier>
-            error at 2921..2924: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2921..2924: 'std' is a reserved word in WGSL
             error at 2925..2926: invalid syntax, expected: <identifier>
-            error at 2942..2952: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2942..2952: 'subroutine' is a reserved word in WGSL
             error at 2953..2954: invalid syntax, expected: <identifier>
-            error at 2970..2975: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2970..2975: 'super' is a reserved word in WGSL
             error at 2976..2977: invalid syntax, expected: <identifier>
-            error at 2993..2999: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 2993..2999: 'target' is a reserved word in WGSL
             error at 3000..3001: invalid syntax, expected: <identifier>
-            error at 3017..3025: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 3017..3025: 'template' is a reserved word in WGSL
             error at 3026..3027: invalid syntax, expected: <identifier>
-            error at 3043..3047: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 3043..3047: 'this' is a reserved word in WGSL
             error at 3048..3049: invalid syntax, expected: <identifier>
-            error at 3065..3077: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 3065..3077: 'thread_local' is a reserved word in WGSL
             error at 3078..3079: invalid syntax, expected: <identifier>
-            error at 3095..3100: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 3095..3100: 'throw' is a reserved word in WGSL
             error at 3101..3102: invalid syntax, expected: <identifier>
-            error at 3118..3123: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 3118..3123: 'trait' is a reserved word in WGSL
             error at 3124..3125: invalid syntax, expected: <identifier>
-            error at 3141..3144: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 3141..3144: 'try' is a reserved word in WGSL
             error at 3145..3146: invalid syntax, expected: <identifier>
-            error at 3162..3166: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 3162..3166: 'type' is a reserved word in WGSL
             error at 3167..3168: invalid syntax, expected: <identifier>
-            error at 3184..3191: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 3184..3191: 'typedef' is a reserved word in WGSL
             error at 3192..3193: invalid syntax, expected: <identifier>
-            error at 3209..3215: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 3209..3215: 'typeid' is a reserved word in WGSL
             error at 3216..3217: invalid syntax, expected: <identifier>
-            error at 3233..3241: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 3233..3241: 'typename' is a reserved word in WGSL
             error at 3242..3243: invalid syntax, expected: <identifier>
-            error at 3259..3265: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 3259..3265: 'typeof' is a reserved word in WGSL
             error at 3266..3267: invalid syntax, expected: <identifier>
-            error at 3283..3288: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 3283..3288: 'union' is a reserved word in WGSL
             error at 3289..3290: invalid syntax, expected: <identifier>
-            error at 3306..3312: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 3306..3312: 'unless' is a reserved word in WGSL
             error at 3313..3314: invalid syntax, expected: <identifier>
-            error at 3330..3335: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 3330..3335: 'unorm' is a reserved word in WGSL
             error at 3336..3337: invalid syntax, expected: <identifier>
-            error at 3353..3359: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 3353..3359: 'unsafe' is a reserved word in WGSL
             error at 3360..3361: invalid syntax, expected: <identifier>
-            error at 3377..3384: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 3377..3384: 'unsized' is a reserved word in WGSL
             error at 3385..3386: invalid syntax, expected: <identifier>
-            error at 3402..3405: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 3402..3405: 'use' is a reserved word in WGSL
             error at 3406..3407: invalid syntax, expected: <identifier>
-            error at 3423..3428: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 3423..3428: 'using' is a reserved word in WGSL
             error at 3429..3430: invalid syntax, expected: <identifier>
-            error at 3446..3453: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 3446..3453: 'varying' is a reserved word in WGSL
             error at 3454..3455: invalid syntax, expected: <identifier>
-            error at 3471..3478: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 3471..3478: 'virtual' is a reserved word in WGSL
             error at 3479..3480: invalid syntax, expected: <identifier>
-            error at 3496..3504: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 3496..3504: 'volatile' is a reserved word in WGSL
             error at 3505..3506: invalid syntax, expected: <identifier>
-            error at 3522..3526: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 3522..3526: 'wgsl' is a reserved word in WGSL
             error at 3527..3528: invalid syntax, expected: <identifier>
-            error at 3544..3549: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 3544..3549: 'where' is a reserved word in WGSL
             error at 3550..3551: invalid syntax, expected: <identifier>
-            error at 3567..3571: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 3567..3571: 'with' is a reserved word in WGSL
             error at 3572..3573: invalid syntax, expected: <identifier>
-            error at 3589..3598: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 3589..3598: 'writeonly' is a reserved word in WGSL
             error at 3599..3600: invalid syntax, expected: <identifier>
-            error at 3616..3621: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
+            error at 3616..3621: 'yield' is a reserved word in WGSL
             error at 3622..3623: invalid syntax, expected: <identifier>"#]],
     );
 }

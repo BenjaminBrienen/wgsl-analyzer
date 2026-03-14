@@ -1029,8 +1029,7 @@ fn parse_interpolate_unknown_type_error() {
                 Semicolon@57..58 ";"
               Blankspace@58..67 "\n        "
 
-            error at 22..28: 'smooth' is a reserved word in WGSL
-            error at 22..28: invalid syntax, expected one of: 'flat', 'linear', 'perspective'"#]],
+            error at 22..28: 'smooth' is a reserved word in WGSL"#]],
     );
 }
 
@@ -1077,7 +1076,6 @@ fn parse_interpolate_unknown_type_and_sampling_error() {
               Blankspace@64..73 "\n        "
 
             error at 22..28: 'smooth' is a reserved word in WGSL
-            error at 22..28: invalid syntax, expected one of: 'flat', 'linear', 'perspective'
             error at 30..34: invalid syntax, expected one of: 'center', 'centroid', 'either', 'first', ')', 'sample'"#]],
     );
 }

@@ -1,6 +1,6 @@
 pub mod global_variable;
 
-use base_db::{EditionedFileId, FileRange, TextRange};
+use base_db::{EditionedFileId, FileId, FileRange, TextRange};
 use hir_def::{
     InFile,
     expression::BinaryOperation,
