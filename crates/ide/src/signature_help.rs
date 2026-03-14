@@ -118,7 +118,7 @@ pub(crate) fn signature_help(
     let mut overloads = Vec::new();
     semantics
         .resolver(file_id, syntax)
-        .process_all_names(|name, scope_def| {
+        .process_all_names(database, |name, scope_def| {
             if name.as_str().to_owned().contains(&text.to_string())
                 && let ScopeDef::ModuleItem(file_id, ModuleItem::Function(module_item_id)) =
                     scope_def
