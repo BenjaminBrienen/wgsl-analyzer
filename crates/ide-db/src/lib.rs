@@ -18,6 +18,7 @@ use triomphe::Arc;
 
 pub mod source_change;
 pub mod text_edit;
+pub mod wgsl_attributes;
 
 #[salsa_macros::db]
 pub struct RootDatabase {
