@@ -18,7 +18,7 @@ pub enum SyntaxKind {
     #[doc(hidden)]
     TOMBSTONE,
     SourceFile,
-    /// A name that can be referenced by a [`NameRef`]
+    /// A name that can be referenced by a `NameRef`.
     Name,
     /// a function
     FunctionDeclaration,
