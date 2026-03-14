@@ -227,6 +227,10 @@ fn parse_line(line: &str) -> (&str, Overload) {
     let (name, line) = line
         .split_once('(')
         .expect("all builtins are functions, so each line should have parentheses");
+    // Strip function-level template parameters (e.g. `bitcast<T>` -> `bitcast`).
+    // The generic type variables inside `<...>` are still picked up when
+    // `parse_type` processes the parameters and return type.
+    let name = name.split_once('<').map_or(name, |(n, _)| n);
     let (parameters, line) = line
         .split_once(')')
         .expect("all builtins are functions, so each line should have parentheses");
