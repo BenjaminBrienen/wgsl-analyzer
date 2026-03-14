@@ -207,6 +207,10 @@ impl GlobalState {
             );
         }
 
+        // Configure VFS loader to scan the workspace for .wgsl/.wesl files at startup.
+        // This enables cross-file features (import resolution, naga diagnostics, etc.).
+        self.switch_workspaces(&"startup".to_owned());
+
         while let Ok(event) = self.next_event(&inbox) {
             let Some(event) = event else {
                 anyhow::bail!("client exited without proper shutdown sequence");
