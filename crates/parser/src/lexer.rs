@@ -333,13 +333,7 @@ impl Iterator for WgslLexer<'_, '_> {
                     "first" if self.inner.extras.after_interpolate => Token::First,
                     "either" if self.inner.extras.after_interpolate => Token::Either,
 
-                    word if is_reserved_word(word) => {
-                        self.diagnostics.push(Diagnostic {
-                            message: format!("'{word}' is a reserved word in WGSL"),
-                            range: to_range(token_start..token_end),
-                        });
-                        Token::Reserved
-                    },
+                    word if is_reserved_word(word) => Token::Reserved,
                     _ => Token::Identifier,
                 };
                 self.inner.extras.after_at = false;
