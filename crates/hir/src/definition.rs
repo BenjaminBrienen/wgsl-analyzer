@@ -101,11 +101,16 @@ impl Definition {
                 let (body, _) =
                     database.body_with_source_map(DefinitionWithBodyId::Function(local.parent));
                 let name = &body.bindings[local.binding].name;
-                Some(format!(
-                    "let {}: {}",
-                    name.as_str(),
-                    pretty_type(database, ty)
-                ))
+                let is_param = body.parameters.contains(&local.binding);
+                if is_param {
+                    Some(format!("{}: {}", name.as_str(), pretty_type(database, ty)))
+                } else {
+                    Some(format!(
+                        "let {}: {}",
+                        name.as_str(),
+                        pretty_type(database, ty)
+                    ))
+                }
             },
             Self::Field(field) => {
                 let field_types = database.field_types(field.id.r#struct);
