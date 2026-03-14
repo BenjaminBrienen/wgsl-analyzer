@@ -664,6 +664,7 @@ version = "0.0.0"
 dependencies = [
  "base-db",
  "either",
+ "expect-test",
  "hir",
  "hir-def",
  "hir-ty",
@@ -675,6 +676,7 @@ dependencies = [
  "smol_str",
  "stdx",
  "syntax",
+ "test-fixture",
  "tracing",
 ]
 
