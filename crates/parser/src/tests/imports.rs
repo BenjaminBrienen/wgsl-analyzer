@@ -1,10 +1,29 @@
 use expect_test::expect;
 
-use crate::tests::check;
+use crate::tests::{check, check_with_edition};
+
+#[test]
+fn simplest_import_fail() {
+    check(
+        "import foo;",
+        expect![[r#"
+            SourceFile@0..11
+              Error@0..10
+                Reserved@0..6 "import"
+                Blankspace@6..7 " "
+                Identifier@7..10 "foo"
+              Semicolon@10..11 ";"
+
+            error at 0..6: 'import' is a reserved word in WGSL
+            error at 0..6: import statements are not allowed in WGSL mode
+            error at 0..6: invalid syntax, expected one of: 'alias', '@', 'const', 'const_assert', 'diagnostic', <end of file>, 'enable', 'fn', 'import', 'let', 'override', 'requires', ';', 'struct', 'var'"#]],
+    );
+}
 
 #[test]
 fn simplest_import() {
-    check(
+    check_with_edition(
+        edition::Edition::Wesl2025Unstable,
         "import foo;",
         expect![[r#"
             SourceFile@0..11
@@ -20,7 +39,8 @@ fn simplest_import() {
 
 #[test]
 fn super_import() {
-    check(
+    check_with_edition(
+        edition::Edition::Wesl2025Unstable,
         "import super::super::bar;",
         expect![[r#"
             SourceFile@0..25
@@ -41,7 +61,8 @@ fn super_import() {
 
 #[test]
 fn package_import() {
-    check(
+    check_with_edition(
+        edition::Edition::Wesl2025Unstable,
         "import package::{bar};",
         expect![[r#"
             SourceFile@0..22
@@ -63,7 +84,8 @@ fn package_import() {
 
 #[test]
 fn import_alias() {
-    check(
+    check_with_edition(
+        edition::Edition::Wesl2025Unstable,
         "import foo::bar as bar;",
         expect![[r#"
             SourceFile@0..23
@@ -88,7 +110,8 @@ fn import_alias() {
 
 #[test]
 fn illegal_import_aliasing_super() {
-    check(
+    check_with_edition(
+        edition::Edition::Wesl2025Unstable,
         "import super as bar;",
         expect![[r#"
             SourceFile@0..20
@@ -112,7 +135,8 @@ fn illegal_import_aliasing_super() {
 
 #[test]
 fn import_nested_collections() {
-    check(
+    check_with_edition(
+        edition::Edition::Wesl2025Unstable,
         "import bevy_pbr::{
   forward_io::VertexOutput,
   pbr_types::{PbrInput as PbrOutput, pbr_input_new},

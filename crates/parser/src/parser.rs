@@ -121,11 +121,11 @@ impl<'source> ParserCallbacks<'source> for Parser<'source> {
     type Diagnostic = Diagnostic;
 
     fn create_tokens(
-        _context: &mut Self::Context,
+        context: &mut Self::Context,
         source: &'source str,
         diags: &mut Vec<Self::Diagnostic>,
     ) -> (Vec<Token>, Vec<Span>) {
-        lex(source, diags)
+        lex(source, context.edition, diags)
     }
 
     fn create_diagnostic(
@@ -136,19 +136,6 @@ impl<'source> ParserCallbacks<'source> for Parser<'source> {
         Diagnostic {
             message,
             range: to_range(span),
-        }
-    }
-
-    fn create_node_import_statement(
-        &mut self,
-        node_ref: NodeRef,
-        diags: &mut Vec<Self::Diagnostic>,
-    ) {
-        if !self.context.edition.at_least_wesl_0_0_1() {
-            diags.push(self.create_diagnostic(
-                self.cst.span(node_ref),
-                "import statements are not allowed in WGSL mode".to_owned(),
-            ));
         }
     }
 
