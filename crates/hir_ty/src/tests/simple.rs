@@ -506,6 +506,7 @@ let b = vec4(vec3f(1f), 1f);
 #[test]
 fn scalar_constructors() {
     check_infer(
+        ExtensionsConfig::default(),
         "
 fn foo() {
     let a = f16(1.0f);
@@ -535,6 +536,28 @@ fn foo() {
             128..129 'f': bool
             132..140 'bool(0i)': bool
             137..139 '0i': i32
+        "#]],
+    );
+}
+
+#[test]
+fn array_zero_value_constructor() {
+    check_infer(
+        ExtensionsConfig::default(),
+        "
+fn foo() {
+    let a = array<f32, 3>();
+    let b = array<i32, 2>();
+    let c = array<bool, 4>();
+}
+    ",
+        expect![[r#"
+            19..20 'a': array<f32, 3>
+            23..38 'array<f32, 3>()': array<f32, 3>
+            48..49 'b': array<i32, 2>
+            52..67 'array<i32, 2>()': array<i32, 2>
+            77..78 'c': array<bool, 4>
+            81..97 'array<..., 4>()': array<bool, 4>
         "#]],
     );
 }
