@@ -1,11 +1,12 @@
 use base_db::{EditionedFileId, FilePosition, TextSize};
-use hir::{HirDatabase as _, Semantics, database::DefDatabase};
+use hir::{Definition, HirDatabase as _, Semantics, database::DefDatabase};
 use hir_def::{
     database::{InternDatabase as _, Location},
-    item_tree::ModuleItem,
+    item_tree::{ModuleItem, Name},
     resolver::ScopeDef,
 };
 use hir_ty::{
+    builtins::Builtin,
     function::FunctionDetails,
     infer::ResolvedCall,
     ty::pretty::{TypeVerbosity, pretty_fn_inner_with_offsets, pretty_fn_with_verbosity},
@@ -101,9 +102,18 @@ pub(crate) fn signature_help(
     let token = syntax.token_at_offset(position.offset).left_biased()?;
 
     // Walk up to find the enclosing Arguments node
-    let (function_call, _, active_parameter) = find_enclosing_call(&token, position.offset)?;
+    let (function_call, arguments_node, active_parameter) =
+        find_enclosing_call(&token, position.offset)?;
 
     // Try to resolve the function call via type inference
+    let container = semantics.find_container(file_id, function_call.syntax())?;
+    let def_with_body = container.as_def_with_body_id()?;
+    let analyzed = semantics.analyze(def_with_body);
+
+    let call_expr = ast::Expression::FunctionCall(function_call.clone());
+    let expression_id = analyzed.expression_id(&call_expr);
+
+    // Try to extract doc comments for the function being called
     let text = function_call.ident_expression()?.syntax().text();
     let mut overloads = Vec::new();
     semantics
@@ -130,8 +140,33 @@ pub(crate) fn signature_help(
         .collect();
     let mut active_signature = None;
 
-    if signatures.is_empty() {
-        return None;
+    // If we couldn't resolve via inference, try name-based lookup for builtins
+    if signatures.is_empty()
+        && let Some(ident_expr) = function_call.ident_expression()
+    {
+        let name_text = ident_expr.syntax().text().to_string();
+        // Remove template parameters if present
+        let name_text = name_text.split('<').next().unwrap_or(&name_text).trim();
+        let name = Name::from(name_text);
+        if let Some(builtin) = Builtin::for_name(database, &name) {
+            // Collect types of already-typed arguments to filter overloads
+            let arg_types: Vec<_> = arguments_node
+                .arguments()
+                .filter_map(|arg| analyzed.type_of_expression(&arg))
+                .collect();
+
+            for (index, (_, overload)) in builtin
+                .matching_overloads(database, &arg_types)
+                .iter()
+                .enumerate()
+            {
+                let function = overload.r#type.lookup(database);
+                signatures.push(build_signature(database, &function, None));
+                if index == 0 {
+                    active_signature = Some(0);
+                }
+            }
+        }
     }
 
     Some(SignatureHelp {

@@ -3,7 +3,7 @@ pub mod definition;
 pub mod diagnostics;
 
 use base_db::{EditionedFileId, FileId, Lookup as _};
-use definition::Definition;
+pub use definition::Definition;
 use diagnostics::{AnyDiagnostic, DiagnosticsConfig};
 use either::Either;
 pub use hir_def::database::ExtensionsConfig;
@@ -235,7 +235,7 @@ impl<'database> Semantics<'database> {
         Some(import_id)
     }
 
-    fn function_to_def(
+    pub(crate) fn function_to_def(
         &self,
         source: &InFile<ast::FunctionDeclaration>,
     ) -> Option<FunctionId> {
@@ -246,7 +246,7 @@ impl<'database> Semantics<'database> {
         Some(function_id)
     }
 
-    fn global_constant_to_def(
+    pub(crate) fn global_constant_to_def(
         &self,
         source: &InFile<ast::ConstantDeclaration>,
     ) -> Option<GlobalConstantId> {
@@ -257,7 +257,7 @@ impl<'database> Semantics<'database> {
         Some(id)
     }
 
-    fn global_variable_to_def(
+    pub(crate) fn global_variable_to_def(
         &self,
         source: &InFile<ast::VariableDeclaration>,
     ) -> Option<GlobalVariableId> {
@@ -268,7 +268,7 @@ impl<'database> Semantics<'database> {
         Some(id)
     }
 
-    fn global_override_to_def(
+    pub(crate) fn global_override_to_def(
         &self,
         source: &InFile<ast::OverrideDeclaration>,
     ) -> Option<OverrideId> {
@@ -279,7 +279,7 @@ impl<'database> Semantics<'database> {
         Some(id)
     }
 
-    fn global_type_alias_to_def(
+    pub(crate) fn global_type_alias_to_def(
         &self,
         source: &InFile<ast::TypeAliasDeclaration>,
     ) -> Option<TypeAliasId> {
@@ -290,7 +290,7 @@ impl<'database> Semantics<'database> {
         Some(id)
     }
 
-    fn global_struct_to_def(
+    pub(crate) fn global_struct_to_def(
         &self,
         source: &InFile<ast::StructDeclaration>,
     ) -> Option<StructId> {

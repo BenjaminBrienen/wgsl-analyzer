@@ -1,6 +1,6 @@
 mod builtin;
 mod eval;
-mod unify;
+pub mod unify;
 
 use std::{fmt, ops::Index};
 
@@ -46,7 +46,7 @@ use crate::{
     },
 };
 
-fn extension_name(ext: EnableExtension) -> &'static str {
+const fn extension_name(ext: EnableExtension) -> &'static str {
     match ext {
         EnableExtension::F16 => "f16",
         EnableExtension::ClipDistances => "clip_distances",
@@ -1828,9 +1828,9 @@ impl<'database> InferenceContext<'database> {
         };
 
         // Check if this builtin requires an enable extension
-        if let Some(builtin) = Builtin::for_name(self.database, name) {
-            if let Some(required_ext) = builtin.required_extension() {
-                if !self.is_extension_enabled(required_ext) {
+        if let Some(builtin) = Builtin::for_name(self.database, name)
+            && let Some(required_ext) = builtin.required_extension()
+                && !self.is_extension_enabled(required_ext) {
                     self.push_diagnostic(
                         store.store_source,
                         InferenceDiagnosticKind::WgslError {
@@ -1844,8 +1844,6 @@ impl<'database> InferenceContext<'database> {
                     );
                     return self.error_type();
                 }
-            }
-        }
 
         let mut converter = WgslTypeConverter::new(self.database);
         let mut template_args = vec![];
@@ -2808,13 +2806,13 @@ impl<'database> WgslTypeConverter<'database> {
             },
             TypeKind::BuiltinStruct(builtin_struct) => {
                 wgsl_types::Type::Struct(Box::new(wgsl_types::ty::StructType {
-                    name: builtin_struct.name.to_string(),
+                    name: builtin_struct.name.clone(),
                     members: builtin_struct
                         .fields
                         .iter()
                         .map(|(name, ty)| {
                             Some(wgsl_types::ty::StructMemberType {
-                                name: name.to_string(),
+                                name: name.clone(),
                                 ty: self.to_wgsl_types(*ty)?,
                                 size: None,
                                 align: None,

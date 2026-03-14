@@ -11,6 +11,7 @@ use lsp_types::{
     GotoDefinitionResponse, HoverContents, InlayHint, InlayHintParams, MarkupContent, MarkupKind,
     Range, TextDocumentIdentifier,
 };
+use std::fmt::Write as _;
 use vfs::FileId;
 
 use crate::{
@@ -38,21 +39,23 @@ pub(crate) fn handle_analyzer_status(
     snap: GlobalStateSnapshot,
     parameters: extensions::AnalyzerStatusParameters,
 ) -> Result<String> {
-    let mut buf = String::new();
+    let mut buffer = String::new();
 
-    buf.push_str("wgsl-analyzer status\n\n");
+    buffer.push_str("wgsl-analyzer status\n\n");
 
-    if let Some(text_document) = parameters.text_document {
-        if let Some(file_id) = from_proto::file_id(&snap, &text_document.uri)? {
-            let source_root_id = snap.analysis.source_root_id(file_id)?;
-            buf.push_str(&format!(
-                "Current file: {:?}, source root: {:?}\n",
-                file_id, source_root_id
-            ));
-        }
+    if let Some(text_document) = parameters.text_document
+        && let Some(file_id) = from_proto::file_id(&snap, &text_document.uri)?
+    {
+        let source_root_id = snap.analysis.source_root_id(file_id)?;
+        writeln!(
+            buffer,
+            "Current file: {}, source root: {}",
+            file_id.index(),
+            source_root_id.0,
+        );
     }
 
-    Ok(buf)
+    Ok(buffer)
 }
 
 pub(crate) fn handle_goto_definition(

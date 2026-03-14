@@ -96,13 +96,12 @@ pub(crate) fn complete_names_in_scope(
         });
 
         // Look up the builtin to get its signature for the detail string
-        if let Some(builtin) = Builtin::for_name(context.database, &Name::from(*name)) {
-            if let Some((_, overload)) = builtin.overloads().next() {
+        if let Some(builtin) = Builtin::for_name(context.database, &Name::from(*name))
+            && let Some((_, overload)) = builtin.overloads().next() {
                 let function_details = overload.r#type.lookup(context.database);
                 let detail = pretty_fn(context.database, &function_details);
                 builder.set_detail(Some(detail));
             }
-        }
 
         builder.add_to(accumulator, context.database);
     }

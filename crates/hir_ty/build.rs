@@ -46,7 +46,7 @@ enum Type {
     Bound(usize),
     StorageTypeOfTexelFormat(usize),
     /// A synthetic struct returned by builtins like `frexp` and `modf`.
-    /// Fields: (struct_name, vec of (field_name, field_type))
+    /// Fields: (`struct_name`, vec of (`field_name`, `field_type`))
     BuiltinStruct(String, Vec<(String, Box<Self>)>),
 
     // naga extensions
@@ -416,7 +416,7 @@ fn parse_type(
         let fields_str = r#type[brace_pos + 1..].strip_suffix('}').unwrap();
         let fields = fields_str
             .split(',')
-            .filter(|s| !s.is_empty())
+            .filter(|string| !string.is_empty())
             .map(|field| {
                 let (field_name, field_type) = field.split_once(':').unwrap();
                 (

@@ -248,11 +248,11 @@ fn parse_hex_float(hex: &str) -> f64 {
     let mut place = 1.0_f64 / 16.0;
     for ch in frac_str.chars() {
         let digit = ch.to_digit(16).expect("invalid hex float fraction digit");
-        frac += digit as f64 * place;
+        frac += f64::from(digit) * place;
         place /= 16.0;
     }
 
-    (whole + frac) * f64::exp2(exponent as f64)
+    (whole + frac) * f64::exp2(f64::from(exponent))
 }
 
 impl Expression {
