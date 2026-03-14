@@ -47,6 +47,7 @@ impl Type {
             | TypeKind::Atomic(_)
             | TypeKind::Matrix(_)
             | TypeKind::Struct(_)
+            | TypeKind::BuiltinStruct(_)
             | TypeKind::Array(_)
             | TypeKind::Texture(_)
             | TypeKind::Sampler(_)
@@ -80,6 +81,7 @@ impl Type {
             | TypeKind::Vector(_)
             | TypeKind::Matrix(_)
             | TypeKind::Struct(_)
+            | TypeKind::BuiltinStruct(_)
             | TypeKind::Array(_)
             | TypeKind::Texture(_)
             | TypeKind::Sampler(_)
@@ -109,6 +111,16 @@ impl Type {
     }
 }
 
+/// A synthetic struct type returned by builtin functions (e.g. `frexp`, `modf`).
+///
+/// Unlike [`TypeKind::Struct`], this does not reference a user-declared struct.
+/// Instead, it carries field information inline.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct BuiltinStruct {
+    pub name: String,
+    pub fields: Vec<(String, Type)>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum TypeKind {
     Error,
@@ -119,6 +131,8 @@ pub enum TypeKind {
     Vector(VectorType),
     Matrix(MatrixType),
     Struct(StructId),
+    /// A synthetic struct returned by builtin functions like `frexp` and `modf`.
+    BuiltinStruct(BuiltinStruct),
     Array(ArrayType),
     Texture(TextureType),
     Sampler(SamplerType),
@@ -154,6 +168,7 @@ impl TypeKind {
             | Self::Vector(_)
             | Self::Matrix(_)
             | Self::Struct(_)
+            | Self::BuiltinStruct(_)
             | Self::Array(_)
             | Self::Texture(_)
             | Self::Sampler(_)
@@ -202,6 +217,7 @@ impl TypeKind {
             | Self::Scalar(_)
             | Self::Atomic(_)
             | Self::Struct(_)
+            | Self::BuiltinStruct(_)
             | Self::Texture(_)
             | Self::Sampler(_)
             | Self::Reference(_)
@@ -220,6 +236,7 @@ impl TypeKind {
             | Self::Vector(_)
             | Self::Matrix(_)
             | Self::Struct(_)
+            | Self::BuiltinStruct(_)
             | Self::Array(_)
             | Self::Texture(_)
             | Self::Sampler(_)
@@ -236,6 +253,7 @@ impl TypeKind {
             Self::Scalar(scalar) => scalar.is_index(),
             Self::Error
             | Self::Atomic(_)
+            | Self::BuiltinStruct(_)
             | Self::Vector(_)
             | Self::Matrix(_)
             | Self::Struct(_)
@@ -266,6 +284,7 @@ impl TypeKind {
             | Self::Error
             | Self::Atomic(_)
             | Self::Struct(_)
+            | Self::BuiltinStruct(_)
             | Self::Texture(_)
             | Self::Sampler(_)
             | Self::Reference(_)
@@ -297,6 +316,7 @@ impl TypeKind {
                 | Self::Atomic(_)
                 | Self::Array(_)
                 | Self::Struct(_)
+                | Self::BuiltinStruct(_)
         )
     }
 
@@ -346,7 +366,8 @@ impl TypeKind {
                 .0
                 .iter()
                 .all(|(_, r#type)| r#type.kind(database).is_host_shareable(database)),
-            Self::Texture(_)
+            Self::BuiltinStruct(_)
+            | Self::Texture(_)
             | Self::Sampler(_)
             | Self::Reference(_)
             | Self::Pointer(_)
@@ -375,6 +396,7 @@ impl TypeKind {
             | Self::Vector(_)
             | Self::Matrix(_)
             | Self::Array(_)
+            | Self::BuiltinStruct(_)
             | Self::Texture(_)
             | Self::Sampler(_)
             | Self::Reference(_)
@@ -408,6 +430,7 @@ impl TypeKind {
             | Self::Scalar(_)
             | Self::Vector(_)
             | Self::Matrix(_)
+            | Self::BuiltinStruct(_)
             | Self::Texture(_)
             | Self::Sampler(_)
             | Self::BoundVariable(_)

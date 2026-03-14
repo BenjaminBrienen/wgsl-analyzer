@@ -2238,6 +2238,9 @@ fn keywords_do_not_parse() {
             error at 537..540: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
             error at 540..541: invalid syntax, expected: <identifier>
             error at 556..561: invalid syntax, expected one of: '@', '{', '}', ',', '=', <identifier>, ')', ';', <template start>
-            error at 561..562: invalid syntax, expected: <identifier>"#]],
+            error at 561..562: invalid syntax, expected: <identifier>
+            error at 197..210: directives must come before any declarations
+            error at 266..275: directives must come before any declarations
+            error at 427..438: directives must come before any declarations"#]],
     );
 }

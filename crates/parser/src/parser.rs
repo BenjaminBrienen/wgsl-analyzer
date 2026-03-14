@@ -101,16 +101,18 @@ impl Parser<'_> {
         // Skip past path segments: (:: Ident)*
         // This handles paths like `foo::bar::baz()` where we need to look
         // past the `::` separators to find the `(` or `<` that indicates a call.
-        while self.peek(i) == Token::DoubleColon {
+        while self.peek(i) == Token::ColonColon {
             i += 1;
-            if matches!(self.peek(i), Token::Ident | Token::Super) {
+            if matches!(self.peek(i), Token::Identifier | Token::Super) {
                 i += 1;
             } else {
                 break;
             }
         }
-        matches!(self.peek(i), Token::LPar | Token::Lt | Token::TemplateStart)
-            && self.peek(i + 1) != Token::Lt
+        matches!(
+            self.peek(i),
+            Token::ParenthesisLeft | Token::LessThan | Token::TemplateStart
+        ) && self.peek(i + 1) != Token::LessThan
     }
 }
 

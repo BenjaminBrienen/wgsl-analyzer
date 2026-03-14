@@ -354,9 +354,9 @@ fn path_function_call() {
                       IdentExpression@12..25
                         Path@12..25
                           Identifier@12..15 "foo"
-                          DoubleColon@15..17 "::"
+                          ColonColon@15..17 "::"
                           Identifier@17..20 "bar"
-                          DoubleColon@20..22 "::"
+                          ColonColon@20..22 "::"
                           Identifier@22..25 "baz"
                       Arguments@25..27
                         ParenthesisLeft@25..26 "("
@@ -390,7 +390,7 @@ fn path_assignment() {
                     IdentExpression@12..20
                       Path@12..20
                         Identifier@12..15 "foo"
-                        DoubleColon@15..17 "::"
+                        ColonColon@15..17 "::"
                         Identifier@17..20 "bar"
                     Blankspace@20..21 " "
                     Equal@21..22 "="
@@ -402,7 +402,6 @@ fn path_assignment() {
                   BraceRight@26..27 "}""#]],
     );
 }
-
 
 #[test]
 fn variable_declarations() {
@@ -2670,7 +2669,7 @@ enable f16;",
         expect![[r#"
             SourceFile@0..24
               ConstantDeclaration@0..12
-                Constant@0..5 "const"
+                Const@0..5 "const"
                 Blankspace@5..6 " "
                 Name@6..7
                   Identifier@6..7 "a"
@@ -2708,7 +2707,7 @@ const a = 3;",
                 Semicolon@10..11 ";"
               Blankspace@11..12 "\n"
               ConstantDeclaration@12..24
-                Constant@12..17 "const"
+                Const@12..17 "const"
                 Blankspace@17..18 " "
                 Name@18..19
                   Identifier@18..19 "a"
@@ -2720,7 +2719,6 @@ const a = 3;",
                 Semicolon@23..24 ";""#]],
     );
 }
-
 
 #[test]
 fn struct_underscore_field_name() {

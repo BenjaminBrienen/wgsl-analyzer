@@ -44,6 +44,9 @@ enum Type {
     Atomic(Box<Self>),
     Bound(usize),
     StorageTypeOfTexelFormat(usize),
+    /// A synthetic struct returned by builtins like `frexp` and `modf`.
+    /// Fields: (struct_name, vec of (field_name, field_type))
+    BuiltinStruct(String, Vec<(String, Box<Self>)>),
 
     // naga extensions
     /// This is from naga's `SHADER_INT64` extension.
@@ -388,6 +391,24 @@ fn parse_type(
         return Type::Texture(texture_type);
     }
 
+    // Parse builtin struct types: __name{field1:type1,field2:type2}
+    if let Some(brace_pos) = r#type.find('{') {
+        let name = &r#type[..brace_pos];
+        let fields_str = r#type[brace_pos + 1..].strip_suffix('}').unwrap();
+        let fields = fields_str
+            .split(',')
+            .filter(|s| !s.is_empty())
+            .map(|field| {
+                let (field_name, field_type) = field.split_once(':').unwrap();
+                (
+                    field_name.trim().to_owned(),
+                    Box::new(parse_type(generics, field_type.trim())),
+                )
+            })
+            .collect();
+        return Type::BuiltinStruct(name.to_owned(), fields);
+    }
+
     if r#type.len() == 1 {
         let generic = r#type.chars().next().unwrap();
         let length = generics.len();
@@ -490,6 +511,21 @@ fn type_to_rust(r#type: &Type) -> String {
         Type::StorageTypeOfTexelFormat(variable) => {
             format!(
                 "TypeKind::StorageTypeOfTexelFormat(BoundVariable {{ index: {variable} }}).intern(database)"
+            )
+        },
+        Type::BuiltinStruct(name, fields) => {
+            let fields_code: Vec<String> = fields
+                .iter()
+                .map(|(field_name, field_type)| {
+                    format!(
+                        "(\"{field_name}\".to_owned(), {})",
+                        type_to_rust(field_type)
+                    )
+                })
+                .collect();
+            format!(
+                "TypeKind::BuiltinStruct(crate::ty::BuiltinStruct {{ name: \"{name}\".to_owned(), fields: vec![{}] }}).intern(database)",
+                fields_code.join(", ")
             )
         },
     }
