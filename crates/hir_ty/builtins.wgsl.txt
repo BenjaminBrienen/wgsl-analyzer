@@ -661,6 +661,7 @@ op_f16_constructor(bool) -> f16
 op_f16_constructor(u32) -> f16
 op_f16_constructor(i32) -> f16
 op_f16_constructor(f32) -> f16
+op_f16_constructor(f16) -> f16
 
 // naga SHADER_INT64
 op_i64_constructor(bool) -> i64
