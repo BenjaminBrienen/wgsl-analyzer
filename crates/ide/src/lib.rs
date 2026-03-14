@@ -34,7 +34,6 @@ use syntax::{Edition, Parse, SyntaxNode};
 use triomphe::Arc;
 use vfs::{AbsPathBuf, FileId, VfsPath};
 
-use crate::signature_help::SignatureHelp;
 pub use crate::{
     // annotations::{Annotation, AnnotationConfig, AnnotationKind, AnnotationLocation},
     // call_hierarchy::{CallHierarchyConfig, CallItem},
@@ -71,7 +70,7 @@ pub use crate::{
     // references::ReferenceSearchResult,
     // rename::RenameError,
     // runnables::{Runnable, RunnableKind, TestId, UpdateTest},
-    // signature_help::SignatureHelp,
+    signature_help::SignatureHelp,
     // static_index::{
     //     StaticIndex, StaticIndexedFile, TokenId, TokenStaticData, VendoredLibrariesConfig,
     // },
@@ -391,6 +390,7 @@ impl Analysis {
         self.with_db(|database| hover::hover(database, range, config))
     }
 
+    /// Computes signature help at the given position.
     pub fn signature_help(
         &self,
         position: FilePosition,

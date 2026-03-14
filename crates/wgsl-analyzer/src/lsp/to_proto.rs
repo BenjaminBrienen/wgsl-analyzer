@@ -2,12 +2,11 @@ use std::ops::Not as _;
 
 use base_db::{FileRange, TextRange, TextSize};
 use ide::{
-    Cancellable, Fold, FoldKind, NavigationTarget,
+    Cancellable, Fold, FoldKind, NavigationTarget, SignatureHelp,
     inlay_hints::{
         InlayFieldsToResolve, InlayHint, InlayHintLabel, InlayHintLabelPart, InlayKind,
         LazyProperty,
     },
-    signature_help::SignatureHelp,
 };
 use ide_completion::{
     CompletionFieldsToResolve,
