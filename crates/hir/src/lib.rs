@@ -2,8 +2,8 @@ pub mod database;
 pub mod definition;
 pub mod diagnostics;
 
-use base_db::{EditionedFileId, FileId, Lookup as _};
-pub use definition::Definition;
+use base_db::{EditionedFileId, FileId, Lookup};
+pub use definition::{Definition, doc_comments_from_syntax, format_attributes};
 use diagnostics::{AnyDiagnostic, DiagnosticsConfig};
 use either::Either;
 pub use hir_def::database::ExtensionsConfig;
@@ -439,7 +439,7 @@ impl ChildContainer {
     }
 }
 
-fn module_item_to_def(
+pub fn module_item_to_def(
     database: &dyn HirDatabase,
     file_id: EditionedFileId,
     module_item: ModuleItem,
