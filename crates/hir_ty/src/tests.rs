@@ -36,6 +36,14 @@ fn infer(
     extensions: ExtensionsConfig,
     wa_fixture: &str,
 ) -> String {
+    infer_with_verbosity(extensions, TypeVerbosity::Compact, wa_fixture)
+}
+
+fn infer_with_verbosity(
+    extensions: ExtensionsConfig,
+    verbosity: TypeVerbosity,
+    wa_fixture: &str,
+) -> String {
     let (mut database, file_id) = TestDatabase::with_single_file(wa_fixture);
     database.set_extensions_with_durability(extensions, Durability::MEDIUM);
     let file_id = EditionedFileId::new(&database, file_id.file_id, file_id.edition);
@@ -72,7 +80,7 @@ fn infer(
                 node.text_range(),
                 node.text().to_string().replace('\n', " "),
             );
-            let pretty = pretty_type_with_verbosity(&database, *r#type, TypeVerbosity::Compact);
+            let pretty = pretty_type_with_verbosity(&database, *r#type, verbosity);
             writeln!(buffer, "{range:?} '{}': {pretty}", ellipsize(text, 15)).unwrap();
         }
 
@@ -100,9 +108,9 @@ fn infer(
                         pretty_type_expectation_with_verbosity(
                             &database,
                             expected.clone(),
-                            TypeVerbosity::Compact
+                            verbosity
                         ),
-                        pretty_type_with_verbosity(&database, *actual, TypeVerbosity::Compact)
+                        pretty_type_with_verbosity(&database, *actual, verbosity)
                     )
                     .unwrap();
                 },
@@ -250,6 +258,18 @@ fn check_infer(
     expect: Expect,
 ) {
     let mut actual = infer(extensions, wa_fixture);
-    actual.push('\n');
+    actual.push('\n'); // TODO: trim expect and actual?
+    expect.assert_eq(&actual);
+}
+
+#[expect(clippy::needless_pass_by_value, reason = "Matches expect! macro")]
+fn check_infer_with_verbosity(
+    extensions: ExtensionsConfig,
+    verbosity: TypeVerbosity,
+    wa_fixture: &str,
+    expect: Expect,
+) {
+    let mut actual = infer_with_verbosity(extensions, verbosity, wa_fixture);
+    actual.push('\n'); // TODO: trim expect and actual?
     expect.assert_eq(&actual);
 }
