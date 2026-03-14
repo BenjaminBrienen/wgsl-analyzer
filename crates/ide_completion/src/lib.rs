@@ -101,7 +101,7 @@ mod tests {
             // enable_term_search: false,
             // term_search_fuel: 400,
             // full_function_signatures: false,
-            // callable: None,
+            callable: None,
             // add_semicolon_to_unit: false,
             // prefer_no_std: false,
             // prefer_prelude: false,

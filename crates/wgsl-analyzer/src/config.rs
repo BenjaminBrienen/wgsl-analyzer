@@ -464,7 +464,7 @@ impl Config {
             // TODO: https://github.com/wgsl-analyzer/wgsl-analyzer/issues/916
             // full_function_signatures: false,
             // TODO: https://github.com/wgsl-analyzer/wgsl-analyzer/issues/917
-            // callable: None,
+            callable: None,
             // TODO: https://github.com/wgsl-analyzer/wgsl-analyzer/issues/920
             // snippet_capability: SnippetCapability::new(self.completion_snippet()),
             // TODO: https://github.com/wgsl-analyzer/wgsl-analyzer/issues/914

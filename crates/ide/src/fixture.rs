@@ -1,5 +1,5 @@
-use base_db::EditionedFileId;
 use base_db::change::Change;
+use base_db::{EditionedFileId, RawEditionedFileId};
 use ide_db::RootDatabase;
 use test_fixture::ChangeFixture;
 use triomphe::Arc;
@@ -23,7 +23,7 @@ pub(crate) fn single_file_db(source: &str) -> (Analysis, FileId) {
 
 /// Creates analysis for a multi-file fixture.
 /// Returns the analysis and all file IDs (in fixture order).
-pub(crate) fn multi_file_db(source: &str) -> (Analysis, Vec<EditionedFileId>) {
+pub(crate) fn multi_file_db(source: &str) -> (Analysis, Vec<RawEditionedFileId>) {
     let mut host = AnalysisHost::default();
     let fixture = ChangeFixture::parse(source);
     host.apply_change(fixture.change);

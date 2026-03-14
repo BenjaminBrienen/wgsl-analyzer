@@ -1,7 +1,7 @@
 use base_db::{EditionedFileId, FilePosition, TextSize};
-use hir::{Definition, HirDatabase as _, Semantics, database::DefDatabase};
+use hir::{Definition, Function, HirDatabase as _, ModuleDef, Semantics};
 use hir_def::{
-    database::{InternDatabase as _, Location},
+    database::{DefDatabase as _, InternDatabase, Location},
     item_tree::{ModuleItem, Name},
     resolver::ScopeDef,
 };
@@ -114,6 +114,12 @@ pub(crate) fn signature_help(
     let expression_id = analyzed.expression_id(&call_expr);
 
     // Try to extract doc comments for the function being called
+    let fn_doc = function_call.ident_expression().and_then(|ident_expr| {
+        let name_token = ident_expr.syntax().first_token()?;
+        let def = Definition::from_token(&semantics, file_id.into(), &name_token)?;
+        def.doc_comments(database)
+    });
+
     let text = function_call.ident_expression()?.syntax().text();
     let mut overloads = Vec::new();
     semantics

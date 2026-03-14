@@ -98,8 +98,7 @@ pub(crate) fn complete_names_in_scope(
             // Add function call snippet with parameter placeholders
             if let ScopeDef::ModuleItem(file_id, ModuleItem::Function(id)) = item {
                 if let Some(callable) = &context.config.callable {
-                    let function_id =
-                        context.database.intern_function(Location::new(file_id, id));
+                    let function_id = context.database.intern_function(Location::new(file_id, id));
                     let function_type = context.database.function_type(function_id);
                     let details = function_type.lookup(context.database);
                     let snippet = build_fn_snippet(name.as_str(), &details, callable);
@@ -124,11 +123,12 @@ pub(crate) fn complete_names_in_scope(
 
         // Look up the builtin to get its signature for the detail string
         if let Some(builtin) = Builtin::for_name(context.database, &Name::from(*name))
-            && let Some((_, overload)) = builtin.overloads().next() {
-                let function_details = overload.r#type.lookup(context.database);
-                let detail = pretty_fn(context.database, &function_details);
-                builder.set_detail(Some(detail));
-            }
+            && let Some((_, overload)) = builtin.overloads().next()
+        {
+            let function_details = overload.r#type.lookup(context.database);
+            let detail = pretty_fn(context.database, &function_details);
+            builder.set_detail(Some(detail));
+        }
 
         builder.add_to(accumulator, context.database);
     }
@@ -226,11 +226,10 @@ fn render_detail(
     }
 }
 
-
 /// Extract doc comments from the AST node of a module item.
 fn render_doc_comments(
     context: &CompletionContext<'_>,
-    file_id: hir_def::HirFileId,
+    file_id: EditionedFileId,
     item: &ModuleItem,
 ) -> Option<String> {
     let item_tree = context.database.item_tree(file_id);

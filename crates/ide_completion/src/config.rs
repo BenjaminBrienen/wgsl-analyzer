@@ -29,7 +29,7 @@ pub struct CompletionConfig {
     // TODO: https://github.com/wgsl-analyzer/wgsl-analyzer/issues/916
     // pub full_function_signatures: bool,
     // TODO: https://github.com/wgsl-analyzer/wgsl-analyzer/issues/917
-    // pub callable: Option<CallableSnippets>,
+    pub callable: Option<CallableSnippets>,
     // TODO: https://github.com/wgsl-analyzer/wgsl-analyzer/issues/920
     // pub snippet_capability: Option<SnippetCapability>,
     // TODO: https://github.com/wgsl-analyzer/wgsl-analyzer/issues/914

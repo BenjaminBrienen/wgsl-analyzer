@@ -10,7 +10,6 @@ use triomphe::Arc;
 use vfs::VfsPath;
 use vfs::file_set::FileSetConfig;
 use vfs::loader::{Config as VfsLoaderConfig, Directories, Entry};
-use vfs::{VfsPath, file_set::FileSetConfig};
 
 use crate::{
     config::Config, discover::DiscoverArgument, global_state::GlobalState, lsp, main_loop::Task,
