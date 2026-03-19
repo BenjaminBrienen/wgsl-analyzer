@@ -113,11 +113,14 @@ pub(crate) fn signature_help(
     let call_expr = ast::Expression::FunctionCall(function_call.clone());
     let expression_id = analyzed.expression_id(&call_expr);
 
+    let mut signatures = Vec::new();
+    let mut active_signature = None;
+
     // Try to extract doc comments for the function being called
     let fn_doc = function_call.ident_expression().and_then(|ident_expr| {
         let name_token = ident_expr.syntax().first_token()?;
-        let def = Definition::from_token(&semantics, file_id.into(), &name_token)?;
-        def.doc_comments(database)
+        let definition = Definition::from_token(&semantics, file_id.into(), &name_token)?;
+        definition.doc_comments(database)
     });
 
     let text = function_call.ident_expression()?.syntax().text();

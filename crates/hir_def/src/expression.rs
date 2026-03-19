@@ -240,7 +240,13 @@ fn parse_hex_float(hex: &str) -> f64 {
     let whole: f64 = if whole_str.is_empty() {
         0.0
     } else {
-        u64::from_str_radix(whole_str, 16).expect("invalid hex float whole part") as f64
+        #[expect(
+            clippy::as_conversions,
+            reason = "u64 to f64 may lose precision but is correct for float parsing"
+        )]
+        {
+            u64::from_str_radix(whole_str, 16).expect("invalid hex float whole part") as f64
+        }
     };
 
     // Parse the fractional part: each hex digit is worth 1/16 of the previous
@@ -300,6 +306,7 @@ impl Expression {
 }
 
 #[cfg(test)]
+#[expect(clippy::float_cmp, reason = "hex float parsing produces exact results")]
 mod hex_float_tests {
     use super::parse_hex_float;
 
@@ -330,7 +337,7 @@ mod hex_float_tests {
         // 0xa.fp+2 = (10 + 15/16) * 4 = 43.75
         assert_eq!(parse_hex_float("a.fp+2"), 43.75);
         // 0x1.fp-4 = (1 + 15/16) * 2^-4 = 0.12109375
-        assert_eq!(parse_hex_float("1.fp-4"), 0.12109375);
+        assert_eq!(parse_hex_float("1.fp-4"), 0.121_093_75);
         // 0x3.2p+2 = (3 + 2/16) * 4 = 12.5
         assert_eq!(parse_hex_float("3.2p+2"), 12.5);
     }
@@ -344,7 +351,7 @@ mod hex_float_tests {
     #[test]
     fn multi_digit_fraction() {
         // 0xff.13p13 = (255 + 1/16 + 3/256) * 2^13
-        let expected = 255.07421875 * 8192.0;
+        let expected = 255.074_218_75 * 8192.0;
         assert_eq!(parse_hex_float("ff.13p13"), expected);
     }
 
@@ -357,6 +364,6 @@ mod hex_float_tests {
     #[test]
     fn wgsl_spec_example() {
         // 0x80.8p-5 = (128 + 8/16) * 2^-5 = 4.015625
-        assert_eq!(parse_hex_float("80.8p-5"), 4.015625);
+        assert_eq!(parse_hex_float("80.8p-5"), 4.015_625);
     }
 }

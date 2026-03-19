@@ -1152,13 +1152,12 @@ impl<'database> InferenceContext<'database> {
                 // Extract address space and access mode from the parent reference,
                 // so that field access preserves them.
                 // See: https://github.com/wgsl-analyzer/wgsl-analyzer/issues/704
-                let (address_space, access_mode) = if let TypeKind::Reference(ref reference) =
-                    expression_type.kind(self.database)
-                {
-                    (reference.address_space, reference.access_mode)
-                } else {
-                    (AddressSpace::Function, AccessMode::ReadWrite)
-                };
+                let (address_space, access_mode) =
+                    if let TypeKind::Reference(reference) = expression_type.kind(self.database) {
+                        (reference.address_space, reference.access_mode)
+                    } else {
+                        (AddressSpace::Function, AccessMode::ReadWrite)
+                    };
 
                 match expression_type
                     .kind(self.database)
@@ -1271,6 +1270,10 @@ impl<'database> InferenceContext<'database> {
                 // Extract address space and access mode from the parent reference,
                 // so that index access preserves them.
                 // See: https://github.com/wgsl-analyzer/wgsl-analyzer/issues/704
+                #[expect(
+                    clippy::ref_patterns,
+                    reason = "needed to avoid partial move of left_kind"
+                )]
                 let ref_info = if let TypeKind::Reference(ref reference) = left_kind {
                     Some((reference.address_space, reference.access_mode))
                 } else {
@@ -1830,20 +1833,21 @@ impl<'database> InferenceContext<'database> {
         // Check if this builtin requires an enable extension
         if let Some(builtin) = Builtin::for_name(self.database, name)
             && let Some(required_ext) = builtin.required_extension()
-                && !self.is_extension_enabled(required_ext) {
-                    self.push_diagnostic(
-                        store.store_source,
-                        InferenceDiagnosticKind::WgslError {
-                            expression,
-                            message: format!(
-                                "`{}` requires `enable {}`",
-                                name.as_str(),
-                                extension_name(required_ext),
-                            ),
-                        },
-                    );
-                    return self.error_type();
-                }
+            && !self.is_extension_enabled(required_ext)
+        {
+            self.push_diagnostic(
+                store.store_source,
+                InferenceDiagnosticKind::WgslError {
+                    expression,
+                    message: format!(
+                        "`{}` requires `enable {}`",
+                        name.as_str(),
+                        extension_name(required_ext),
+                    ),
+                },
+            );
+            return self.error_type();
+        }
 
         let mut converter = WgslTypeConverter::new(self.database);
         let mut template_args = vec![];
@@ -2743,6 +2747,7 @@ impl<'database> WgslTypeConverter<'database> {
         clippy::wrong_self_convention,
         reason = "naming things is hard and this is probably changing in the future"
     )]
+    #[expect(clippy::too_many_lines, reason = "long but simple match")]
     fn to_wgsl_types(
         &mut self,
         r#type: Type,
@@ -2810,7 +2815,7 @@ impl<'database> WgslTypeConverter<'database> {
                     members: builtin_struct
                         .fields
                         .iter()
-                        .map(|(name, ty)| {
+                        .map(|(name, field_type)| {
                             Some(wgsl_types::ty::StructMemberType {
                                 name: name.clone(),
                                 ty: self.to_wgsl_types(*ty)?,
@@ -2892,6 +2897,7 @@ impl<'database> WgslTypeConverter<'database> {
         clippy::wrong_self_convention,
         reason = "naming things is hard and this is probably changing in the future"
     )]
+    #[expect(clippy::too_many_lines, reason = "long but simple match")]
     fn from_wgsl_types(
         &self,
         r#type: wgsl_types::Type,

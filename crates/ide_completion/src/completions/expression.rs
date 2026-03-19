@@ -80,10 +80,10 @@ pub(crate) fn complete_names_in_scope(
 
             let detail = definition
                 .as_ref()
-                .and_then(|d| d.detail_text(context.database));
+                .and_then(|resolved| resolved.detail_text(context.database));
             let doc = definition
                 .as_ref()
-                .and_then(|d| d.doc_comments(context.database));
+                .and_then(|resolved| resolved.doc_comments(context.database));
 
             let mut completion = CompletionItem::new(kind, context.source_range(), name.as_str());
             completion.set_relevance(CompletionRelevance {
@@ -102,16 +102,17 @@ pub(crate) fn complete_names_in_scope(
             completion.set_documentation(doc);
 
             // Add function call snippet with parameter placeholders
-            if let ScopeDef::ModuleItem(file_id, ModuleItem::Function(id)) = item {
-                if let Some(callable) = &context.config.callable {
-                    let function_id = context.database.intern_function(Location::new(file_id, id));
-                    let function_type = context.database.function_type(function_id);
-                    let details = function_type.lookup(context.database);
-                    let snippet = build_fn_snippet(name.as_str(), &details, callable);
-                    completion.insert_text(snippet);
-                    completion.mark_as_snippet();
-                }
-            }
+            // TODO: https://github.com/wgsl-analyzer/wgsl-analyzer/issues/917
+            // if let ScopeDef::ModuleItem(file_id, ModuleItem::Function(id)) = item
+            //     && let Some(callable) = &context.config.callable
+            // {
+            //     let function_id = context.database.intern_function(Location::new(file_id, id));
+            //     let function_type = context.database.function_type(function_id);
+            //     let details = function_type.lookup(context.database);
+            //     let snippet = build_fn_snippet(name.as_str(), &details, callable);
+            //     completion.insert_text(snippet);
+            //     completion.mark_as_snippet();
+            // }
 
             completion.add_to(accumulator, context.database);
         });
@@ -324,22 +325,22 @@ fn build_fn_snippet(
             format!("{name}($0)")
         },
         CallableSnippets::FillArguments => {
-            let params: Vec<_> = details.parameters_with_names().collect();
-            if params.is_empty() {
+            let parameters: Vec<_> = details.parameters_with_names().collect();
+            if parameters.is_empty() {
                 format!("{name}()$0")
             } else {
-                let param_snippets: Vec<String> = params
+                let param_snippets: Vec<String> = parameters
                     .iter()
                     .enumerate()
-                    .map(|(i, (_, param_name))| {
+                    .map(|(index, (_, param_name))| {
                         let label = if param_name.is_empty()
                             || hir_def::item_tree::Name::is_missing(param_name)
                         {
-                            format!("arg{}", i + 1)
+                            format!("arg{}", index + 1)
                         } else {
                             param_name.to_string()
                         };
-                        format!("${{{}:{}}}", i + 1, label)
+                        format!("${{{}:{label}}}", index + 1)
                     })
                     .collect();
                 format!("{name}({})$0", param_snippets.join(", "))

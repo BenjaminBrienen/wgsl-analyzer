@@ -21,12 +21,16 @@ extend-ignore-re = [
 	"(?Rm) .+ ...\"$",  # parser snapshot test data
 	"(?Rm)^\\s+\\d+..\\d+ .*$",  # hir-ty snapshot test data
 ]
-extend-ignore-identifiers-re = []
+extend-ignore-identifiers-re = [
+	"textur",
+]
 
 # Match Whole Word - Case Sensitive
 [default.extend-identifiers]
 "err" = "error"
 "idx" = "index"
+# rowan library enum variant
+"Prev" = "Prev"
 
 # Match Inside a Word - Case Insensitive
 [default.extend-words]

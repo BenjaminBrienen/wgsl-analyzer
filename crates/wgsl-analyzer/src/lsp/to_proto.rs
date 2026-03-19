@@ -203,6 +203,10 @@ pub(crate) fn completion_items(
 }
 
 #[expect(clippy::too_many_arguments, reason = "TODO")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "LSP protocol conversion with many fields"
+)]
 fn completion_item(
     accumulator: &mut Vec<lsp_types::CompletionItem>,
     config: &Config,

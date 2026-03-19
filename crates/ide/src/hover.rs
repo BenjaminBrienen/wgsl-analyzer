@@ -7,6 +7,7 @@ use hir_ty::{
     ty::pretty::{pretty_fn, pretty_type},
 };
 use ide_db::RootDatabase;
+use std::fmt::Write as _;
 use syntax::{AstNode as _, SyntaxKind, ast};
 
 use crate::{NavigationTarget, helpers, markup::Markup};
@@ -76,6 +77,10 @@ pub struct HoverGotoTypeData {
 //
 // Shows additional information, like the type of an expression or the documentation for a definition when "focusing" code.
 // Focusing is usually hovering with a mouse, but can also be triggered with a shortcut.
+#[expect(
+    clippy::too_many_lines,
+    reason = "sequential fallback logic for hover resolution"
+)]
 pub(crate) fn hover(
     database: &RootDatabase,
     file_range: FileRange,
@@ -115,11 +120,11 @@ pub(crate) fn hover(
     if let Some(parent) = token.parent()
         && let Some(field_expr) = ast::FieldExpression::cast(parent)
     {
-        let expr = ast::Expression::FieldExpression(field_expr);
-        let container = semantics.find_container(file_id, expr.syntax())?;
+        let expression = ast::Expression::FieldExpression(field_expr);
+        let container = semantics.find_container(file_id.into(), expression.syntax())?;
         let analyzer = semantics.analyze(container.as_def_with_body_id()?);
-        if let Some(ty) = analyzer.type_of_expression(&expr) {
-            let markup_text = pretty_type(database, ty);
+        if let Some(expression_type) = analyzer.type_of_expression(&expression) {
+            let markup_text = pretty_type(database, expression_type);
             return Some(RangeInfo::new(
                 range,
                 HoverResult {
@@ -131,33 +136,31 @@ pub(crate) fn hover(
     }
 
     // Check if hovering over an attribute name (e.g., @group, @binding, @vertex)
-    if token.kind() == SyntaxKind::Identifier {
-        if let Some(parent) = token.parent() {
-            if ast::Attribute::cast(parent).is_some() {
-                if let Some(description) = attribute_description(token.text()) {
-                    return Some(RangeInfo::new(
-                        range,
-                        HoverResult {
-                            markup: Markup::from(description),
-                            actions: Vec::new(),
-                        },
-                    ));
-                }
-            }
-        }
+    if token.kind() == SyntaxKind::Identifier
+        && let Some(parent) = token.parent()
+        && ast::Attribute::cast(parent).is_some()
+        && let Some(description) = attribute_description(token.text())
+    {
+        return Some(RangeInfo::new(
+            range,
+            HoverResult {
+                markup: Markup::from(description),
+                actions: Vec::new(),
+            },
+        ));
     }
 
     // Check if hovering over a builtin type name (e.g., f32, vec3, mat4x4, sampler, texture_2d)
-    if token.kind() == SyntaxKind::Identifier {
-        if let Some(description) = builtin_type_description(token.text()) {
-            return Some(RangeInfo::new(
-                range,
-                HoverResult {
-                    markup: Markup::from(description),
-                    actions: Vec::new(),
-                },
-            ));
-        }
+    if token.kind() == SyntaxKind::Identifier
+        && let Some(description) = builtin_type_description(token.text())
+    {
+        return Some(RangeInfo::new(
+            range,
+            HoverResult {
+                markup: Markup::from(description),
+                actions: Vec::new(),
+            },
+        ));
     }
 
     // Fall back to builtin lookup for functions like abs, dot, clamp, etc.
@@ -270,22 +273,22 @@ fn collect_call_arg_types(
 
 /// Returns a Markdown description for a WGSL attribute name.
 fn attribute_description(name: &str) -> Option<String> {
-    let attr = ide_db::wgsl_attributes::find_attribute(name)?;
+    let attribute = ide_db::wgsl_attributes::find_attribute(name)?;
     Some(format!(
         "{}\n\n---\n\n```wgsl\n{}\n```\n\n[WGSL Spec]({})",
-        attr.description,
-        attr.syntax,
-        attr.spec_url()
+        attribute.description,
+        attribute.syntax,
+        attribute.spec_url()
     ))
 }
 
 /// Returns a Markdown description for a WGSL builtin type name.
 fn builtin_type_description(name: &str) -> Option<String> {
-    let ty = ide_db::wgsl_builtin_types::find_builtin_type(name)?;
+    let builtin_type = ide_db::wgsl_builtin_types::find_builtin_type(name)?;
     Some(format!(
         "{}\n\n---\n\n```wgsl\n{}\n```\n\n[WGSL Spec]({})",
-        ty.description,
-        ty.name,
-        ty.spec_url()
+        builtin_type.description,
+        builtin_type.name,
+        builtin_type.spec_url()
     ))
 }

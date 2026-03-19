@@ -70,6 +70,7 @@ pub(crate) fn lex_block_comment(lexer: &mut logos::Lexer<'_, SyntaxKind>) -> Opt
 
 /// Returns `true` if the given word is a WGSL reserved word.
 /// See <https://www.w3.org/TR/WGSL/#reserved-words>.
+#[expect(clippy::too_many_lines, reason = "long but simple match list")]
 pub(crate) fn is_reserved_word(word: &str) -> bool {
     matches!(
         word,
