@@ -17,15 +17,15 @@ pub(crate) fn format(
     range: Option<TextRange>,
 ) -> Option<FormattedRange> {
     let file_id = EditionedFileId::from_file(database, file_id);
-    let file = file_id.parse(database).tree();
+    let file = file_id.parse(database);
 
     // Refuse to format documents with syntax errors
-    if !parsed.errors().is_empty() {
+    if !file.errors().is_empty() {
         tracing::warn!("Skipped formatting, file has syntax errors");
         return None;
     }
 
-    match wgsl_formatter::format_range(&parsed.syntax(), range, config) {
+    match wgsl_formatter::format_range(&file.syntax(), range, config) {
         Ok(formatted) => Some(formatted),
         Err(error) => {
             // TODO: Properly display this error

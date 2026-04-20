@@ -800,6 +800,11 @@ ast_node! {
 }
 
 ast_node! {
+    EarlyDepthTestAttribute:
+    early_depth_test_mode: Option<SyntaxToken EarlyDepthTestMode>;
+}
+
+ast_node! {
     DiagnosticControl:
     severity_control_name: Option<SeverityControlName>;
     diagnostic_rule_name: Option<DiagnosticRuleName>;

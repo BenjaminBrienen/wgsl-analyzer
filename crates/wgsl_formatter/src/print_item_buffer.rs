@@ -52,6 +52,7 @@ pub struct PrintItemBuffer {
 }
 
 impl PrintItemBuffer {
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -99,6 +100,7 @@ impl PrintItemBuffer {
         });
     }
 
+    #[must_use]
     pub fn finish(mut self) -> PrintItems {
         let mut pi = PrintItems::default();
         self.start_request.resolve(&mut pi);
@@ -136,9 +138,7 @@ impl PrintItemBuffer {
     ) {
         #[cfg(feature = "prefer-immediate-crash")]
         {
-            if string.contains("\n") {
-                panic!("Cannot push string with newlines to PrintItemBuffer {string:?}");
-            }
+            assert!(!string.contains('\n'), "Cannot push string with newlines to PrintItemBuffer {string:?}");
         }
         self.apply_end_request();
         self.items.push_string(string);

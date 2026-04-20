@@ -99,7 +99,7 @@ pub fn assert_out_of_scope(
     reason: &str,
 ) {
     let parse = syntax::parse(before.trim_start(), Edition::LATEST);
-    let syntax = parse.tree();
+    let _syntax = parse.tree();
 
     if parse.errors().is_empty() {
         println!(
@@ -127,8 +127,6 @@ pub fn check_with_options<E: ExpectAssertEq>(
         parse.syntax()
     );
 
-    // dbg!(&parse.errors());
-    dbg!(&syntax);
     let formatted = match format_tree(&syntax, options) {
         Ok(formatted) => formatted,
         Err(format_error) => {

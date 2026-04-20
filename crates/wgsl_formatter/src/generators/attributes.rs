@@ -407,6 +407,7 @@ mod standard_attributes {
     pub fn gen_vertex_attribute(attribute: &ast::VertexAttribute ) -> FormatDocumentResult<PrintItemBuffer>                { gen_attr_standard_with_args(attribute.syntax(), SyntaxKind::Vertex, sc!("vertex")) }
     pub fn gen_fragment_attribute(attribute: &ast::FragmentAttribute ) -> FormatDocumentResult<PrintItemBuffer>            { gen_attr_standard_with_args(attribute.syntax(), SyntaxKind::Fragment, sc!("fragment")) }
     pub fn gen_compute_attribute(attribute: &ast::ComputeAttribute ) -> FormatDocumentResult<PrintItemBuffer>              { gen_attr_standard_with_args(attribute.syntax(), SyntaxKind::Compute, sc!("compute")) }
+    pub fn gen_early_depth_test_attribute(attribute: &ast::EarlyDepthTestAttribute ) -> FormatDocumentResult<PrintItemBuffer>              { gen_attr_standard_with_args(attribute.syntax(), SyntaxKind::Compute, sc!("compute")) }
 }
 
 /// Attributes of the form:

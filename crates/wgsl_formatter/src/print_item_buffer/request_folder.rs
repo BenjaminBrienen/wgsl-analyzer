@@ -47,6 +47,7 @@ pub enum Request {
 
 impl Request {
     // ==== Helper methods to create a request ====
+    #[must_use] 
     pub fn expect(item: RequestItem) -> Self {
         Self::Unconditional {
             expected: BTreeSet::from([item]),
@@ -56,6 +57,7 @@ impl Request {
         }
     }
 
+    #[must_use]
     pub fn discourage(item: RequestItem) -> Self {
         Self::Unconditional {
             expected: BTreeSet::new(),
@@ -65,6 +67,7 @@ impl Request {
         }
     }
 
+    #[must_use]
     pub fn force(item: RequestItem) -> Self {
         Self::Unconditional {
             expected: BTreeSet::new(),
@@ -74,6 +77,7 @@ impl Request {
         }
     }
 
+    #[must_use]
     pub fn or_newline(self) -> Self {
         //TODO Redesign requests once again
         match self {
@@ -93,6 +97,7 @@ impl Request {
     }
 
     // ==== Request Logic ====
+    #[must_use]
     pub fn combine(
         left: Self,
         right: Self,

@@ -8,11 +8,12 @@ use crate::{
         attributes::{
             gen_align_attribute, gen_attribute, gen_binding_attribute, gen_blend_src_attribute,
             gen_builtin_attribute, gen_builtin_value_name, gen_compute_attribute,
-            gen_const_attribute, gen_diagnostic_attribute, gen_fragment_attribute,
-            gen_group_attribute, gen_id_attribute, gen_interpolate_attribute,
-            gen_interpolate_sampling_name, gen_interpolate_type_name, gen_invariant_attribute,
-            gen_location_attribute, gen_must_use_attribute, gen_other_attribute,
-            gen_size_attribute, gen_vertex_attribute, gen_workgroup_size_attribute,
+            gen_const_attribute, gen_diagnostic_attribute, gen_early_depth_test_attribute,
+            gen_fragment_attribute, gen_group_attribute, gen_id_attribute,
+            gen_interpolate_attribute, gen_interpolate_sampling_name, gen_interpolate_type_name,
+            gen_invariant_attribute, gen_location_attribute, gen_must_use_attribute,
+            gen_other_attribute, gen_size_attribute, gen_vertex_attribute,
+            gen_workgroup_size_attribute,
         },
         diagnostic_directive::{
             gen_diagnostic_control, gen_diagnostic_rule_name, gen_severity_control_name,
@@ -225,6 +226,7 @@ pub fn gen_node(node: &SyntaxNode) -> FormatDocumentResult<PrintItemBuffer> {
              SyntaxKind::LocationAttribute(node) => gen_location_attribute(&node),
              SyntaxKind::MustUseAttribute(node) => gen_must_use_attribute(&node),
              SyntaxKind::SizeAttribute(node) => gen_size_attribute(&node),
+             SyntaxKind::EarlyDepthTestAttribute(node) => gen_early_depth_test_attribute(&node),
              SyntaxKind::WorkgroupSizeAttribute(node) => gen_workgroup_size_attribute(&node),
              SyntaxKind::VertexAttribute(node) => gen_vertex_attribute(&node),
              SyntaxKind::FragmentAttribute(node) => gen_fragment_attribute(&node),
@@ -266,6 +268,7 @@ pub fn gen_node(node: &SyntaxNode) -> FormatDocumentResult<PrintItemBuffer> {
              SyntaxKind::Builtin |
              SyntaxKind::Binding |
              SyntaxKind::BlendSrc |
+             SyntaxKind::EarlyDepthTest |
              SyntaxKind::Group |
              SyntaxKind::Id |
              SyntaxKind::Interpolate |
@@ -315,6 +318,11 @@ pub fn gen_node(node: &SyntaxNode) -> FormatDocumentResult<PrintItemBuffer> {
              SyntaxKind::ColonColon |
              SyntaxKind::Comma |
              SyntaxKind::Equal |
+             SyntaxKind::Force |
+             SyntaxKind::Unchanged |
+             SyntaxKind::EarlyDepthTestMode |
+             SyntaxKind::LessEqual |
+             SyntaxKind::GreaterEqual |
              SyntaxKind::EqualEqual |
              SyntaxKind::NotEqual |
              SyntaxKind::GreaterThan |
