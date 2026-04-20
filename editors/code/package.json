@@ -32,10 +32,10 @@
 		}
 	},
 	"engines": {
-		"vscode": "^1.110.0",
-		"pnpm": "^10.32.0"
+		"vscode": "^1.115.0",
+		"pnpm": "^10.33.0"
 	},
-	"packageManager": "pnpm@10.32.0",
+	"packageManager": "pnpm@10.33.0",
 	"enabledApiProposals": [],
 	"extensionKind": [
 		"workspace"
@@ -66,12 +66,12 @@
 		"vscode-languageclient": "^9.0.1"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^2.4.10",
+		"@biomejs/biome": "^2.4.11",
 		"@tsconfig/node-ts": "^23.6.4",
 		"@tsconfig/node22": "^22.0.5",
 		"@tsconfig/strictest": "^2.0.8",
-		"@types/node": "^25.5.2",
-		"@types/vscode": "^1.110.0",
+		"@types/node": "^25.6.0",
+		"@types/vscode": "^1.115.0",
 		"@vscode/test-electron": "^2.5.2",
 		"@vscode/vsce": "^3.7.1",
 		"esbuild": "^0.28.0",
@@ -88,11 +88,6 @@
 	],
 	"contributes": {
 		"commands": [
-			{
-				"command": "wgsl-analyzer.debugCommand",
-				"title": "Debug command",
-				"category": "wgsl-analyzer"
-			},
 			{
 				"command": "wgsl-analyzer.fullSource",
 				"title": "Show full source",
@@ -112,6 +107,16 @@
 				"command": "wgsl-analyzer.memoryUsage",
 				"title": "Memory Usage (Clears Database)",
 				"category": "wgsl-analyzer (debug command)"
+			},
+			{
+				"command": "wgsl-analyzer.viewPackageGraph",
+				"title": "View Package Graph",
+				"category": "wgsl-analyzer"
+			},
+			{
+				"command": "wgsl-analyzer.viewFullPackageGraph",
+				"title": "View Package Graph (Full)",
+				"category": "wgsl-analyzer"
 			},
 			{
 				"command": "wgsl-analyzer.matchingBrace",
@@ -160,7 +165,7 @@
 			},
 			{
 				"command": "wgsl-analyzer.serverVersion",
-				"title": "Show RA Version",
+				"title": "Show wgsl-analyzer Version",
 				"category": "wgsl-analyzer"
 			},
 			{

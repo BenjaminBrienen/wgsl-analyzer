@@ -34,7 +34,7 @@ use crate::{
 };
 
 type RequestHandler = fn(&mut GlobalState, lsp_server::Response);
-type RequestQueue = lsp_server::ReqQueue<(String, Instant), RequestHandler>;
+type RequestQueue = lsp_server::ReqQueue<(String, Instant), RequestHandler>; // spellchecker:disable-line
 
 // Enforces drop order
 pub(crate) struct HandleReceiver<H, C> {
@@ -369,7 +369,6 @@ impl GlobalState {
                     edition: package.edition,
                     display_name: package.display_name.clone(),
                     dependencies,
-                    cyclic_dependencies: Vec::new(),
                     origin: package.origin,
                 })
             });

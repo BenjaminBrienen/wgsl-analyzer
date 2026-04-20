@@ -21,6 +21,7 @@ env:
   RUSTFLAGS: -D warnings
   # If nightly is breaking CI, modify this variable to target a specific nightly version.
   NIGHTLY_TOOLCHAIN: nightly
+  PNPM_VERSION: "10.33.0"
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}
@@ -66,7 +67,6 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
       - name: Restore cache
@@ -104,7 +104,7 @@ jobs:
       #       ./crates/proc-macro-srv/proc-macro-test/imp -> target
 
       - name: Install nextest
-        uses: taiki-e/install-action@97a5807a604e12de3a13b52d868ebecaeeea757c # v2.75.4
+        uses: taiki-e/install-action@a2352fc6ce487f030a3aa709482d57823eadfb37 # v2.75.16
         with:
           tool: nextest
 
@@ -178,7 +178,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
       - name: Install Rust toolchain
@@ -260,7 +259,6 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
       - name: Install beta Rust toolchain
@@ -298,7 +296,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
       - name: Install cargo-binstall
@@ -327,15 +324,23 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@08c4be7e2e672a47d11bd04269e27e5f3e8529cb # v6.0.0
+        with:
+          package_json_file: ./editors/code/package.json
+          cache_dependency_path: ./editors/code/pnpm-lock.yaml
+          version: ${{ env.PNPM_VERSION }}
+          cache: true
+
       - name: Install Node.js
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 24
+          cache: pnpm
+          cache-dependency-path: ./editors/code/pnpm-lock.yaml
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
-        with:
-          package_json_file: ./editors/code/package.json
+      - name: Upgrade pnpm
+        run: npm install --global pnpm@${{ env.PNPM_VERSION }}
 
       - name: Install xvfb
         if: matrix.os == 'ubuntu-latest'
@@ -377,7 +382,8 @@ jobs:
         working-directory: ./editors/code
 
   conclusion:
-    needs: [
+    needs:
+      [
         rust,
         # rust-cross,
         markdown,

@@ -1,5 +1,5 @@
 import anser from "anser";
-import { sep as pathSeparator } from "path";
+import { sep as pathSeparator } from "path"; // spellchecker:disable-line
 import * as vscode from "vscode";
 import { WorkspaceEdit } from "vscode";
 import * as Is from "vscode-languageclient/lib/common/utils/is";
@@ -345,9 +345,9 @@ class OverrideFeatures implements lc.StaticFeature {
 	fillClientCapabilities(capabilities: lc.ClientCapabilities): void {
 		// Force disable `augmentsSyntaxTokens`, VS Code's textmate grammar is somewhat incomplete
 		// making the experience generally worse
-		const caps = capabilities.textDocument?.semanticTokens;
-		if (caps) {
-			caps.augmentsSyntaxTokens = false;
+		const semantic_tokens_client_capabilities = capabilities.textDocument?.semanticTokens;
+		if (semantic_tokens_client_capabilities) {
+			semantic_tokens_client_capabilities.augmentsSyntaxTokens = false;
 		}
 	}
 

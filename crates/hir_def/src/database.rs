@@ -8,11 +8,9 @@
 )]
 use std::fmt::{self, Debug};
 
-use base_db::{
-    EditionedFileId, Lookup as _, RootQueryDb, SourceDatabase, impl_intern_key, impl_intern_lookup,
-};
+use base_db::{EditionedFileId, Lookup as _, SourceDatabase, impl_intern_key, impl_intern_lookup};
 use salsa::plumbing::AsId as _;
-use syntax::{Parse, ast};
+use syntax::{ExtensionsConfig, Parse, ast};
 use triomphe::Arc;
 use vfs::VfsPath;
 
@@ -32,11 +30,6 @@ use crate::{
         StructSignature, TypeAliasSignature, VariableSignature,
     },
 };
-
-#[derive(Clone, Copy, Debug, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct ExtensionsConfig {
-    pub shader_int64: bool,
-}
 
 #[query_group::query_group(DefDatabaseStorage)]
 pub trait DefDatabase: InternDatabase + SourceDatabase {
@@ -168,7 +161,7 @@ fn parse_or_resolve(
     database: &dyn DefDatabase,
     file_id: EditionedFileId,
 ) -> Parse {
-    database.parse(file_id)
+    file_id.parse(database)
 }
 
 fn ast_id_map(
@@ -181,7 +174,7 @@ fn ast_id_map(
 }
 
 #[query_group::query_group(InternDatabaseStorage)]
-pub trait InternDatabase: RootQueryDb {
+pub trait InternDatabase: SourceDatabase {
     #[salsa::interned]
     fn intern_import(
         &self,

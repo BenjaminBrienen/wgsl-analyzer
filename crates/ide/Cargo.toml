@@ -11,6 +11,7 @@ license.workspace = true
 
 # tombi: format.rules.table-keys-order.disabled = true
 [dependencies]
+dot.workspace = true
 itertools.workspace = true
 line-index.workspace = true
 naga27 = { package = "naga", version = "27.0.3", features = ["wgsl-in"] }
@@ -24,7 +25,7 @@ salsa.workspace = true
 smallvec.workspace = true
 smol_str.workspace = true
 triomphe.workspace = true
-# local deps
+# local dependencies
 ide-completion.workspace = true
 ide-db.workspace = true
 syntax.workspace = true

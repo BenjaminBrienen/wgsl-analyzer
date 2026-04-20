@@ -1,7 +1,8 @@
+//! Core data structure representing IDE state.
+
 #[cfg(test)]
 mod fixture;
 
-mod debug_command;
 pub mod diagnostics;
 mod folding_ranges;
 mod formatting;
@@ -13,23 +14,24 @@ mod markup;
 mod navigation_target;
 pub mod signature_help;
 mod typing;
+mod view_package_graph;
 mod view_syntax_tree;
 
 use std::panic;
 
 use base_db::{
-    EditionedFileId, FilePosition, FileRange, FileSet, RangeInfo, RootQueryDb as _,
-    SourceDatabase as _, SourceRoot, TextRange, change::Change, input::SourceRootId,
+    EditionedFileId, FilePosition, FileRange, FileSet, RangeInfo, SourceDatabase as _, SourceRoot,
+    TextRange, change::Change, input::SourceRootId,
 };
 use diagnostics::Diagnostic;
-use hir::{ExtensionsConfig, diagnostics::DiagnosticsConfig};
+use hir::diagnostics::DiagnosticsConfig;
 use hir_def::database::DefDatabase as _;
 use ide_completion::{CompletionConfig, item::CompletionItem};
 use ide_db::LineIndexDatabase as _;
 pub use line_index::{LineCol, LineIndex};
 use rustc_hash::FxHashMap;
 use salsa::{Cancelled, Database as _, Durability};
-use syntax::{Edition, Parse, SyntaxNode};
+use syntax::{Edition, ExtensionsConfig, Parse, SyntaxNode};
 use triomphe::Arc;
 use vfs::{AbsPathBuf, FileId, VfsPath};
 use wgsl_formatter::FormattingOptions;
@@ -298,7 +300,15 @@ impl Analysis {
         &self,
         file_id: FileId,
     ) -> Cancellable<Parse> {
-        self.with_db(|database| database.parse(EditionedFileId::from_file(database, file_id)))
+        self.with_db(|database| EditionedFileId::from_file(database, file_id).parse(database))
+    }
+
+    /// Renders the package graph to `GraphViz` "dot" syntax.
+    pub fn view_package_graph(
+        &self,
+        full: bool,
+    ) -> Cancellable<String> {
+        self.with_db(|database| view_package_graph::view_package_graph(database, full))
     }
 
     pub fn line_index(
@@ -332,8 +342,8 @@ impl Analysis {
     ) -> Cancellable<Vec<Fold>> {
         self.with_db(|database| {
             folding_ranges::folding_ranges(
-                &database
-                    .parse(EditionedFileId::from_file(database, file_id))
+                &EditionedFileId::from_file(database, file_id)
+                    .parse(database)
                     .tree(),
             )
         })
@@ -389,16 +399,5 @@ impl Analysis {
         position: FilePosition,
     ) -> Cancellable<Option<SignatureHelp>> {
         self.with_db(|database| signature_help::signature_help(database, position))
-    }
-
-    /// # Panics
-    ///
-    /// Panics if the command was cancelled.
-    pub fn debug_command(
-        &self,
-        file_position: FilePosition,
-    ) -> Cancellable<()> {
-        self.with_db(|database| debug_command::debug_command(database, file_position))?;
-        Ok(())
     }
 }

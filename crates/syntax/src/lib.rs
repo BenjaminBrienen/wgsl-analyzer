@@ -1,3 +1,5 @@
+//! Concrete syntax tree definitions.
+
 pub mod algorithms;
 pub mod ast;
 pub mod pointer;
@@ -6,7 +8,7 @@ use std::{marker::PhantomData, ops::Deref};
 
 use either::Either;
 pub use parser::{
-    Diagnostic, Edition, ParseEntryPoint, SyntaxElement, SyntaxKind, SyntaxNode,
+    Diagnostic, Edition, ExtensionsConfig, ParseEntryPoint, SyntaxElement, SyntaxKind, SyntaxNode,
     SyntaxNodeChildren, SyntaxToken,
 };
 pub use rowan::Direction;
@@ -49,6 +51,13 @@ impl Parse {
     #[must_use]
     pub fn tree(&self) -> ast::SourceFile {
         ast::SourceFile::cast(self.syntax()).unwrap()
+    }
+
+    pub fn ok(self) -> Result<ast::SourceFile, Vec<Diagnostic>> {
+        match self.errors() {
+            errors if !errors.is_empty() => Err(errors.to_vec()),
+            _ => Ok(self.tree()),
+        }
     }
 }
 

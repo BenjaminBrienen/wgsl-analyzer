@@ -9,7 +9,7 @@ exclude = []
 
 [workspace.package]
 edition = "2024"
-rust-version = "1.93"
+rust-version = "1.95"
 repository = "https://github.com/wgsl-analyzer/wgsl-analyzer"
 license = "MIT OR Apache-2.0"
 
@@ -49,7 +49,9 @@ lsp-server = "0.7.9"
 anyhow = "1.0.102"
 camino = "1.2.2"
 # cargo_metadata = "0.23.1"
+# wesl_metadata = "0.0.1"
 clap = { version = "4", default-features = false, features = ["help", "std"] }
+dot = "0.1.4"
 glob = "0.3"
 crossbeam-channel = "0.5.15"
 dissimilar = "1.0.11"
@@ -64,7 +66,7 @@ rustc-hash = "2.1.2"
 salsa = { version = "0.25.2", default-features = true, features = [
 	"macros",
 	"rayon",
-	"salsa_unstable"
+	"salsa_unstable",
 ] }
 salsa-macros = "0.25.2"
 semver = "1.0.27"
@@ -87,9 +89,7 @@ tracing-subscriber = { version = "0.3.23", default-features = false, features = 
 	"tracing-log",
 ] }
 triomphe = { version = "0.1.15", default-features = false, features = ["std"] }
-wgsl-types = { version = "0.3.2", features = [
-	"naga-ext",
-] }
+wgsl-types = { version = "0.3.2", features = ["naga-ext"] }
 indexmap = { version = "2.13.0" }
 
 # tombi: format.rules.table-keys-order.disabled = true
@@ -205,6 +205,19 @@ rust-2018-idioms = { level = "deny", priority = -1 }
 rust-2021-compatibility = { level = "deny", priority = -1 }
 rust-2024-compatibility = { level = "deny", priority = -1 }
 unused = { level = "allow", priority = 1 }
+
+[workspace.lints.rustdoc]
+bare_urls = "warn"
+broken_intra_doc_links = "warn"
+invalid_codeblock_attributes = "warn"
+invalid_html_tags = "warn"
+invalid_rust_codeblocks = "warn"
+missing_crate_level_docs = "warn"
+# missing_doc_code_examples = "warn"
+private_doc_tests = "warn"
+private_intra_doc_links = "allow"
+redundant_explicit_links = "warn"
+unescaped_backticks = "warn"
 
 [profile.dev]
 debug = 1

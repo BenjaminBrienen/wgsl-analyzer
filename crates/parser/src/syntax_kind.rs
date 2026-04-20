@@ -18,7 +18,7 @@ pub enum SyntaxKind {
     #[doc(hidden)]
     TOMBSTONE,
     SourceFile,
-    /// A name that can be referenced by a [`NameRef`]
+    /// <https://www.w3.org/TR/WGSL/#name>
     Name,
     /// a function
     FunctionDeclaration,
@@ -222,6 +222,13 @@ pub enum SyntaxKind {
     SeverityControlName,
     DiagnosticAttribute,
     OtherAttribute,
+    EarlyDepthTest,
+    LessEqual,
+    GreaterEqual,
+    Force,
+    Unchanged,
+    EarlyDepthTestAttribute,
+    EarlyDepthTestMode,
     AlignAttribute,
     BindingAttribute,
     BlendSrcAttribute,

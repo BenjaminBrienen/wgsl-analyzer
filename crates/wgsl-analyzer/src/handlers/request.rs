@@ -19,11 +19,20 @@ use crate::{
     global_state::GlobalStateSnapshot,
     lsp::{
         self,
-        extensions::{self, PositionOrRange},
+        extensions::{self, PositionOrRange, ViewPackageGraphParameters},
         from_proto, to_proto,
     },
     try_default,
 };
+
+pub(crate) fn handle_view_package_graph(
+    snap: GlobalStateSnapshot,
+    parameters: ViewPackageGraphParameters,
+) -> anyhow::Result<String> {
+    let _p = tracing::info_span!("handle_view_package_graph").entered();
+    let dot = snap.analysis.view_package_graph(parameters.full)?;
+    Ok(dot)
+}
 
 pub(crate) fn handle_goto_definition(
     snap: GlobalStateSnapshot,
@@ -281,17 +290,6 @@ pub(crate) fn view_syntax_tree(
     let file_id = try_default!(from_proto::file_id(&snap, &parameters.text_document.uri)?);
     let string = snap.analysis.view_syntax_tree(file_id)?;
     Ok(string)
-}
-
-pub(crate) fn debug_command(
-    snap: GlobalStateSnapshot,
-    parameters: extensions::DebugCommandParameters,
-) -> Result<()> {
-    let Some(position) = from_proto::file_position(&snap, &parameters.position)? else {
-        return Ok(());
-    };
-    snap.analysis.debug_command(position)?;
-    Ok(())
 }
 
 // This is the “empty” fallback if the VFS lookup fails.

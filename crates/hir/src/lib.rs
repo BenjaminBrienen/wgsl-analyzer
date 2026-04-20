@@ -1,3 +1,5 @@
+//! A high-level object-oriented access to code.
+
 pub mod database;
 pub mod definition;
 pub mod diagnostics;
@@ -6,7 +8,6 @@ use base_db::{EditionedFileId, FileId, Lookup as _};
 use definition::Definition;
 use diagnostics::{AnyDiagnostic, DiagnosticsConfig};
 use either::Either;
-pub use hir_def::database::ExtensionsConfig;
 use hir_def::{
     HasSource as _, InFile,
     body::{BindingId, Body, BodySourceMap},
@@ -50,7 +51,7 @@ impl<'database> Semantics<'database> {
         &self,
         file_id: EditionedFileId,
     ) -> ast::SourceFile {
-        self.database.parse(file_id).tree()
+        file_id.parse(self.database).tree()
     }
 
     #[must_use]

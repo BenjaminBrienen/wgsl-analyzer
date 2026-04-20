@@ -19,6 +19,7 @@ env:
   RUST_BACKTRACE: short
   RUSTUP_MAX_RETRIES: 10
   RUSTFLAGS: -D warnings
+  PNPM_VERSION: "10.33.0"
 
 jobs:
   engines-vscode:
@@ -34,15 +35,23 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: false
 
-      - name: Set up Node.js
+      - name: Install pnpm
+        uses: pnpm/action-setup@08c4be7e2e672a47d11bd04269e27e5f3e8529cb # v6.0.0
+        with:
+          package_json_file: ./editors/code/package.json
+          cache_dependency_path: ./editors/code/pnpm-lock.yaml
+          version: ${{ env.PNPM_VERSION }}
+          cache: true
+
+      - name: Install Node.js
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 24
+          cache: pnpm
+          cache-dependency-path: ./editors/code/pnpm-lock.yaml
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
-        with:
-          package_json_file: ./editors/code/package.json
+      - name: Upgrade pnpm
+        run: npm install --global pnpm@${{ env.PNPM_VERSION }}
 
       - name: Read current @types/vscode version
         id: types-version
@@ -71,6 +80,6 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add .
           git commit -m "chore: align engines.vscode with types/vscode@${STEPS_TYPES_VERSION_OUTPUTS_VERSION}"
-          git push origin HEAD:${GITHUB_HEAD_REF}
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:${GITHUB_HEAD_REF}
         env:
           STEPS_TYPES_VERSION_OUTPUTS_VERSION: ${{ steps.types-version.outputs.version }}

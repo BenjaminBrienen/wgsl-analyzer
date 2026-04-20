@@ -1,3 +1,5 @@
+//! Parser for WGSL code, supporting language extensions such as naga and WESL.
+
 mod cst_builder;
 mod lexer;
 mod parser;
@@ -5,25 +7,14 @@ mod syntax_kind;
 
 use std::fmt::{self, Debug, Write as _};
 
-pub use edition::Edition;
+pub use edition::{Edition, ExtensionsConfig};
 pub use parser::{Diagnostic, parse_entrypoint};
 use rowan::GreenNode;
 
+#[derive(Debug)]
 pub struct Parse {
     green_node: GreenNode,
     errors: Vec<Diagnostic>,
-}
-impl fmt::Debug for Parse {
-    fn fmt(
-        &self,
-        formatter: &mut fmt::Formatter<'_>,
-    ) -> fmt::Result {
-        formatter
-            .debug_struct("Parse")
-            .field("green_node", &self.green_node)
-            .field("errors", &self.errors)
-            .finish()
-    }
 }
 
 impl PartialEq for Parse {
@@ -104,12 +95,6 @@ pub enum ParseEntryPoint {
     Statement,
     Type,
     Attribute,
-}
-
-// TODO: Remove this function, it is only used by wgsl_formatter
-#[must_use]
-pub fn parse_file(input: &str) -> Parse {
-    parse_entrypoint(input, ParseEntryPoint::File, Edition::Wgsl)
 }
 
 #[cfg(test)]

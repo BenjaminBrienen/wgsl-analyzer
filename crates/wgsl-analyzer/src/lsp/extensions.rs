@@ -21,22 +21,6 @@ use lsp_types::{
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
 
-pub enum DebugCommand {}
-
-impl Request for DebugCommand {
-    type Params = DebugCommandParameters;
-    type Result = ();
-
-    const METHOD: &'static str = "wgsl-analyzer/debugCommand";
-}
-
-#[derive(Deserialize, Serialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct DebugCommandParameters {
-    #[serde(flatten)]
-    pub position: TextDocumentPositionParams,
-}
-
 pub enum FullSource {}
 
 impl Request for FullSource {
@@ -52,122 +36,6 @@ pub struct FullSourceParameters {
     pub text_document: TextDocumentIdentifier,
 }
 
-pub enum RequestConfiguration {}
-
-impl Request for RequestConfiguration {
-    type Params = ();
-    type Result = serde_json::Value;
-
-    const METHOD: &'static str = "wgsl-analyzer/requestConfiguration";
-}
-
-pub enum InlayHints {}
-
-impl Request for InlayHints {
-    type Params = inlay_hints::InlayHintsParameters;
-    type Result = Vec<inlay_hints::InlayHint>;
-
-    const METHOD: &'static str = "experimental/inlayHints";
-}
-
-pub mod inlay_hints {
-    use lsp_types::{Position, TextDocumentIdentifier};
-    use serde::{Deserialize, Serialize};
-
-    #[derive(Serialize, Deserialize, Debug)]
-    #[serde(rename_all = "camelCase")]
-    pub struct InlayHintsParameters {
-        pub text_document: TextDocumentIdentifier,
-        pub range: Option<lsp_types::Range>,
-    }
-
-    #[derive(Eq, PartialEq, Debug, Copy, Clone, Serialize, Deserialize)]
-    #[serde(transparent)]
-    pub struct InlayHintKind(u8);
-
-    impl InlayHintKind {
-        pub const PARAMETER: Self = Self(2);
-        pub const TYPE: Self = Self(1);
-    }
-
-    #[derive(Debug, Deserialize, Serialize)]
-    #[serde(rename_all = "camelCase")]
-    pub struct InlayHint {
-        pub label: InlayHintLabel,
-        pub position: Position,
-        pub kind: Option<InlayHintKind>,
-        pub tooltip: Option<String>,
-        pub padding_left: Option<bool>,
-        pub padding_right: Option<bool>,
-    }
-
-    #[derive(Debug, Deserialize, Serialize)]
-    #[serde(untagged)]
-    pub enum InlayHintLabel {
-        String(String),
-        Parts(Vec<InlayHintLabelPart>),
-    }
-
-    #[derive(Debug, Deserialize, Serialize)]
-    #[serde(rename_all = "camelCase")]
-    pub struct InlayHintLabelPart {
-        pub value: String,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        pub tooltip: Option<String>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        pub location: Option<lsp_types::LocationLink>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        pub command: Option<lsp_types::Command>,
-    }
-}
-
-pub enum ImportTextDocument {}
-
-impl Request for ImportTextDocument {
-    type Params = import_text_document::ImportTextDocumentParameters;
-    type Result = ();
-
-    const METHOD: &'static str = "wgsl-analyzer/importTextDocument";
-}
-
-pub mod import_text_document {
-    use serde::{Deserialize, Serialize};
-
-    #[derive(Serialize, Deserialize, Debug)]
-    #[serde(rename_all = "camelCase")]
-    pub struct ImportTextDocumentParameters {
-        pub uri: String,
-    }
-}
-
-pub enum InternalTestingFetchConfig {}
-
-#[derive(Deserialize, Serialize, Debug)]
-pub enum InternalTestingFetchConfigOption {
-    AssistEmitMustUse,
-    CheckWorkspace,
-}
-
-#[derive(Deserialize, Serialize, Debug, PartialEq, Eq)]
-pub enum InternalTestingFetchConfigResponse {
-    AssistEmitMustUse(bool),
-    CheckWorkspace(bool),
-}
-
-impl Request for InternalTestingFetchConfig {
-    type Params = InternalTestingFetchConfigParameters;
-    // Option is solely to circumvent Default bound.
-    type Result = Option<InternalTestingFetchConfigResponse>;
-
-    const METHOD: &'static str = "wgsl-analyzer-internal/internalTestingFetchConfig";
-}
-
-#[derive(Deserialize, Serialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct InternalTestingFetchConfigParameters {
-    pub text_document: Option<TextDocumentIdentifier>,
-    pub config: InternalTestingFetchConfigOption,
-}
 pub enum AnalyzerStatus {}
 
 impl Request for AnalyzerStatus {
@@ -185,7 +53,7 @@ pub struct AnalyzerStatusParameters {
 
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct CrateInfoResult {
+pub struct PackageInfoResult {
     pub name: Option<String>,
     pub version: Option<String>,
     pub path: Url,
@@ -206,7 +74,7 @@ pub struct FetchDependencyListParameters;
 #[derive(Deserialize, Serialize, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct FetchDependencyListResult {
-    pub crates: Vec<CrateInfoResult>,
+    pub packages: Vec<PackageInfoResult>,
 }
 
 pub enum MemoryUsage {}
@@ -242,24 +110,22 @@ pub struct ViewSyntaxTreeParameters {
     pub text_document: TextDocumentIdentifier,
 }
 
-// change this to ViewWgsl (used when writing WESL)
-pub enum ViewHir {}
+pub enum ViewWgsl {}
 
-impl Request for ViewHir {
+impl Request for ViewWgsl {
     type Params = lsp_types::TextDocumentPositionParams;
     type Result = String;
 
-    const METHOD: &'static str = "wgsl-analyzer/viewHir";
+    const METHOD: &'static str = "wgsl-analyzer/viewWgsl";
 }
 
-// change this to ViewSpirV
-pub enum ViewMir {}
+pub enum ViewSpirv {}
 
-impl Request for ViewMir {
+impl Request for ViewSpirv {
     type Params = lsp_types::TextDocumentPositionParams;
     type Result = String;
 
-    const METHOD: &'static str = "wgsl-analyzer/viewMir";
+    const METHOD: &'static str = "wgsl-analyzer/viewSpirv";
 }
 
 pub enum InterpretFunction {}
@@ -282,18 +148,17 @@ impl Request for ViewFileText {
 
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct ViewCrateGraphParameters {
-    /// Include *all* crates, not just crates in the workspace.
+pub struct ViewPackageGraphParameters {
+    /// Include *all* packages, not just packages in the workspace.
     pub full: bool,
 }
 
-pub enum ViewCrateGraph {}
+pub enum ViewPackageGraph {}
 
-impl Request for ViewCrateGraph {
-    type Params = ViewCrateGraphParameters;
+impl Request for ViewPackageGraph {
+    type Params = ViewPackageGraphParameters;
     type Result = String;
-
-    const METHOD: &'static str = "wgsl-analyzer/viewCrateGraph";
+    const METHOD: &'static str = "wgsl-analyzer/viewPackageGraph";
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -426,29 +291,6 @@ impl Notification for ChangeTestState {
     type Params = ChangeTestStateParameters;
 
     const METHOD: &'static str = "experimental/changeTestState";
-}
-
-pub enum ExpandMacro {}
-
-impl Request for ExpandMacro {
-    type Params = ExpandMacroParameters;
-    type Result = Option<ExpandedMacro>;
-
-    const METHOD: &'static str = "wgsl-analyzer/expandMacro";
-}
-
-#[derive(Deserialize, Serialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct ExpandMacroParameters {
-    pub text_document: TextDocumentIdentifier,
-    pub position: Position,
-}
-
-#[derive(Deserialize, Serialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct ExpandedMacro {
-    pub name: String,
-    pub expansion: String,
 }
 
 pub enum ViewRecursiveMemoryLayout {}
@@ -974,7 +816,7 @@ pub enum WorkspaceSymbolSearchKind {
 /// the server to format parts of the document during typing.
 ///
 /// This is almost same as [`lsp_types::request::OnTypeFormatting`], but the
-/// result has [`SnippetTextEdit`] in it instead of [`TextEdit`].
+/// result has [`SnippetTextEdit`] in it instead of [`lsp_types::TextEdit`].
 #[derive(Debug)]
 pub enum OnTypeFormatting {}
 
