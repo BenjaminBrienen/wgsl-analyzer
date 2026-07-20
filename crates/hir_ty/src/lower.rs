@@ -250,7 +250,7 @@ impl<'database> TypeLoweringContext<'database> {
             Ok(lowered) => lowered,
             Err(error) => {
                 self.diagnostics.push(error);
-                Lowered::Type(self.database.intern_type(TypeKind::Error))
+                Lowered::Type(TypeKind::Error.intern(self.database))
             },
         }
     }
@@ -360,7 +360,7 @@ impl<'database> TypeLoweringContext<'database> {
                     container: TypeContainer::TypeSpecifier(type_specifier_id),
                     kind: TypeLoweringErrorKind::MissingTemplate,
                 });
-                self.database.intern_type(TypeKind::Error)
+                TypeKind::Error.intern(self.database)
             },
             Ok(
                 Lowered::Enumerant(_)
@@ -375,11 +375,11 @@ impl<'database> TypeLoweringContext<'database> {
                     container: TypeContainer::TypeSpecifier(type_specifier_id),
                     kind: TypeLoweringErrorKind::ExpectedType(type_specifier.path.clone()),
                 });
-                self.database.intern_type(TypeKind::Error)
+                TypeKind::Error.intern(self.database)
             },
             Err(error) => {
                 self.diagnostics.push(error);
-                self.database.intern_type(TypeKind::Error)
+                TypeKind::Error.intern(self.database)
             },
         }
     }

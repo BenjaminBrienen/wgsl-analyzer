@@ -191,7 +191,7 @@ fn cannot_import_imported_item() {
             ---
             6..7 'b': [error]
             10..25 'package::foo::A': [error]
-            InvalidType { error: TypeLoweringError { container: Expression(Idx::<Expression>(0)), kind: UnresolvedPath { path: Path(ModPath("package::foo::A")), failed_segment: 2 } } } in Body
+            10..25 'package::foo::A': `A` not found in `foo`
             ExpectedLoweredKind { expression: Idx::<Expression>(0), expected: Variable, actual: Type, path: Path(ModPath("package::foo::A")) } in Body
             ---
             ---
@@ -280,7 +280,7 @@ fn import_statement_self_shadowing_error() {
             ---
             61..64 'foo': [error]
             67..70 'bar': [error]
-            InvalidType { error: TypeLoweringError { container: Expression(Idx::<Expression>(0)), kind: UnresolvedPath { path: Path(ModPath("bar")), failed_segment: 0 } } } in Body
+            67..70 'bar': `bar` not found in scope
             ExpectedLoweredKind { expression: Idx::<Expression>(0), expected: Variable, actual: Type, path: Path(ModPath("bar")) } in Body
             ---
             6..9 'bar': integer
@@ -416,7 +416,7 @@ fn import_escapes_root() {
             13..44 'super:...= true': [error]
             34..35 '3': integer
             40..44 'true': bool
-            InvalidType { error: TypeLoweringError { container: Expression(Idx::<Expression>(1)), kind: UnresolvedPath { path: Path(ModPath("super::super::MyType")), failed_segment: 0 } } } in Body
+            13..36 'super:...ype(3)': `super` not found in scope
         "#]],
     );
 }
@@ -433,7 +433,7 @@ fn import_nonexistent_module() {
         const a = Bar(2);
         ",
         expect![[r#"
-            InvalidType { error: TypeLoweringError { container: TypeSpecifier(Idx::<TypeSpecifier>(0)), kind: UnresolvedPath { path: Path(ModPath("not_a_module::foo")), failed_segment: 0 } } } in Signature
+            20..37 'not_a_...e::foo': `not_a_module` not found in scope
             47..48 'a': [error]
             51..57 'Bar(2)': [error]
             55..56 '2': integer
@@ -458,7 +458,7 @@ fn invalid_import_starting_with_item() {
             12..13 '5': integer
             81..86 'fails': [error]
             89..97 'bar::nya': [error]
-            InvalidType { error: TypeLoweringError { container: Expression(Idx::<Expression>(0)), kind: UnresolvedPath { path: Path(ModPath("bar::nya")), failed_segment: 0 } } } in Body
+            89..97 'bar::nya': `bar` not found in scope
             ExpectedLoweredKind { expression: Idx::<Expression>(0), expected: Variable, actual: Type, path: Path(ModPath("bar::nya")) } in Body
         "#]],
     );
