@@ -73,6 +73,10 @@ xflags::xflags! {
             required changelog: String
         }
 
+        cmd metrics {
+            optional measurement_type: MeasurementType
+        }
+
         /// Builds a benchmark version of wgsl-analyzer and puts it into `./target`.
         cmd bb {
             required suffix: String
@@ -108,6 +112,7 @@ pub enum XtaskCmd {
     Release(Release),
     Dist(Dist),
     PublishReleaseNotes(PublishReleaseNotes),
+    Metrics(Metrics),
     Bb(Bb),
     Codegen(Codegen),
     Tidy(Tidy),
@@ -151,6 +156,11 @@ pub struct PublishReleaseNotes {
     pub changelog: String,
 
     pub dry_run: bool,
+}
+
+#[derive(Debug)]
+pub struct Metrics {
+    pub measurement_type: Option<MeasurementType>,
 }
 
 #[derive(Debug)]
@@ -227,8 +237,8 @@ impl FromStr for CodegenType {
 
 #[derive(Debug)]
 pub enum MeasurementType {
-    WeslRsTests,
-    AnalyzeBevy,
+    Build,
+    AnalyzeBevy20,
 }
 
 impl FromStr for MeasurementType {
@@ -236,8 +246,8 @@ impl FromStr for MeasurementType {
 
     fn from_str(string: &str) -> Result<Self, Self::Err> {
         match string {
-            "wesl-rs_tests" => Ok(Self::WeslRsTests),
-            "bevy-16.0.0" => Ok(Self::AnalyzeBevy),
+            "build" => Ok(Self::Build),
+            "bevy-20.0.0" => Ok(Self::AnalyzeBevy20),
             _ => Err("Invalid option".to_owned()),
         }
     }
@@ -246,8 +256,8 @@ impl FromStr for MeasurementType {
 impl AsRef<str> for MeasurementType {
     fn as_ref(&self) -> &str {
         match self {
-            Self::WeslRsTests => "wesl-rs_tests",
-            Self::AnalyzeBevy => "bevy-16.0.0",
+            Self::Build => "build",
+            Self::AnalyzeBevy20 => "bevy-20.0.0",
         }
     }
 }

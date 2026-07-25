@@ -17,6 +17,7 @@ mod flags;
 mod changelog;
 mod codegen;
 mod dist;
+mod metrics;
 mod install;
 mod pgo;
 mod publish;
@@ -42,6 +43,7 @@ fn main() -> anyhow::Result<()> {
         flags::XtaskCmd::Release(command) => command.run(shell),
         flags::XtaskCmd::Dist(command) => command.run(shell),
         flags::XtaskCmd::PublishReleaseNotes(command) => command.run(shell),
+        flags::XtaskCmd::Metrics(cmd) => cmd.run(shell),
         flags::XtaskCmd::Codegen(command) => command.run(shell),
         flags::XtaskCmd::Bb(command) => {
             {

@@ -1,8 +1,8 @@
-name: metrics
+name: Metrics
 on:
   push:
     branches:
-      - master
+      - main
 
 permissions: {}
 
