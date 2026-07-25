@@ -73,6 +73,11 @@ impl EditionedFileId {
         Self::from_span_file_id(database, RawEditionedFileId { file_id, edition })
     }
 
+    #[inline]
+    pub fn current_edition(db: &dyn Database, file_id: FileId) -> Self {
+        Self::from_span_file_id(db, RawEditionedFileId { file_id, edition: Edition::CURRENT })
+    }
+
     pub fn from_file(
         database: &dyn SourceDatabase,
         file_id: FileId,

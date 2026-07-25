@@ -31,7 +31,7 @@ pub struct SourceRootId(pub u32);
 pub struct SourceRoot {
     /// Libraries are considered mostly immutable, this assumption is used to
     /// optimize salsa's query structure.
-    is_library: bool,
+    pub is_library: bool,
     file_set: FileSet,
 }
 

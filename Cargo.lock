@@ -1039,6 +1039,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 
 [[package]]
+name = "oorandom"
+version = "11.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d6790f58c7ff633d8771f42965289203411a5e5c68388703c06e14f24770b41e"
+
+[[package]]
 name = "owo-colors"
 version = "4.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1872,6 +1878,7 @@ dependencies = [
  "expect-test",
  "gen-lsp-types",
  "hir",
+ "hir-def",
  "hir-ty",
  "ide",
  "ide-completion",
@@ -1883,6 +1890,7 @@ dependencies = [
  "memchr",
  "nohash-hasher",
  "num_cpus",
+ "oorandom",
  "parking_lot",
  "paths",
  "project-model",

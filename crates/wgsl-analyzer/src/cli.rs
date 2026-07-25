@@ -1,6 +1,6 @@
 //! Various batch processing tasks, intended primarily for debugging.
 
-// mod analysis_stats;
+mod analysis_stats;
 // mod diagnostics;
 pub mod flags;
 // mod highlight;

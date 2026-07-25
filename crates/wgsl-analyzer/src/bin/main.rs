@@ -73,7 +73,7 @@ fn main() -> Result<ExitCode> {
         // flags::WgslAnalyzerCmd::Parse(cmd) => cmd.run()?,
         // flags::WgslAnalyzerCmd::Symbols(cmd) => cmd.run()?,
         // flags::WgslAnalyzerCmd::Highlight(cmd) => cmd.run()?,
-        // flags::WgslAnalyzerCmd::AnalysisStats(cmd) => cmd.run(verbosity)?,
+        flags::WgslAnalyzerCmd::AnalysisStats(cmd) => cmd.run(verbosity)?,
         // flags::WgslAnalyzerCmd::Diagnostics(cmd) => cmd.run()?,
         // flags::WgslAnalyzerCmd::UnresolvedReferences(cmd) => cmd.run()?,
         // flags::WgslAnalyzerCmd::Ssr(cmd) => cmd.run()?,

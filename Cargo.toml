@@ -73,6 +73,7 @@ either = "1.16.0"
 expect-test = "1.5.1"
 itertools = "0.15.0"
 libc = "0.2.185"
+oorandom = "11.1.5"
 dashmap = { version = "6.2.1" }
 nohash-hasher = "0.2.0"
 rowan = "0.16.1"

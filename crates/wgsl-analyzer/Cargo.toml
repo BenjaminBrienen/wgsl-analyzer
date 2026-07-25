@@ -47,6 +47,7 @@ semver.workspace = true
 memchr = "2.8.1"
 # process-wrap = { version = "8.2.0", features = ["std"] }
 # cfg.workspace = true
+hir-def.workspace = true
 hir-ty.workspace = true
 hir.workspace = true
 ide-db.workspace = true
@@ -67,6 +68,7 @@ base-db.workspace = true
 line-index.workspace = true
 edition.workspace = true
 idna_adapter.workspace = true
+oorandom.workspace = true
 
 [dev-dependencies]
 expect-test.workspace = true
