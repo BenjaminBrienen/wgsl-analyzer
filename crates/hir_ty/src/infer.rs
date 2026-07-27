@@ -1873,12 +1873,11 @@ impl<'database> InferenceContext<'database> {
         }
 
         // https://www.w3.org/TR/WGSL/#zero-value-builtin-function
-        if (arguments.is_empty() && !r#type.is_constructible(self.database))
-        {
-            self.push_diagnostic(store.store_source, InferenceDiagnosticKind::NotConstructible {
-                expression,
-                r#type,
-            });
+        if (arguments.is_empty() && !r#type.is_constructible(self.database)) {
+            self.push_diagnostic(
+                store.store_source,
+                InferenceDiagnosticKind::NotConstructible { expression, r#type },
+            );
         }
         match r#type.kind(self.database) {
             TypeKind::Scalar(scalar_type) => {
@@ -2020,12 +2019,11 @@ impl<'database> InferenceContext<'database> {
         }
 
         // https://www.w3.org/TR/WGSL/#zero-value-builtin-function
-        if (arguments.is_empty() && !r#type.is_constructible(self.database))
-        {
-            self.push_diagnostic(store.store_source, InferenceDiagnosticKind::NotConstructible {
-                expression,
-                r#type,
-            });
+        if (arguments.is_empty() && !r#type.is_constructible(self.database)) {
+            self.push_diagnostic(
+                store.store_source,
+                InferenceDiagnosticKind::NotConstructible { expression, r#type },
+            );
         }
 
         match r#type.kind(self.database) {

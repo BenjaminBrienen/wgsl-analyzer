@@ -343,7 +343,11 @@ impl<'db> InferPrinter<'db> {
                 )
                 .unwrap();
             },
-            InferenceDiagnosticKind::FunctionCallArgCountMismatch { expression, n_actual, n_expected } => {
+            InferenceDiagnosticKind::FunctionCallArgCountMismatch {
+                expression,
+                n_actual,
+                n_expected,
+            } => {
                 let Some((range, text)) = self.get_expression_range_text(source_map, *expression)
                 else {
                     return;

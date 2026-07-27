@@ -128,7 +128,7 @@ impl Type {
                 .iter()
                 .all(|(field, field_type)| field_type.is_constructible(database)),
             TypeKind::Array(array_type) => array_type.is_constructible(database),
-            | TypeKind::Atomic(_)
+            TypeKind::Atomic(_)
             | TypeKind::Texture(_)
             | TypeKind::Sampler(_)
             | TypeKind::Reference(_)
