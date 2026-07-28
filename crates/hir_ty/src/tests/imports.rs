@@ -192,7 +192,7 @@ fn cannot_import_imported_item() {
             6..7 'b': [error]
             10..25 'package::foo::A': [error]
             10..25 'package::foo::A': `A` not found in `foo`
-            [EditionedFileId(Id(2000))] ExpectedLoweredKind { expression: Idx::<Expression>(0), expected: Variable, actual: Type, path: Path(ModPath("package::foo::A")) } in Body
+            10..25 'package::foo::A': expected variable, but got type `package::foo::A`
             ---
             ---
             6..7 'A': integer
@@ -281,7 +281,7 @@ fn import_statement_self_shadowing_error() {
             61..64 'foo': [error]
             67..70 'bar': [error]
             67..70 'bar': `bar` not found in scope
-            [EditionedFileId(Id(2000))] ExpectedLoweredKind { expression: Idx::<Expression>(0), expected: Variable, actual: Type, path: Path(ModPath("bar")) } in Body
+            67..70 'bar': expected variable, but got type `bar`
             ---
             6..9 'bar': integer
             12..13 '3': integer
@@ -459,7 +459,7 @@ fn invalid_import_starting_with_item() {
             81..86 'fails': [error]
             89..97 'bar::nya': [error]
             89..97 'bar::nya': `bar` not found in scope
-            [EditionedFileId(Id(2000))] ExpectedLoweredKind { expression: Idx::<Expression>(0), expected: Variable, actual: Type, path: Path(ModPath("bar::nya")) } in Body
+            89..97 'bar::nya': expected variable, but got type `bar::nya`
         "#]],
     );
 }
