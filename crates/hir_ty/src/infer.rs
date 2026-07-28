@@ -95,7 +95,7 @@ fn infer_query(
             let expression = body.root.and_then(Either::right);
 
             if let Some(expression) = expression {
-                let expected_type = &TypeExpectation::from_type(
+                let expected_type = TypeExpectation::from_type(
                     database.intern_type(TypeKind::Scalar(ScalarType::Bool)),
                 );
                 context.infer_expression_expect(expression, expected_type, &body.store);
@@ -693,14 +693,14 @@ impl<'database> InferenceContext<'database> {
                 (Some(expression), Some(return_type)) => {
                     self.infer_expression_expect(
                         *expression,
-                        &TypeExpectation::from_type(self.return_type),
+                        TypeExpectation::from_type(self.return_type),
                         body,
                     );
                 },
                 (Some(expression), None) => {
                     let actual = self.infer_expression_expect(
                         *expression,
-                        &TypeExpectation::from_type(self.return_type),
+                        TypeExpectation::from_type(self.return_type),
                         body,
                     );
                     self.push_diagnostic(
@@ -735,7 +735,7 @@ impl<'database> InferenceContext<'database> {
 
                 self.infer_expression_expect(
                     *right_side,
-                    &TypeExpectation::from_type(left_inner),
+                    TypeExpectation::from_type(left_inner),
                     body,
                 );
             },
@@ -802,7 +802,7 @@ impl<'database> InferenceContext<'database> {
                 };
 
                 if self
-                    .expect_type_inner(left_inner, &TypeExpectationInner::IntegerScalar)
+                    .expect_type_inner(left_inner, TypeExpectationInner::IntegerScalar)
                     .is_err()
                 {
                     self.push_diagnostic(
@@ -830,7 +830,7 @@ impl<'database> InferenceContext<'database> {
                 }
                 self.infer_expression_expect(
                     *condition,
-                    &TypeExpectation::from_type(self.bool_type()),
+                    TypeExpectation::from_type(self.bool_type()),
                     body,
                 );
             },
@@ -838,7 +838,7 @@ impl<'database> InferenceContext<'database> {
                 self.infer_statement(*block, body, return_type);
                 self.infer_expression_expect(
                     *condition,
-                    &TypeExpectation::from_type(self.bool_type()),
+                    TypeExpectation::from_type(self.bool_type()),
                     body,
                 );
             },
@@ -855,7 +855,7 @@ impl<'database> InferenceContext<'database> {
                         if let SwitchCaseSelector::Expression(selector) = selector {
                             self.infer_expression_expect(
                                 *selector,
-                                &TypeExpectation::from_type(r#type),
+                                TypeExpectation::from_type(r#type),
                                 body,
                             );
                         }
@@ -879,7 +879,7 @@ impl<'database> InferenceContext<'database> {
                 if let Some(condition) = condition {
                     self.infer_expression_expect(
                         *condition,
-                        &TypeExpectation::from_type(self.bool_type()),
+                        TypeExpectation::from_type(self.bool_type()),
                         body,
                     );
                 }
@@ -892,7 +892,7 @@ impl<'database> InferenceContext<'database> {
             Statement::Assert { expression } => {
                 self.infer_expression_expect(
                     *expression,
-                    &TypeExpectation::from_type(self.bool_type()),
+                    TypeExpectation::from_type(self.bool_type()),
                     body,
                 );
             },
@@ -901,7 +901,7 @@ impl<'database> InferenceContext<'database> {
             Statement::BreakIf { condition } => {
                 self.infer_expression_expect(
                     *condition,
-                    &TypeExpectation::from_type(self.bool_type()),
+                    TypeExpectation::from_type(self.bool_type()),
                     body,
                 );
             },
@@ -945,7 +945,7 @@ impl<'database> InferenceContext<'database> {
             (Some(r#type), Some(initializer)) => {
                 self.infer_expression_expect(
                     initializer,
-                    &TypeExpectation::from_type(r#type),
+                    TypeExpectation::from_type(r#type),
                     store,
                 );
                 r#type
@@ -968,14 +968,14 @@ impl<'database> InferenceContext<'database> {
     fn expect_type_inner(
         &self,
         r#type: Type,
-        expectation: &TypeExpectationInner,
+        expectation: TypeExpectationInner,
     ) -> Result<(), ()> {
         let type_kind = r#type.kind(self.database);
         if type_kind == TypeKind::Error {
             return Ok(());
         }
 
-        match *expectation {
+        match expectation {
             TypeExpectationInner::Exact(expected_type) => {
                 if expected_type.kind(self.database) == TypeKind::Error
                     || r#type.is_convertible_to(expected_type, self.database)
@@ -1011,7 +1011,7 @@ impl<'database> InferenceContext<'database> {
     fn infer_expression_expect(
         &mut self,
         expression: ExpressionId,
-        expected: &TypeExpectation,
+        expected: TypeExpectation,
         store: &ExpressionStore,
     ) -> Type {
         let r#type = self.infer_expression(expression, store);
@@ -1024,7 +1024,7 @@ impl<'database> InferenceContext<'database> {
                         InferenceDiagnosticKind::TypeMismatch {
                             expression,
                             actual: r#type,
-                            expected: expected.clone(),
+                            expected,
                         },
                     );
                 }
@@ -2310,14 +2310,14 @@ enum AbstractHandling {
     Abstract,
 }
 
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
 pub enum TypeExpectationInner {
     Exact(Type),
     IntegerScalar,
     IntegerIndex,
 }
 
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
 pub enum TypeExpectation {
     Type(TypeExpectationInner),
     Any,
