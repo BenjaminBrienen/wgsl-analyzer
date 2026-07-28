@@ -46,7 +46,6 @@ pub struct TypeLoweringError {
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum TypeLoweringErrorKind {
-    UnresolvedName(Name),
     UnresolvedPath {
         path: Path,
         failed_segment: usize,
@@ -78,9 +77,6 @@ impl fmt::Display for TypeLoweringErrorKind {
         formatter: &mut fmt::Formatter<'_>,
     ) -> fmt::Result {
         match self {
-            Self::UnresolvedName(name) => {
-                write!(formatter, "`{}` not found in scope", name.as_str())
-            },
             Self::UnresolvedPath {
                 path,
                 failed_segment,

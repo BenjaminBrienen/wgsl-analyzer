@@ -64,10 +64,6 @@ pub enum AnyDiagnostic {
         expression: InFile<AstPointer<ast::Expression>>,
         r#type: Type,
     },
-    UnresolvedName {
-        expression: InFile<AstPointer<ast::Expression>>,
-        name: Name,
-    },
     NotConstructible {
         expression: InFile<AstPointer<ast::Expression>>,
         r#type: Type,
@@ -178,7 +174,6 @@ impl AnyDiagnostic {
             Self::TypeMismatch { expression, .. }
             | Self::NoSuchField { expression, .. }
             | Self::ArrayAccessInvalidType { expression, .. }
-            | Self::UnresolvedName { expression, .. }
             | Self::NotConstructible { expression, .. }
             | Self::FunctionCallArgCountMismatch { expression, .. }
             | Self::NoBuiltinOverload { expression, .. }
@@ -256,14 +251,6 @@ pub(crate) fn any_diag_from_infer_diagnostic(
             AnyDiagnostic::ArrayAccessInvalidType {
                 expression: source,
                 r#type: *r#type,
-            }
-        },
-        InferenceDiagnosticKind::UnresolvedName { expression, name } => {
-            let pointer = source_map.expression_to_source(*expression).ok()?.clone();
-            let source = InFile::new(file_id, pointer);
-            AnyDiagnostic::UnresolvedName {
-                expression: source,
-                name: name.clone(),
             }
         },
         InferenceDiagnosticKind::NotConstructible { expression, r#type } => {
