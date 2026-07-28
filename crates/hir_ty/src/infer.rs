@@ -1490,7 +1490,7 @@ impl<'database> InferenceContext<'database> {
             | Lowered::Enumerant(_) => {
                 self.push_diagnostic(
                     store.store_source,
-                    InferenceDiagnosticKind::ExpectedLoweredKind {
+                    InferenceDiagnosticKind::UnexpectedLoweredKind {
                         expression,
                         expected: LoweredKind::Variable,
                         actual: lowered.kind(),
@@ -1790,7 +1790,7 @@ impl<'database> InferenceContext<'database> {
             | Lowered::Local(_) => {
                 self.push_diagnostic(
                     store.store_source,
-                    InferenceDiagnosticKind::ExpectedLoweredKind {
+                    InferenceDiagnosticKind::UnexpectedLoweredKind {
                         expression,
                         expected: LoweredKind::Function,
                         actual: lowered.kind(),
@@ -2058,7 +2058,7 @@ impl<'database> InferenceContext<'database> {
         }
 
         // https://www.w3.org/TR/WGSL/#zero-value-builtin-function
-        if (dbg!(&arguments).is_empty() && !dbg!(r#type.is_constructible(self.database))) {
+        if (arguments.is_empty() && !r#type.is_constructible(self.database)) {
             self.push_diagnostic(
                 store.store_source,
                 InferenceDiagnosticKind::NotConstructible { expression, r#type },

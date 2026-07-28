@@ -364,7 +364,7 @@ pub(crate) fn any_diag_from_infer_diagnostic(
                 message: message.clone(),
             }
         },
-        InferenceDiagnosticKind::ExpectedLoweredKind {
+        InferenceDiagnosticKind::UnexpectedLoweredKind {
             expression,
             expected,
             actual,
