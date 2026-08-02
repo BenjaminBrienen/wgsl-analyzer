@@ -116,14 +116,16 @@ impl TypeLoweringContext<'_> {
             },
         };
 
-        // Copied from wesl-rs
         let operand = self.eval_expression(expression)?;
-        if operator == wgsl_types::syntax::UnaryOperator::AddressOf {
-            operand.op_ref().ok()
+        // The load rule does not apply for the address-of operator because its input
+        // is a ref<AS,T,AM>
+        // https://www.w3.org/TR/WGSL/#address-of-expr
+        let operand = if operator == wgsl_types::syntax::UnaryOperator::AddressOf {
+            operand
         } else {
-            let operand = operand.loaded().ok()?;
-            wgsl_types::builtin::call_unary_op(operator, &operand).ok()
-        }
+            operand.loaded().ok()?
+        };
+        wgsl_types::builtin::call_unary_op(operator, &operand).ok()
     }
 
     pub fn evaluate_template_argument(
