@@ -206,9 +206,14 @@ impl<'db> InferPrinter<'db> {
             | IDK::AddressOfNotReference { .. }
             | IDK::DerefNotAPointer { .. }
             | IDK::CyclicType { .. }
-            | IDK::UnexpectedTemplateArgument { .. }
-            | IDK::WgslError { .. } => {
+            | IDK::UnexpectedTemplateArgument { .. } => {
                 self.print_todo_bad_diagnostic(diagnostic, buffer);
+            },
+            IDK::WgslError {
+                expression,
+                message,
+            } => {
+                self.print_wgsl_error(source_map, buffer, *expression, message);
             },
             IDK::NoBuiltinOverload {
                 builtin,
@@ -277,6 +282,19 @@ impl<'db> InferPrinter<'db> {
                 );
             },
         }
+    }
+
+    fn print_wgsl_error(
+        &self,
+        source_map: &ExpressionSourceMap,
+        buffer: &mut String,
+        expression: ExpressionId,
+        message: &str,
+    ) {
+        let Some((range, text)) = self.get_expression_range_text(source_map, expression) else {
+            return;
+        };
+        writeln!(buffer, "{range:?} '{}': {}", ellipsize(text, 15), message,).unwrap();
     }
 
     fn print_no_builtin_overload(
