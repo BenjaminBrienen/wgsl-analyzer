@@ -1,10 +1,11 @@
 use base_db::{EditionedFileId, SourceDatabase};
 use either::Either;
 use syntax::{
-    HasAttributes as _, HasName as _, HasTemplateParameters as _, ast, pointer::AstPointer,
+    ast::{self, HasAttributes as _, HasName as _, HasTemplateParameters as _},
+    pointer::AstPointer,
 };
 
-use super::{Binding, BindingId, Body, BodySourceMap, SyntheticSyntax};
+use super::{BindingId, Binding, Body, BodySourceMap, SyntheticSyntax};
 use crate::{
     expression::{ExpressionId, Statement, StatementId, SwitchCaseSelector},
     expression_store::{ExpressionStoreSource, lower::ExprCollector},

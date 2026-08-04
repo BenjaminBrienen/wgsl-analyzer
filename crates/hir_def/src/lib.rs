@@ -1,6 +1,5 @@
 //! RPC API.
 
-mod ast_id;
 pub mod attributes;
 pub mod body;
 pub mod db;
@@ -16,8 +15,7 @@ pub mod signature;
 mod test_db;
 pub mod type_specifier;
 pub mod visibility;
-pub use ast_id::*;
-use base_db::{EditionedFileId, FileRange, SourceDatabase, TextRange};
+use base_db::{AstIdMap, EditionedFileId, FileAstId, FileRange, SourceDatabase, TextRange};
 use rowan::NodeOrToken;
 use syntax::{AstNode, SyntaxNode, SyntaxToken, pointer::AstPointer};
 
@@ -138,6 +136,7 @@ pub trait HasSource {
         let InFile { file_id, value } = self.ast_ptr(db);
         InFile::new(file_id, value.to_node(&file_id.parse(db).syntax()))
     }
+
     fn ast_ptr(
         &self,
         db: &dyn SourceDatabase,

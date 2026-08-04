@@ -1,6 +1,9 @@
 use base_db::SourceDatabase;
 use la_arena::Arena;
-use syntax::{HasName as _, HasTemplateParameters as _, ast, pointer::AstPointer};
+use syntax::{
+    ast::{self, HasName as _, HasTemplateParameters as _},
+    pointer::AstPointer,
+};
 use triomphe::Arc;
 
 use crate::{

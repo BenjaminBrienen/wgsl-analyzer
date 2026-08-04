@@ -5,7 +5,7 @@ mod pretty;
 #[cfg(test)]
 mod tests;
 
-use base_db::{EditionedFileId, SourceDatabase};
+use base_db::{EditionedFileId, FileAstId, SourceDatabase};
 use rustc_hash::FxHashMap;
 use smol_str::SmolStr;
 use syntax::{
@@ -13,10 +13,7 @@ use syntax::{
     ast::{self, StructDeclaration},
 };
 
-use crate::{
-    ast_id::FileAstId,
-    mod_path::{ModPath, PathKind},
-};
+use crate::mod_path::{ModPath, PathKind};
 
 const MISSING_NAME_PLACEHOLDER: &str = "[missing name]";
 

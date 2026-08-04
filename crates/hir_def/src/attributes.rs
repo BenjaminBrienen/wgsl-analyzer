@@ -2,7 +2,7 @@ use std::iter;
 
 use base_db::{Lookup as _, SourceDatabase};
 use either::Either;
-use syntax::{HasAttributes, ast};
+use syntax::ast::{self, HasAttributes};
 use triomphe::Arc;
 
 use crate::{

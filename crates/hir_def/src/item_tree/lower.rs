@@ -1,12 +1,8 @@
-use base_db::{EditionedFileId, SourceDatabase};
-use syntax::{
-    HasName as _,
-    ast::{Item, SourceFile},
-};
+use base_db::{AstIdMap, EditionedFileId, SourceDatabase};
+use syntax::ast::{HasName as _, Item, SourceFile};
 
 use super::{GlobalConstant, GlobalVariable, Override, Struct, TypeAlias};
 use crate::{
-    ast_id::AstIdMap,
     item_tree::{
         self, BigModItem, Function, GlobalAssertStatement, ImportStatement, ImportTree, ItemTree,
         ItemTreeAstId, ModuleItemId, SmallModItem,

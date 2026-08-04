@@ -1,5 +1,6 @@
 //! Basic database traits.
 
+mod ast_id;
 pub mod change;
 pub mod input;
 
@@ -14,6 +15,7 @@ use std::{
     sync::{Once, atomic::AtomicUsize},
 };
 
+pub use crate::ast_id::{AstIdMap, FileAstId};
 use crate::input::{PackageData, PackageId, PackageName};
 use dashmap::{DashMap, Entry};
 use rustc_hash::FxHasher;
@@ -23,7 +25,7 @@ use triomphe::Arc;
 pub use crate::editioned_file_id::{
     Capabilities, EditionedFileId, FileExtension, RawEditionedFileId,
 };
-pub use input::{SourceRoot, SourceRootId};
+pub use crate::input::{SourceRoot, SourceRootId};
 pub use salsa;
 pub use salsa_macros;
 pub use util_types::*;

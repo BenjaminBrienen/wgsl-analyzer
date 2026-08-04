@@ -5,8 +5,9 @@ use std::{fmt, panic};
 pub use base_db;
 pub use base_db::FileId;
 use base_db::{
-    Capabilities, CapabilitiesInput, FileSourceRootInput, FileText, Files, Nonce, SourceDatabase,
-    SourceRoot, SourceRootId, SourceRootInput, change::Change, set_all_packages_with_durability,
+    AstIdMap, Capabilities, CapabilitiesInput, EditionedFileId, FileSourceRootInput, FileText,
+    Files, Nonce, SourceDatabase, SourceRoot, SourceRootId, SourceRootInput, change::Change,
+    set_all_packages_with_durability,
 };
 use line_index::LineIndex;
 pub use rustc_hash::{FxHashMap, FxHashSet, FxHasher};

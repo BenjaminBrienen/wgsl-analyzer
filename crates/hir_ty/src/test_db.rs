@@ -1,8 +1,9 @@
 use std::{fmt, panic, sync::Mutex};
 
 use base_db::{
-    CapabilitiesInput, FileSourceRootInput, FileText, Nonce, SourceDatabase, SourceRootId,
-    SourceRootInput, input::SourceRoot, set_all_packages_with_durability,
+    CapabilitiesInput, FileSourceRootInput, FileText, Nonce,
+    SourceDatabase, SourceRootId, SourceRootInput, input::SourceRoot,
+    set_all_packages_with_durability,
 };
 use salsa::{Database as _, Durability};
 use syntax::Capabilities;

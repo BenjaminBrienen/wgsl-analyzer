@@ -5,11 +5,11 @@ pub mod db;
 pub mod definition;
 pub mod diagnostics;
 
-use base_db::{EditionedFileId, Intern as _, Lookup as _, SourceDatabase};
+use base_db::{AstIdMap, EditionedFileId, Intern as _, Lookup as _, SourceDatabase};
 use diagnostics::AnyDiagnostic;
 use either::Either;
 use hir_def::{
-    AstIdMap, HasSource as _, InFile,
+    HasSource as _, InFile,
     body::{BindingId, Body, BodySourceMap, scope::ExprScopes},
     db::{
         DefinitionWithBodyId, FunctionId, GlobalAssertStatementId, GlobalConstantId,
@@ -25,7 +25,11 @@ use hir_def::{
 use hir_ty::{infer::InferenceResult, ty::Type};
 use smallvec::SmallVec;
 use stdx::impl_from;
-use syntax::{AstNode as _, HasName as _, SyntaxNode, ast, pointer::AstPointer};
+use syntax::{
+    AstNode as _, SyntaxNode,
+    ast::{self, HasName as _},
+    pointer::AstPointer,
+};
 
 pub use hir_ty::{AddressSpace, db::HirDatabase};
 

@@ -1,6 +1,6 @@
 use std::{fmt, marker::PhantomData};
 
-use base_db::{EditionedFileId, SourceDatabase};
+use crate::{EditionedFileId, SourceDatabase};
 use la_arena::{Arena, Idx};
 use syntax::{
     AstNode, SyntaxNode,
