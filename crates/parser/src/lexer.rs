@@ -9,8 +9,13 @@ pub(crate) type Token = SyntaxKind;
 
 #[derive(Default, Clone)]
 pub struct LexerExtras {
+    /// used to force an identifier
+    pub after_let: bool,
+    /// used for context-sensitive parsing of identifiers
     pub after_at: bool,
+    /// used for context-sensitive parsing of identifiers
     pub after_interpolate: bool,
+    /// used for context-sensitive parsing of identifiers
     pub after_early_depth_test: bool,
     pub edition: edition::Edition,
     pub extensions: edition::ExtensionsConfig,
@@ -299,7 +304,10 @@ impl Iterator for WgslLexer<'_, '_> {
                     "fn" => Token::Fn,
                     "for" => Token::For,
                     "if" => Token::If,
-                    "let" => Token::Let,
+                    "let" => {
+                        self.inner.extras.after_let = true;
+                        Token::Let
+                    },
                     "loop" => Token::Loop,
                     "override" => Token::Override,
                     "requires" => Token::Requires,
@@ -392,10 +400,18 @@ impl Iterator for WgslLexer<'_, '_> {
                         {
                             self.inner.bump(next_char.len_utf8());
                         }
-
+                        self.inner.extras.after_let = false;
                         return Some((Token::Identifier, token_start..self.inner.span().end));
                     },
                     _ => {
+                        if self.inner.extras.after_let {
+                            self.diagnostics.push(Diagnostic {
+                                message: "`_` is not a valid identifier".to_owned(),
+                                range: to_range(self.inner.span()),
+                            });
+                            self.inner.extras.after_let = false;
+                            return Some((Token::Identifier, token_start..self.inner.span().end));
+                        }
                         return Some((Token::Underscore, token_start..self.inner.span().end));
                     },
                 }
@@ -403,6 +419,7 @@ impl Iterator for WgslLexer<'_, '_> {
             Some(')') => {
                 self.inner.extras.after_interpolate = false;
                 self.inner.extras.after_early_depth_test = false;
+                self.inner.extras.after_let = false;
             },
             _ => (), // Not an ident
         }

@@ -425,7 +425,14 @@ impl<'database> InferenceContext<'database> {
         }
 
         self.bind_return_type(
-            Some(self.make_ref(self.return_type, address_space, access_mode)),
+            Some(self.make_ref(
+                address_space,
+                self.return_type.unwrap_or_else(|| {
+                    //debug_assert!(!self.result.diagnostics().is_empty());
+                    self.types.error
+                }),
+                access_mode,
+            )),
             body,
         );
     }

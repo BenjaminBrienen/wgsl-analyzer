@@ -314,8 +314,8 @@ fn _() {}
 fn foo() { let _ = 1; }
 ",
         expect![[r#"
+            24..26 wgsl-analyzer Error 16: `_` is not a valid identifier
             3..4 wgsl-analyzer Error 16: invalid syntax, expected: <identifier>
-            25..26 wgsl-analyzer Error 16: invalid syntax, expected: <identifier>
         "#]],
     );
 }

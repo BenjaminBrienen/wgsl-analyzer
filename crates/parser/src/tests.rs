@@ -3880,3 +3880,60 @@ fn invalid_suffix() {
             error at 46..47: invalid syntax, expected one of: '&=', '/=', '=', '-=', '--', '%=', '|=', '+=', '++', '<<=', '>>=', '*=', '^='"#]],
     );
 }
+
+#[test]
+fn invalid_identifier_underscore() {
+    // An identifier must not be _ (a single underscore, U+005F).
+    // https://www.w3.org/TR/WGSL/#identifiers
+    check(
+        "
+fn _() {}
+fn foo() { let _ = 1; }
+",
+        expect![[r#"
+            SourceFile@0..35
+              Blankspace@0..1 "\n"
+              FunctionDeclaration@1..10
+                Fn@1..3 "fn"
+                Blankspace@3..4 " "
+                FunctionParameters@4..7
+                  Error@4..6
+                    Underscore@4..5 "_"
+                    ParenthesisLeft@5..6 "("
+                  ParenthesisRight@6..7 ")"
+                Blankspace@7..8 " "
+                CompoundStatement@8..10
+                  BraceLeft@8..9 "{"
+                  BraceRight@9..10 "}"
+              Blankspace@10..11 "\n"
+              FunctionDeclaration@11..34
+                Fn@11..13 "fn"
+                Blankspace@13..14 " "
+                Name@14..17
+                  Identifier@14..17 "foo"
+                FunctionParameters@17..19
+                  ParenthesisLeft@17..18 "("
+                  ParenthesisRight@18..19 ")"
+                Blankspace@19..20 " "
+                CompoundStatement@20..34
+                  BraceLeft@20..21 "{"
+                  Blankspace@21..22 " "
+                  LetDeclaration@22..32
+                    Let@22..25 "let"
+                    Blankspace@25..26 " "
+                    Name@26..27
+                      Identifier@26..27 "_"
+                    Blankspace@27..28 " "
+                    Equal@28..29 "="
+                    Blankspace@29..30 " "
+                    Literal@30..31
+                      IntLiteral@30..31 "1"
+                    Semicolon@31..32 ";"
+                  Blankspace@32..33 " "
+                  BraceRight@33..34 "}"
+              Blankspace@34..35 "\n"
+
+            error at 25..27: `_` is not a valid identifier
+            error at 4..5: invalid syntax, expected: <identifier>"#]],
+    );
+}
