@@ -45,6 +45,9 @@ pub enum AnyDiagnostic {
     DetachedFile {
         id: InFile<AstPointer<ast::ImportStatement>>,
     },
+    InvalidMustUse {
+        id: InFile<AstPointer<ast::FunctionDeclaration>>,
+    },
     NameConflict {
         item: InFile<AstPointer<ast::Item>>,
         name: Name,
@@ -215,6 +218,7 @@ impl AnyDiagnostic {
             Self::NameConflict { item, name: _ } => {
                 item.file_id
             },
+            Self::InvalidMustUse { id } => id.file_id,
         }
     }
 }
@@ -417,6 +421,9 @@ pub(crate) fn any_diag_from_def_diagnostic(
         DefDiagnosticKind::NameConflict { item, previous } => AnyDiagnostic::NameConflict {
             item: item.ast_ptr(db),
             name: previous.clone(),
+        },
+        DefDiagnosticKind::InvalidMustUse { id } => {
+            AnyDiagnostic::InvalidMustUse { id: id.ast_ptr(db) }
         },
     }
 }

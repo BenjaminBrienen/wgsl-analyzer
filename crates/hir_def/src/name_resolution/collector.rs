@@ -2,11 +2,13 @@ use base_db::{EditionedFileId, Intern as _, Package, SourceDatabase, file_packag
 use syntax::ast;
 
 use crate::{
+    attributes::{AttributeDefId, AttributesWithOwner},
     db::{Location, ModuleDefinitionId},
     item_scope::{ItemScope, ModuleImportPath, ModuleItem},
-    item_tree::{FlatImport, ImportStatement, ItemTree, ModuleItemId, Name},
+    item_tree::{FlatImport, Function, ImportStatement, ItemTree, ModuleItemId, Name},
     mod_path::{AbsoluteModPath, PathKind},
     name_resolution::{ModulesMap, diagnostics::DefDiagnostic, resolve_module},
+    signature::FunctionSignature,
     visibility::Visibility,
 };
 
@@ -45,52 +47,82 @@ impl ModCollector<'_> {
         item_tree: &ItemTree,
     ) {
         for item in item_tree.top_level_items() {
-            let (name, definition) = match *item {
+            match *item {
                 ModuleItemId::ImportStatement(id) => {
                     let location = Location::new(self.file_id, id);
                     self.collect_import_statement(&item_tree[id], location, *item);
-                    continue;
                 },
-                ModuleItemId::Function(id) => (
-                    &item_tree[id].name,
-                    ModuleDefinitionId::Function(Location::new(self.file_id, id).intern(self.db)),
-                ),
-                ModuleItemId::Struct(id) => (
-                    &item_tree[id].name,
-                    ModuleDefinitionId::Struct(Location::new(self.file_id, id).intern(self.db)),
-                ),
-                ModuleItemId::GlobalVariable(id) => (
-                    &item_tree[id].name,
-                    ModuleDefinitionId::GlobalVariable(
-                        Location::new(self.file_id, id).intern(self.db),
-                    ),
-                ),
-                ModuleItemId::GlobalConstant(id) => (
-                    &item_tree[id].name,
-                    ModuleDefinitionId::GlobalConstant(
-                        Location::new(self.file_id, id).intern(self.db),
-                    ),
-                ),
-                ModuleItemId::Override(id) => (
-                    &item_tree[id].name,
-                    ModuleDefinitionId::Override(Location::new(self.file_id, id).intern(self.db)),
-                ),
-                ModuleItemId::TypeAlias(id) => (
-                    &item_tree[id].name,
-                    ModuleDefinitionId::TypeAlias(Location::new(self.file_id, id).intern(self.db)),
-                ),
-                ModuleItemId::GlobalAssertStatement(_) => continue,
-            };
-
-            self.push_item(
-                name,
-                ModuleItem {
-                    definition,
-                    visibility: Visibility::Public,
-                    import: None,
+                ModuleItemId::Function(id) => {
+                    let location = Location::new(self.file_id, id);
+                    self.collect_function(&item_tree[id], location, *item);
                 },
-                *item,
-            );
+                ModuleItemId::Struct(id) => {
+                    self.push_item(
+                        &item_tree[id].name,
+                        ModuleItem {
+                            definition: ModuleDefinitionId::Struct(
+                                Location::new(self.file_id, id).intern(self.db),
+                            ),
+                            visibility: Visibility::Public,
+                            import: None,
+                        },
+                        *item,
+                    );
+                },
+                ModuleItemId::GlobalVariable(id) => {
+                    self.push_item(
+                        &item_tree[id].name,
+                        ModuleItem {
+                            definition: ModuleDefinitionId::GlobalVariable(
+                                Location::new(self.file_id, id).intern(self.db),
+                            ),
+                            visibility: Visibility::Public,
+                            import: None,
+                        },
+                        *item,
+                    );
+                },
+                ModuleItemId::GlobalConstant(id) => {
+                    self.push_item(
+                        &item_tree[id].name,
+                        ModuleItem {
+                            definition: ModuleDefinitionId::GlobalConstant(
+                                Location::new(self.file_id, id).intern(self.db),
+                            ),
+                            visibility: Visibility::Public,
+                            import: None,
+                        },
+                        *item,
+                    );
+                },
+                ModuleItemId::Override(id) => {
+                    self.push_item(
+                        &item_tree[id].name,
+                        ModuleItem {
+                            definition: ModuleDefinitionId::Override(
+                                Location::new(self.file_id, id).intern(self.db),
+                            ),
+                            visibility: Visibility::Public,
+                            import: None,
+                        },
+                        *item,
+                    );
+                },
+                ModuleItemId::TypeAlias(id) => {
+                    self.push_item(
+                        &item_tree[id].name,
+                        ModuleItem {
+                            definition: ModuleDefinitionId::TypeAlias(
+                                Location::new(self.file_id, id).intern(self.db),
+                            ),
+                            visibility: Visibility::Public,
+                            import: None,
+                        },
+                        *item,
+                    );
+                },
+                ModuleItemId::GlobalAssertStatement(_) => {},
+            }
         }
     }
 
@@ -150,6 +182,32 @@ impl ModCollector<'_> {
         });
     }
 
+    fn collect_function(
+        &mut self,
+        function: &Function,
+        location: Location<ast::FunctionDeclaration>,
+        item_id: ModuleItemId,
+    ) {
+        let function_id = location.intern(self.db);
+        let data = FunctionSignature::of(self.db, function_id);
+        let attributes = AttributesWithOwner::of(self.db, AttributeDefId::Function(function_id));
+        if let Some(attribute) = attributes.attribute_list.try_get("must_use")
+            && data.return_type.is_none()
+        {
+            self.item_scope
+                .push_diagnostic(DefDiagnostic::invalid_must_use(self.file_id, location));
+        }
+        self.push_item(
+            &function.name,
+            ModuleItem {
+                definition: ModuleDefinitionId::Function(function_id),
+                visibility: Visibility::Public,
+                import: None,
+            },
+            item_id,
+        );
+    }
+
     fn push_item(
         &mut self,
         name: &Name,
@@ -157,7 +215,6 @@ impl ModCollector<'_> {
         item_id: ModuleItemId,
     ) {
         let previous = self.item_scope.push_item(name.clone(), item);
-
         if previous.is_some() {
             self.item_scope
                 .push_diagnostic(DefDiagnostic::name_conflict(

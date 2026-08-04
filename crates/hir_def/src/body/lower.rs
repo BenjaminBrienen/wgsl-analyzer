@@ -5,7 +5,7 @@ use syntax::{
     pointer::AstPointer,
 };
 
-use super::{BindingId, Binding, Body, BodySourceMap, SyntheticSyntax};
+use super::{Binding, BindingId, Body, BodySourceMap, SyntheticSyntax};
 use crate::{
     expression::{ExpressionId, Statement, StatementId, SwitchCaseSelector},
     expression_store::{ExpressionStoreSource, lower::ExprCollector},

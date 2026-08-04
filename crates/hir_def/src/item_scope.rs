@@ -142,6 +142,10 @@ impl ItemScope {
                 DefDiagnosticKind::NameConflict { previous, item: _ } => {
                     writeln!(buffer, "name conflict for {}", previous.as_str())
                 },
+                DefDiagnosticKind::InvalidMustUse { id } => writeln!(
+                    buffer,
+                    "`@must_use` must only be used on a function with a return type"
+                ),
             };
         }
     }
