@@ -19,7 +19,13 @@ pub fn collect<Function>(
     Function: FnMut(GlobalVariableDiagnostic),
 {
     let inference = InferenceResult::of(database, DefinitionWithBodyId::GlobalVariable(variable));
-    let type_kind = inference.return_type().kind(database);
+    let type_kind = inference.return_type().map_or_else(
+        || {
+            debug_assert!(!inference.diagnostics().is_empty());
+            TypeKind::Error
+        },
+        |r#type| r#type.kind(database),
+    );
 
     if let TypeKind::Reference(Reference {
         address_space,
