@@ -565,6 +565,15 @@ pub fn diagnostics(
                         frange.range,
                     )
                 },
+                AnyDiagnostic::ExpectedReturnValue { expression } => {
+                    let source = expression.value.to_node(&root);
+                    let frange = original_file_range(database, expression.file_id, source.syntax());
+                    Diagnostic::new(
+                        DiagnosticCode("31"),
+                        "expected a value, but function has no return type".to_owned(),
+                        frange.range,
+                    )
+                },
             }
         })
         .collect()

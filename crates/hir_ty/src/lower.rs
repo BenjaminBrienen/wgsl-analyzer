@@ -348,11 +348,16 @@ impl<'database> TypeLoweringContext<'database> {
         type_specifier_id: TypeSpecifierId,
     ) -> Type {
         let type_specifier = &self.store[type_specifier_id];
-        let lowered = self.try_lower(
-            TypeContainer::TypeSpecifier(type_specifier_id),
-            &type_specifier.path,
-            &type_specifier.template_parameters,
-        );
+        let lowered = self
+            .try_lower(
+                TypeContainer::TypeSpecifier(type_specifier_id),
+                &type_specifier.path,
+                &type_specifier.template_parameters,
+            )
+            .unwrap_or_else(|error| {
+                self.push_diagnostic(error);
+                Lowered::Type(TypeKind::Error.intern(self.database))
+            });
         match lowered {
             Ok(Lowered::Type(r#type)) => r#type,
             Ok(Lowered::TypeWithoutTemplate(_)) => {
@@ -375,10 +380,6 @@ impl<'database> TypeLoweringContext<'database> {
                     container: TypeContainer::TypeSpecifier(type_specifier_id),
                     kind: TypeLoweringErrorKind::ExpectedType(type_specifier.path.clone()),
                 });
-                TypeKind::Error.intern(self.database)
-            },
-            Err(error) => {
-                self.diagnostics.push(error);
                 TypeKind::Error.intern(self.database)
             },
         }

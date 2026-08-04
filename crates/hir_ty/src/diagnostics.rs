@@ -94,4 +94,7 @@ pub enum InferenceDiagnosticKind {
         expression: ExpressionId,
         actual: Type,
     },
+    ExpectedReturnValue {
+        expression: ExpressionId,
+    },
 }

@@ -109,6 +109,7 @@ fn unexpected_return_value() {
         "fn foo() { return 0; }",
         expect![[r#"
             18..19 wgsl-analyzer Error 30: unexpected return value of type `integer` in function with no return type
+            18..19 wgsl-analyzer Error 30: unexpected return value of type `integer` in function with no return type
         "#]],
     );
 }
@@ -570,6 +571,7 @@ fn foo() {
 }
 ",
         expect![[r#"
+            27..32 wgsl-analyzer Error 31: expected a value, but function has no return type
             15..34 wgsl-analyzer Error 7: expected 0 parameters, found 1
         "#]],
     );
@@ -586,6 +588,22 @@ fn foo() {
 ",
         expect![[r#"
             41..45 wgsl-analyzer Error 4: cannot index into type bool
+        "#]],
+    );
+}
+
+#[test]
+fn invalid_expression_call() {
+    check_diagnostics(
+        "
+fn foo() {
+    let x = workgroupBarrier();
+    let z = foo();
+}
+",
+        expect![[r#"
+            23..41 wgsl-analyzer Error 31: expected a value, but function has no return type
+            55..60 wgsl-analyzer Error 31: expected a value, but function has no return type
         "#]],
     );
 }

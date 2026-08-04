@@ -208,7 +208,8 @@ pub struct InferenceResult {
     pub(crate) type_of_expression: ArenaMap<ExpressionId, Type>,
     pub(crate) type_of_binding: ArenaMap<BindingId, Type>,
     diagnostics: Vec<InferenceDiagnostic>,
-    return_type: Type,
+    /// The return type of the function being inferred.
+    return_type: Option<Type>,
     call_resolutions: FxHashMap<ExpressionId, ResolvedCall>,
     field_resolutions: FxHashMap<ExpressionId, FieldId>,
     standard_types: InternedStandardTypes,
@@ -220,7 +221,7 @@ impl InferenceResult {
             type_of_expression: ArenaMap::default(),
             type_of_binding: ArenaMap::default(),
             diagnostics: Vec::default(),
-            return_type: TypeKind::Error.intern(database),
+            return_type: Some(error_type), // set in collect_* calls
             call_resolutions: FxHashMap::default(),
             field_resolutions: FxHashMap::default(),
             standard_types: InternedStandardTypes::new(database),
@@ -249,7 +250,7 @@ impl InferenceResult {
     }
 
     #[must_use]
-    pub const fn return_type(&self) -> Type {
+    pub const fn return_type(&self) -> Option<Type> {
         self.return_type
     }
 
@@ -296,7 +297,7 @@ pub struct InferenceContext<'database> {
     /// Root resolver for the entire module.
     resolver: Resolver,
     result: InferenceResult, // set in collect_* calls
-    return_type: Type,
+    return_type: Option<Type>,
     converter: WgslTypeConverter<'database>,
 }
 
@@ -353,8 +354,7 @@ impl<'database> InferenceContext<'database> {
         {
             self.set_binding_type(binding, r#type);
         }
-
-        self.return_type = r#type.unwrap_or_else(|| self.error_type());
+        self.return_type = r#type;
     }
 
     fn set_field_resolution(

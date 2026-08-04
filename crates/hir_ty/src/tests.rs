@@ -206,6 +206,7 @@ impl<'db> InferPrinter<'db> {
             | IDK::AddressOfNotReference { .. }
             | IDK::DerefNotAPointer { .. }
             | IDK::CyclicType { .. }
+            | IDK::ExpectedReturnValue { .. }
             | IDK::UnexpectedTemplateArgument { .. } => {
                 self.print_todo_bad_diagnostic(diagnostic, buffer);
             },

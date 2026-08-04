@@ -126,7 +126,7 @@ fn type_alias_type(
     let result = type_context.lower_type(data.r#type);
     let diagnostics = type_context
         .diagnostics
-        .into_iter()
+        .drain(..)
         .map(|error| InferenceDiagnostic {
             source: data.store.store_source,
             kind: InferenceDiagnosticKind::InvalidType { error },
@@ -186,15 +186,19 @@ fn struct_is_used_in_uniform(
                     database,
                     DefinitionWithBodyId::GlobalVariable(declaration),
                 );
-                let type_kind = inference.return_type().kind(database);
-
+                let type_kind = inference
+                    .return_type()
+                    .unwrap_or_else(|| {
+                        debug_assert!(!inference.diagnostics().is_empty());
+                        TypeKind::Error.intern(database)
+                    })
+                    .kind(database);
                 if let TypeKind::Reference(crate::ty::Reference { address_space, .. }) = type_kind
                     && !matches!(address_space, AddressSpace::Uniform)
                 {
                     return false;
                 }
-
-                inference.return_type().contains_struct(database, r#struct)
+                type_kind.contains_struct(database, r#struct)
             },
             hir_def::item_tree::ModuleItemId::Function(_)
             | hir_def::item_tree::ModuleItemId::Struct(_)

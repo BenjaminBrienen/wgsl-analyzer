@@ -38,6 +38,7 @@ pub fn pretty_type_expectation_with_verbosity(
             _ = write_type_expectation_inner(database, r#type, false, &mut str, verbosity);
         },
         TypeExpectation::Any => _ = write!(&mut str, "any"),
+        TypeExpectation::None => _ = write!(&mut str, "none"),
     }
     str
 }

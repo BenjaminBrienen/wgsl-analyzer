@@ -127,7 +127,9 @@ fn render_detail(
                 name.as_str(),
                 pretty_type_with_verbosity(
                     database,
-                    variable_type.return_type(),
+                    variable_type
+                        .return_type()
+                        .unwrap_or_else(|| TypeKind::Error.intern(database)),
                     TypeVerbosity::Compact
                 )
             )
@@ -140,7 +142,9 @@ fn render_detail(
                 name.as_str(),
                 pretty_type_with_verbosity(
                     database,
-                    constant_type.return_type(),
+                    constant_type
+                        .return_type()
+                        .unwrap_or_else(|| TypeKind::Error.intern(database)),
                     TypeVerbosity::Compact
                 )
             )
@@ -152,7 +156,9 @@ fn render_detail(
                 name.as_str(),
                 pretty_type_with_verbosity(
                     database,
-                    override_type.return_type(),
+                    override_type
+                        .return_type()
+                        .unwrap_or_else(|| TypeKind::Error.intern(database)),
                     TypeVerbosity::Compact
                 )
             )

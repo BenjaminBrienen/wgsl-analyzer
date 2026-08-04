@@ -156,6 +156,9 @@ pub enum AnyDiagnostic {
         expression: InFile<AstPointer<ast::Expression>>,
         actual: Type,
     },
+    ExpectedReturnValue {
+        expression: InFile<AstPointer<ast::Expression>>,
+    },
 }
 
 #[derive(Clone, Copy)]
@@ -186,6 +189,7 @@ impl AnyDiagnostic {
             | Self::WgslError { expression, .. }
             | Self::InvalidIdentExpression { expression, .. }
             | Self::UnexpectedReturnValue { expression, .. }
+            | Self::ExpectedReturnValue { expression, .. }
             | Self::ExpectedLoweredKind { expression, .. } => expression.file_id,
             Self::MissingAddressSpace { variable } | Self::InvalidAddressSpace { variable, .. } => {
                 variable.file_id
@@ -394,6 +398,11 @@ pub(crate) fn any_diag_from_infer_diagnostic(
                 expression: source,
                 actual: *actual,
             }
+        },
+        InferenceDiagnosticKind::ExpectedReturnValue { expression } => {
+            let pointer = source_map.expression_to_source(*expression).ok()?.clone();
+            let source = InFile::new(file_id, pointer);
+            AnyDiagnostic::ExpectedReturnValue { expression: source }
         },
     })
 }

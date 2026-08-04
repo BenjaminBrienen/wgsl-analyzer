@@ -664,7 +664,7 @@ fn vec_xy_is_not_ref() {
             39..43 'v.xy': vec2<i32>
             46..47 'v': ref<function, vec2<i32>, read_write>
             46..50 'v.yx': vec2<i32>
-            [EditionedFileId(Id(1c00))] AssignmentNotAReference { left_side: Idx::<Expression>(4), actual: Type(2409) } in Body
+            [EditionedFileId(Id(1c00))] AssignmentNotAReference { left_side: Idx::<Expression>(4), actual: Type(241c) } in Body
         "#]],
     );
 }
@@ -1794,6 +1794,7 @@ fn unexpected_return_type() {
         expect![[r#"
             22..23 '0': integer
             22..23 '0': unexpected return value of type `integer` in function with no return type
+            22..23 '0': unexpected return value of type `integer` in function with no return type
         "#]],
     );
 }
@@ -2035,6 +2036,42 @@ fn main(@builtin(position) pos: vec4f) -> @location(0) vec4f {
             152..159 'vec3(x)': vec3<f32>
             157..158 'x': ref<function, f32, read_write>
             161..162 '1': integer
+        "#]],
+    );
+}
+
+#[test]
+fn invalid_expression_call() {
+    check_infer(
+        ExtensionsConfig::default(),
+        "
+fn foo() {
+    let x = workgroupBarrier();
+    let z = foo();
+}
+",
+        expect![[r#"
+            19..20 'x': [error]
+            23..41 'workgr...rier()': [error]
+            51..52 'z': [error]
+            55..60 'foo()': [error]
+        "#]],
+    );
+}
+
+#[test]
+fn valid_call_statement() {
+    check_infer(
+        ExtensionsConfig::default(),
+        "
+fn foo() {
+    workgroupBarrier();
+    foo();
+}
+",
+        expect![[r#"
+            15..33 'workgr...rier()': [error]
+            39..44 'foo()': [error]
         "#]],
     );
 }
