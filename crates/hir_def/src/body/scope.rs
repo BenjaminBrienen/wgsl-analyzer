@@ -204,6 +204,9 @@ fn compute_statement_scopes(
             scopes.set_scope_statement(statement_id, new_scope);
             compute_compound_statement_scopes(statements, body, scopes, new_scope);
         },
+        Statement::ConditionalCompound { statements } => {
+            compute_compound_statement_scopes(statements, body, scopes, scope);
+        },
         Statement::Variable {
             binding_id,
             initializer,
