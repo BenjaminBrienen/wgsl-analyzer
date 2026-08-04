@@ -142,7 +142,7 @@ impl TypeLoweringContext<'_> {
                 match resolved_type {
                     Lowered::Type(r#type) => TemplateParameter::Type(r#type),
                     Lowered::TypeWithoutTemplate(_) => {
-                        self.diagnostics.push(TypeLoweringError {
+                        self.push_diagnostic(TypeLoweringError {
                             container: TypeContainer::Expression(template_argument),
                             kind: TypeLoweringErrorKind::MissingTemplate,
                         });
@@ -151,7 +151,7 @@ impl TypeLoweringContext<'_> {
                     Lowered::Enumerant(enumerant) => TemplateParameter::Enumerant(enumerant),
                     Lowered::Function(_) | Lowered::BuiltinFunction => {
                         // function<another_function>()
-                        self.diagnostics.push(TypeLoweringError {
+                        self.push_diagnostic(TypeLoweringError {
                             container: TypeContainer::Expression(template_argument),
                             kind: TypeLoweringErrorKind::ExpectedFunctionToBeCalled(
                                 ident_expression.path.clone(),

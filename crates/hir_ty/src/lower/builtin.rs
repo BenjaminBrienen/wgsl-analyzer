@@ -55,7 +55,7 @@ impl TypeLoweringContext<'_> {
                 }
             },
             Err(error) => {
-                self.diagnostics.push(error);
+                self.push_diagnostic(error);
                 Some(Lowered::Type(TypeKind::Error.intern(self.database)))
             },
         }
@@ -651,7 +651,7 @@ impl TypeLoweringContext<'_> {
         let r#type = match template_parameters.next_as_type() {
             Ok((r#type, _)) => r#type,
             Err(error) => {
-                self.diagnostics.push(error);
+                self.push_diagnostic(error);
                 TypeKind::Error.intern(self.database)
             },
         };
@@ -695,11 +695,11 @@ impl TypeLoweringContext<'_> {
                             "a `u32` or a `i32` greater than `0`".to_owned(),
                         ),
                     };
-                    self.diagnostics.push(error.clone());
+                    self.push_diagnostic(error.clone());
                     return Err(error);
                 },
                 Err(error) => {
-                    self.diagnostics.push(error.clone());
+                    self.push_diagnostic(error.clone());
                     return Err(error);
                 },
             }
@@ -723,7 +723,7 @@ impl TypeLoweringContext<'_> {
                 {
                     r#type
                 } else {
-                    self.diagnostics.push(TypeLoweringError {
+                    self.push_diagnostic(TypeLoweringError {
                         container: TypeContainer::Expression(expression),
                         kind: TypeLoweringErrorKind::UnexpectedTemplateArgument(
                             "a scalar".to_owned(),
@@ -733,7 +733,7 @@ impl TypeLoweringContext<'_> {
                 }
             },
             Err(error) => {
-                self.diagnostics.push(error);
+                self.push_diagnostic(error);
                 TypeKind::Error.intern(self.database)
             },
         }
@@ -754,7 +754,7 @@ impl TypeLoweringContext<'_> {
                 ) {
                     r#type
                 } else {
-                    self.diagnostics.push(TypeLoweringError {
+                    self.push_diagnostic(TypeLoweringError {
                         container: TypeContainer::Expression(expression),
                         kind: TypeLoweringErrorKind::UnexpectedTemplateArgument(
                             "one of: f32 or f16".to_owned(),
@@ -764,7 +764,7 @@ impl TypeLoweringContext<'_> {
                 }
             },
             Err(error) => {
-                self.diagnostics.push(error);
+                self.push_diagnostic(error);
                 TypeKind::Error.intern(self.database)
             },
         }
@@ -784,18 +784,18 @@ impl TypeLoweringContext<'_> {
                         "an address space".to_owned(),
                     ),
                 };
-                self.diagnostics.push(error.clone());
+                self.push_diagnostic(error.clone());
                 return Err(error);
             },
             Err(error) => {
-                self.diagnostics.push(error.clone());
+                self.push_diagnostic(error.clone());
                 return Err(error);
             },
         };
         let inner = match template_parameters.next_as_type() {
             Ok((inner, expression)) if inner.kind(self.database).is_storable() => inner,
             Ok((_, expression)) => {
-                self.diagnostics.push(TypeLoweringError {
+                self.push_diagnostic(TypeLoweringError {
                     container: TypeContainer::Expression(expression),
                     kind: TypeLoweringErrorKind::UnexpectedTemplateArgument(
                         "a storable type".to_owned(),
@@ -804,7 +804,7 @@ impl TypeLoweringContext<'_> {
                 TypeKind::Error.intern(self.database)
             },
             Err(error) => {
-                self.diagnostics.push(error);
+                self.push_diagnostic(error);
                 TypeKind::Error.intern(self.database)
             },
         };
@@ -816,7 +816,7 @@ impl TypeLoweringContext<'_> {
                     Enumerant::AccessMode(AccessMode::ReadWrite | AccessMode::ReadWrite),
                     expression,
                 )) if address_space == AddressSpace::Uniform => {
-                    self.diagnostics.push(TypeLoweringError {
+                    self.push_diagnostic(TypeLoweringError {
                         container: TypeContainer::Expression(expression),
                         kind: TypeLoweringErrorKind::UnexpectedTemplateArgument(
                             "`read` access mode for uniforms".to_owned(),
@@ -833,11 +833,11 @@ impl TypeLoweringContext<'_> {
                             "one of: (read, read_write, write)".to_owned(),
                         ),
                     };
-                    self.diagnostics.push(error.clone());
+                    self.push_diagnostic(error.clone());
                     return Err(error);
                 },
                 Err(error) => {
-                    self.diagnostics.push(error.clone());
+                    self.push_diagnostic(error.clone());
                     return Err(error);
                 },
             }
@@ -877,7 +877,7 @@ impl TypeLoweringContext<'_> {
                     } else {
                         "i32, u32, i64, or u64".to_owned()
                     };
-                    self.diagnostics.push(TypeLoweringError {
+                    self.push_diagnostic(TypeLoweringError {
                         container: TypeContainer::Expression(expression),
                         kind: TypeLoweringErrorKind::UnexpectedTemplateArgument(possible_types),
                     });
@@ -885,7 +885,7 @@ impl TypeLoweringContext<'_> {
                 }
             },
             Err(error) => {
-                self.diagnostics.push(error);
+                self.push_diagnostic(error);
                 TypeKind::Error.intern(self.database)
             },
         }
@@ -925,13 +925,13 @@ impl TypeLoweringContext<'_> {
                                 "i32 or u32 or f32".to_owned(),
                             ),
                         };
-                        self.diagnostics.push(error.clone());
+                        self.push_diagnostic(error.clone());
                         Err(error)
                     },
                 }
             },
             Err(error) => {
-                self.diagnostics.push(error.clone());
+                self.push_diagnostic(error.clone());
                 Err(error)
             },
         }
@@ -951,11 +951,11 @@ impl TypeLoweringContext<'_> {
                         "a texel format (`rgba8unorm`, `rgba8snorm`, ...)".to_owned(),
                     ),
                 };
-                self.diagnostics.push(error.clone());
+                self.push_diagnostic(error.clone());
                 return Err(error);
             },
             Err(error) => {
-                self.diagnostics.push(error.clone());
+                self.push_diagnostic(error.clone());
                 return Err(error);
             },
         };
@@ -968,11 +968,11 @@ impl TypeLoweringContext<'_> {
                         "one of: read, write, read_write".to_owned(),
                     ),
                 };
-                self.diagnostics.push(error.clone());
+                self.push_diagnostic(error.clone());
                 return Err(error);
             },
             Err(error) => {
-                self.diagnostics.push(error.clone());
+                self.push_diagnostic(error.clone());
                 return Err(error);
             },
         };

@@ -295,7 +295,7 @@ impl<'db> InferPrinter<'db> {
         let Some((range, text)) = self.get_expression_range_text(source_map, expression) else {
             return;
         };
-        writeln!(buffer, "{range:?} '{}': {}", ellipsize(text, 15), message,).unwrap();
+        writeln!(buffer, "{range:?} '{}': {message}", ellipsize(text, 15)).unwrap();
     }
 
     fn print_no_builtin_overload(

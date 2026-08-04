@@ -3,14 +3,13 @@
 
 pub mod builtins;
 pub mod database;
+pub mod diagnostics;
 pub mod function;
 pub mod infer;
 pub mod layout;
+pub mod lower;
 pub mod ty;
 pub mod validate;
-
-pub mod diagnostics;
-pub mod lower;
 
 pub use wgsl_types::syntax::AddressSpace;
 

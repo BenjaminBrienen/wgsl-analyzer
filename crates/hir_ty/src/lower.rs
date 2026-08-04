@@ -149,6 +149,7 @@ impl fmt::Display for TypeLoweringErrorKind {
 
 /// A lowered type, or the definition of an item.
 /// Also covers built-ins.
+#[must_use]
 pub enum Lowered {
     Type(Type),
     TypeWithoutTemplate(Type),
@@ -236,6 +237,14 @@ impl<'database> TypeLoweringContext<'database> {
         }
     }
 
+    /// Adds a diagnostic to the context and returns an interned `Lowered::Type(TypeKind::Error)`.
+    fn push_diagnostic(
+        &mut self,
+        diagnostic: TypeLoweringError,
+    ) {
+        self.diagnostics.push(diagnostic);
+    }
+
     pub fn lower(
         &mut self,
         expression: ExpressionId,
@@ -249,7 +258,7 @@ impl<'database> TypeLoweringContext<'database> {
         ) {
             Ok(lowered) => lowered,
             Err(error) => {
-                self.diagnostics.push(error);
+                self.push_diagnostic(error);
                 Lowered::Type(TypeKind::Error.intern(self.database))
             },
         }
@@ -276,9 +285,9 @@ impl<'database> TypeLoweringContext<'database> {
             Ok(ResolveKind::TypeAlias(id)) => {
                 Ok(Lowered::Type(self.database.type_alias_type(id).0))
             },
-            Ok(ResolveKind::Struct(id)) => Ok(Lowered::Type(
-                self.database.intern_type(TypeKind::Struct(id)),
-            )),
+            Ok(ResolveKind::Struct(id)) => {
+                Ok(Lowered::Type(TypeKind::Struct(id).intern(self.database)))
+            },
             Ok(ResolveKind::Function(id)) => Ok(Lowered::Function(self.database.function_type(id))),
             Ok(ResolveKind::GlobalConstant(id)) => Ok(Lowered::GlobalConstant(id)),
             Ok(ResolveKind::GlobalVariable(id)) => Ok(Lowered::GlobalVariable(id)),
@@ -316,7 +325,7 @@ impl<'database> TypeLoweringContext<'database> {
             return;
         }
         for template_expression in template_parameters {
-            self.diagnostics.push(TypeLoweringError {
+            self.push_diagnostic(TypeLoweringError {
                 container: TypeContainer::Expression(*template_expression),
                 kind: TypeLoweringErrorKind::UnexpectedTemplateArgument("nothing".to_owned()),
             });
@@ -331,7 +340,7 @@ impl<'database> TypeLoweringContext<'database> {
         if expected.contains(&template_parameters.len()) {
             true
         } else {
-            self.diagnostics.push(TypeLoweringError {
+            self.push_diagnostic(TypeLoweringError {
                 container: *template_parameters.container(),
                 kind: TypeLoweringErrorKind::WrongNumberOfTemplateArguments {
                     expected,
@@ -359,24 +368,22 @@ impl<'database> TypeLoweringContext<'database> {
                 Lowered::Type(TypeKind::Error.intern(self.database))
             });
         match lowered {
-            Ok(Lowered::Type(r#type)) => r#type,
-            Ok(Lowered::TypeWithoutTemplate(_)) => {
-                self.diagnostics.push(TypeLoweringError {
+            Lowered::Type(r#type) => r#type,
+            Lowered::TypeWithoutTemplate(_) => {
+                self.push_diagnostic(TypeLoweringError {
                     container: TypeContainer::TypeSpecifier(type_specifier_id),
                     kind: TypeLoweringErrorKind::MissingTemplate,
                 });
                 TypeKind::Error.intern(self.database)
             },
-            Ok(
-                Lowered::Enumerant(_)
-                | Lowered::Function(_)
-                | Lowered::BuiltinFunction
-                | Lowered::GlobalConstant(_)
-                | Lowered::GlobalVariable(_)
-                | Lowered::Override(_)
-                | Lowered::Local(_),
-            ) => {
-                self.diagnostics.push(TypeLoweringError {
+            Lowered::Enumerant(_)
+            | Lowered::Function(_)
+            | Lowered::BuiltinFunction
+            | Lowered::GlobalConstant(_)
+            | Lowered::GlobalVariable(_)
+            | Lowered::Override(_)
+            | Lowered::Local(_) => {
+                self.push_diagnostic(TypeLoweringError {
                     container: TypeContainer::TypeSpecifier(type_specifier_id),
                     kind: TypeLoweringErrorKind::ExpectedType(type_specifier.path.clone()),
                 });
@@ -400,15 +407,11 @@ impl<'database> WgslTypeConverter<'database> {
     }
 
     #[expect(
-        clippy::wrong_self_convention,
-        reason = "naming things is hard and this is probably changing in the future"
-    )]
-    #[expect(
         clippy::too_many_lines,
         reason = "long match, not a good candidate for refactoring"
     )]
     pub fn to_wgsl_types(
-        &mut self,
+        &self,
         r#type: Type,
     ) -> wgsl_types::Type {
         match r#type.kind(self.database) {
@@ -445,9 +448,8 @@ impl<'database> WgslTypeConverter<'database> {
             TypeKind::Struct(struct_id) => {
                 let data = self.database.struct_data(struct_id).0;
                 let fields = &self.database.field_types(struct_id).0;
-                let name = self.intern_struct(struct_id);
                 wgsl_types::Type::Struct(Box::new(wgsl_types::ty::StructType {
-                    name,
+                    name: data.name.as_str().to_owned(),
                     members: data
                         .fields
                         .iter()
@@ -532,7 +534,7 @@ impl<'database> WgslTypeConverter<'database> {
 
     /// Returns `None` if it is an error type.
     pub fn template_parameter_to_wgsl_types(
-        &mut self,
+        &self,
         param: TemplateParameter,
     ) -> Option<wgsl_types::tplt::TpltParam> {
         Some(match param {
@@ -920,6 +922,25 @@ impl<'database> WgslTypeConverter<'database> {
             | TypeKind::BoundVariable(_)
             | TypeKind::StorageTypeOfTexelFormat(_)) => panic!("invalid sampled type {kind:?}"),
         }
+    }
+
+    pub fn to_wgsl_template_parameters(
+        &self,
+        store: &ExpressionStore,
+        expression: ExpressionId,
+        mut template_parameters: TemplateParameters,
+        arguments: &[(ExpressionId, Type)],
+    ) -> Option<(Vec<wgsl_types::tplt::TpltParam>, Vec<wgsl_types::Type>)> {
+        let mut template_args = vec![];
+        while let Some((template_parameter, _)) = template_parameters.take_next() {
+            let template_parameter = self.template_parameter_to_wgsl_types(template_parameter)?;
+            template_args.push(template_parameter);
+        }
+        let converted_arguments: Vec<_> = arguments
+            .iter()
+            .map(|(_, r#type)| self.to_wgsl_types(*r#type))
+            .collect();
+        Some((template_args, converted_arguments))
     }
 }
 

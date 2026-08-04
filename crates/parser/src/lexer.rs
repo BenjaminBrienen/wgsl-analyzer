@@ -9,13 +9,13 @@ pub(crate) type Token = SyntaxKind;
 
 #[derive(Default, Clone)]
 pub struct LexerExtras {
-    /// used to force an identifier
+    /// Used to force an identifier.
     pub after_let: bool,
-    /// used for context-sensitive parsing of identifiers
+    /// Used for context-sensitive parsing of identifiers.
     pub after_at: bool,
-    /// used for context-sensitive parsing of identifiers
+    /// Used for context-sensitive parsing of identifiers.
     pub after_interpolate: bool,
-    /// used for context-sensitive parsing of identifiers
+    /// Used for context-sensitive parsing of identifiers.
     pub after_early_depth_test: bool,
     pub edition: edition::Edition,
     pub extensions: edition::ExtensionsConfig,

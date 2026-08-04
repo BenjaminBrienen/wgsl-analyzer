@@ -7,8 +7,11 @@ use hir_def::{
 use hir_ty::{
     builtins::Builtin,
     infer::InferenceResult,
-    ty::pretty::{
-        TypeVerbosity, pretty_fn_with_verbosity, pretty_type, pretty_type_with_verbosity,
+    ty::{
+        TypeKind,
+        pretty::{
+            TypeVerbosity, pretty_fn_with_verbosity, pretty_type, pretty_type_with_verbosity,
+        },
     },
 };
 
@@ -56,7 +59,7 @@ pub(crate) fn complete_names_in_scope(
                 .and_then(hir::ChildContainer::as_def_with_body_id)
                 .map(|definition| {
                     let inference = InferenceResult::of(context.database, definition);
-                    inference[local]
+                    inference.binding_type(local)
                 })
                 .map(|r#type| pretty_type(context.database, r#type)),
             ScopeDef::ModuleDefinition(item) => {

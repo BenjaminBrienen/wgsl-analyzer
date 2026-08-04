@@ -161,7 +161,6 @@ pub struct BuiltinStruct {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum TypeKind {
-    Error,
     Scalar(ScalarType),
     Atomic(AtomicType),
     #[expect(clippy::doc_paragraphs_missing_punctuation, reason = "false positive")]
@@ -177,6 +176,11 @@ pub enum TypeKind {
     Pointer(Pointer),
     BoundVariable(BoundVariable),            // used for builtins?
     StorageTypeOfTexelFormat(BoundVariable), // for example, rgba8unorm -> vec4<f32>
+
+    /// A placeholder for a type which could not be computed.
+    ///
+    /// This is propagated to avoid useless error messages.
+    Error,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

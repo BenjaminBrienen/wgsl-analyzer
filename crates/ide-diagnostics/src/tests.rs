@@ -571,7 +571,6 @@ fn foo() {
 }
 ",
         expect![[r#"
-            27..32 wgsl-analyzer Error 31: expected a value, but function has no return type
             15..34 wgsl-analyzer Error 7: expected 0 parameters, found 1
         "#]],
     );
@@ -601,9 +600,20 @@ fn foo() {
     let z = foo();
 }
 ",
-        expect![[r#"
-            23..41 wgsl-analyzer Error 31: expected a value, but function has no return type
-            55..60 wgsl-analyzer Error 31: expected a value, but function has no return type
-        "#]],
+        expect![""],
     );
 }
+
+#[test]
+fn valid_call_statement() {
+    check_diagnostics(
+        "
+fn foo() {
+    workgroupBarrier();
+    foo();
+}
+",
+        expect![""],
+    );
+}
+
