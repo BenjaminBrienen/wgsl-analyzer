@@ -197,7 +197,7 @@ impl ExprCollector<'_> {
         expression: Expression,
         source: Result<AstPointer<ast::Expression>, SyntheticSyntax>,
     ) -> ExpressionId {
-        let id = self.store.exprs.alloc(expression);
+        let id = self.store.expressions.alloc(expression);
         self.store.expression_map_back.insert(id, source);
         id
     }

@@ -87,6 +87,7 @@ impl DefDiagnostic {
             kind: DefDiagnosticKind::DetachedFile { id },
         }
     }
+
     pub(crate) const fn name_conflict(
         container: EditionedFileId,
         item: Location<ast::Item>,

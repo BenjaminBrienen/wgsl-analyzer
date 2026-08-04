@@ -20,7 +20,7 @@ pub fn collect<Function>(
 {
     let body = Body::of(db, body);
 
-    for (_, expression) in body.store.exprs.iter() {
+    for (_, expression) in body.store.expressions.iter() {
         // See https://github.com/gpuweb/gpuweb/issues/1146#issuecomment-714721825
         let hir_def::expression::Expression::BinaryOperation {
             operation,

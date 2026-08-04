@@ -355,20 +355,20 @@ impl fmt::Display for VfsPath {
 impl fmt::Debug for VfsPath {
     fn fmt(
         &self,
-        f: &mut fmt::Formatter<'_>,
+        formatter: &mut fmt::Formatter<'_>,
     ) -> fmt::Result {
-        fmt::Debug::fmt(&self.0, f)
+        fmt::Debug::fmt(&self.0, formatter)
     }
 }
 
 impl fmt::Debug for VfsPathRepr {
     fn fmt(
         &self,
-        f: &mut fmt::Formatter<'_>,
+        formatter: &mut fmt::Formatter<'_>,
     ) -> fmt::Result {
         match &self {
-            Self::PathBuf(it) => it.fmt(f),
-            Self::VirtualPath(VirtualPath(it)) => it.fmt(f),
+            Self::PathBuf(it) => it.fmt(formatter),
+            Self::VirtualPath(VirtualPath(it)) => it.fmt(formatter),
         }
     }
 }

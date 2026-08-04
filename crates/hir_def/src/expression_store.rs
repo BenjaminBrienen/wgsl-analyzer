@@ -25,7 +25,7 @@ pub struct SyntheticSyntax;
 /// An arena with expressions.
 #[derive(Default, Debug, PartialEq, Eq)]
 pub struct ExpressionStore {
-    pub exprs: Arena<Expression>,
+    pub expressions: Arena<Expression>,
     pub types: Arena<TypeSpecifier>,
     /// Used for signatures and for bodies.
     /// For example, a `const foo: vec3<f32> = vec3f(1,2,3);` will have two stores.
@@ -61,7 +61,7 @@ impl Index<ExpressionId> for ExpressionStore {
         &self,
         index: ExpressionId,
     ) -> &Expression {
-        &self.exprs[index]
+        &self.expressions[index]
     }
 }
 
@@ -166,7 +166,7 @@ impl PartialEq for ExpressionSourceMap {
 /// The body of an item (function, const etc.).
 #[derive(Debug, Eq, PartialEq, Default)]
 pub struct ExpressionStoreBuilder {
-    exprs: Arena<Expression>,
+    expressions: Arena<Expression>,
     types: Arena<TypeSpecifier>,
     store_source: ExpressionStoreSource,
     parenthesis_expressions: FxHashSet<ExpressionId>,
@@ -183,7 +183,7 @@ impl ExpressionStoreBuilder {
     #[must_use]
     pub fn finish(self) -> (ExpressionStore, ExpressionSourceMap) {
         let Self {
-            mut exprs,
+            mut expressions,
             mut types,
             store_source,
             mut parenthesis_expressions,
@@ -192,7 +192,7 @@ impl ExpressionStoreBuilder {
             mut type_map,
             mut type_map_back,
         } = self;
-        exprs.shrink_to_fit();
+        expressions.shrink_to_fit();
         types.shrink_to_fit();
         parenthesis_expressions.shrink_to_fit();
         expression_map.shrink_to_fit();
@@ -201,7 +201,7 @@ impl ExpressionStoreBuilder {
         type_map_back.shrink_to_fit();
         (
             ExpressionStore {
-                exprs,
+                expressions,
                 types,
                 store_source,
                 parenthesis_expressions,

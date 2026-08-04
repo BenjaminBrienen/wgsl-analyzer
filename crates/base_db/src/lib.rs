@@ -31,12 +31,12 @@ pub use vfs::{AnchoredPath, AnchoredPathBuf, FileId, VfsPath, file_set::FileSet}
 
 #[macro_export]
 macro_rules! impl_intern_key {
-    ($id:ident, $loc:ty) => {
+    ($id:ident, $location:ty) => {
         #[salsa::interned(unsafe(no_lifetime), revisions = usize::MAX)]
         #[derive(PartialOrd, Ord)]
         pub struct $id {
             #[returns(ref)]
-            pub location: $loc,
+            pub location: $location,
         }
 
         // If we derive this salsa prints the values recursively, and this causes us to blow.
@@ -55,8 +55,8 @@ macro_rules! impl_intern_key {
 
 #[macro_export]
 macro_rules! impl_intern_lookup {
-    ($id:ident, $loc:ty) => {
-        impl base_db::Intern for $loc {
+    ($id:ident, $location:ty) => {
+        impl base_db::Intern for $location {
             type ID = $id;
             fn intern(
                 self,
@@ -67,7 +67,7 @@ macro_rules! impl_intern_lookup {
         }
 
         impl base_db::Lookup for $id {
-            type Data = $loc;
+            type Data = $location;
 
             fn lookup<'db>(
                 &self,
@@ -327,9 +327,9 @@ impl From<PackageName> for PackageDisplayName {
 impl fmt::Display for PackageDisplayName {
     fn fmt(
         &self,
-        f: &mut fmt::Formatter<'_>,
+        formatter: &mut fmt::Formatter<'_>,
     ) -> fmt::Result {
-        self.package_name.fmt(f)
+        self.package_name.fmt(formatter)
     }
 }
 

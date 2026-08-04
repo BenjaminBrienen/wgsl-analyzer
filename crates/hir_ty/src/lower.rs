@@ -253,16 +253,16 @@ pub enum LoweredKind {
 impl std::fmt::Display for LoweredKind {
     fn fmt(
         &self,
-        f: &mut fmt::Formatter<'_>,
+        formatter: &mut fmt::Formatter<'_>,
     ) -> fmt::Result {
         match self {
-            Self::Type => write!(f, "type"),
-            Self::Function => write!(f, "function"),
-            Self::Constant => write!(f, "constant"),
-            Self::Variable => write!(f, "variable"),
-            Self::Override => write!(f, "override"),
-            Self::Local => write!(f, "local variable"),
-            Self::Enumerant => write!(f, "enumerant"),
+            Self::Type => write!(formatter, "type"),
+            Self::Function => write!(formatter, "function"),
+            Self::Constant => write!(formatter, "constant"),
+            Self::Variable => write!(formatter, "variable"),
+            Self::Override => write!(formatter, "override"),
+            Self::Local => write!(formatter, "local variable"),
+            Self::Enumerant => write!(formatter, "enumerant"),
         }
     }
 }
