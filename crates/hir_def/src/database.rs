@@ -18,7 +18,10 @@ use crate::{
     FileAstId, InFile,
     ast_id::AstIdMap,
     attributes::{AttributeDefId, AttributesWithOwner},
-    body::{Body, BodySourceMap, scope::ExprScopes},
+    body::{
+        Body, BodySourceMap,
+        scope::{AstId, ExprScopes},
+    },
     expression_store::{ExpressionSourceMap, ExpressionStore},
     item_scope::ItemScope,
     item_tree::{
@@ -209,6 +212,11 @@ pub trait InternDatabase: SourceDatabase {
         &self,
         location: Location<ast::AssertStatement>,
     ) -> GlobalAssertStatementId;
+    #[salsa::interned]
+    fn intern_compound_statement(
+        &self,
+        location: CompoundStatementLocation,
+    ) -> CompoundStatementId;
 }
 
 /// `Location` points to an AST node in any file. Corresponds to `AstId` in Rust-Analyzer.
@@ -277,6 +285,18 @@ impl_intern!(
     intern_global_assert_statement,
     lookup_intern_global_assert_statement
 );
+
+impl_intern!(
+    CompoundStatementId,
+    CompoundStatementLocation,
+    intern_compound_statement,
+    lookup_intern_compound_statement
+);
+
+#[derive(Debug, Hash, PartialEq, Eq, Clone)]
+pub struct CompoundStatementLocation {
+    pub ast_id: AstId<ast::CompoundStatement>,
+}
 
 /// Module items with a body.
 #[derive(PartialEq, Eq, Hash, Debug, Clone, Copy, salsa_macros::Supertype)]

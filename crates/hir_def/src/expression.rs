@@ -1,9 +1,17 @@
-use la_arena::Idx;
+use std::ops::Index;
+
+use either::Either;
+use la_arena::{ArenaMap, Idx};
 pub use syntax::ast::operators::*;
-use syntax::ast::{self, IncrementDecrement};
+use syntax::{
+    ast::{self, IncrementDecrement},
+    pointer::AstPointer,
+};
 
 use crate::{
     body::BindingId,
+    database::CompoundStatementId,
+    expression_store::SyntheticSyntax,
     item_tree::Name,
     type_specifier::{IdentExpression, TypeSpecifierId},
 };
@@ -62,12 +70,32 @@ pub enum Expression {
     IdentExpression(IdentExpression),
 }
 
-pub type StatementId = Idx<Statement>;
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Copy)]
+pub enum StatementId {
+    Other(Idx<Statement>),
+    Compound(CompoundStatementId),
+    // VariableOrValue(VariableOrValueStatementId), // for_init
+    // variable_updating_statement
+}
+
+impl Index<StatementId>
+    for ArenaMap<StatementId, Result<AstPointer<ast::Statement>, SyntheticSyntax>>
+{
+    type Output = Result<AstPointer<ast::Statement>, SyntheticSyntax>;
+
+    fn index(
+        &self,
+        index: StatementId,
+    ) -> &Self::Output {
+        todo!()
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Statement {
     Missing,
     Compound {
+        id: Option<CompoundStatementId>,
         statements: Vec<StatementId>,
     },
     ConditionalCompound {
@@ -110,32 +138,32 @@ pub enum Statement {
     },
     If {
         condition: ExpressionId,
-        block: StatementId,
-        else_if_blocks: Vec<StatementId>,
-        else_block: Option<StatementId>,
+        block: Option<CompoundStatementId>,
+        else_if_blocks: Vec<CompoundStatementId>,
+        else_block: Option<CompoundStatementId>,
     },
     For {
         initializer: Option<StatementId>,
         condition: Option<ExpressionId>,
         continuing_part: Option<StatementId>,
-        block: StatementId,
+        block: CompoundStatementId,
     },
     While {
         condition: ExpressionId,
-        block: StatementId,
+        block: CompoundStatementId,
     },
     Switch {
         expression: ExpressionId,
-        case_blocks: Vec<(Vec<SwitchCaseSelector>, StatementId)>,
+        case_blocks: Vec<(Vec<SwitchCaseSelector>, CompoundStatementId)>,
     },
     Loop {
-        body: StatementId,
+        body: CompoundStatementId,
     },
     Discard,
     Break,
     Continue,
     Continuing {
-        block: StatementId,
+        block: CompoundStatementId,
     },
     BreakIf {
         condition: ExpressionId,

@@ -11,7 +11,7 @@ use triomphe::Arc;
 use crate::{
     HasSource as _,
     attributes::Attribute,
-    database::{DefDatabase, DefinitionWithBodyId},
+    database::{CompoundStatementId, DefDatabase, DefinitionWithBodyId},
     expression::{ExpressionId, Statement, StatementId},
     expression_store::{ExpressionSourceMap, ExpressionStore, SyntheticSyntax},
     item_tree::Name,
@@ -29,14 +29,13 @@ pub struct Body {
     pub store: ExpressionStore,
     pub attributes: Arena<Attribute>,
     pub statements: Arena<Statement>,
-    pub bindings: Arena<Binding>,
 
     // for global declarations
     pub main_binding: Option<BindingId>,
     // for functions
     pub parameters: Vec<BindingId>,
 
-    pub root: Option<Either<StatementId, ExpressionId>>,
+    pub root: Option<Either<CompoundStatementId, ExpressionId>>,
 }
 
 impl std::ops::Deref for Body {
@@ -55,7 +54,7 @@ impl std::ops::Deref for Body {
 /// expression containing it; but for type inference etc., we want to operate on
 /// a structure that is agnostic to the actual positions of expressions in the
 /// file, so that we do not recompute types whenever some whitespace is typed.
-#[derive(Default, Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct BodySourceMap {
     expressions: ExpressionSourceMap,
 

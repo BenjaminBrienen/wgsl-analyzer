@@ -480,7 +480,6 @@ impl<'database> SourceAnalyzer<'database> {
     ) -> Option<Field> {
         let expression = self.expression_id(&ast::Expression::FieldExpression(field))?;
         let field = self.infer.field_resolution(expression)?;
-
         Some(Field { id: field })
     }
 

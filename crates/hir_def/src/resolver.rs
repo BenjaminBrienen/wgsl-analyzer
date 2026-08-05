@@ -146,8 +146,8 @@ impl Resolver {
                     .expression_scopes
                     .scope_chain(Some(expression_scope.scope_id))
                     .for_each(|id| {
-                        let data = &expression_scope.expression_scopes[id];
-                        data.entries.iter().for_each(|entry| {
+                        let data = &expression_scope.expression_scopes.entries(id);
+                        data.iter().for_each(|entry| {
                             callback(&entry.name, ScopeDef::Local(entry.binding));
                         });
                     });

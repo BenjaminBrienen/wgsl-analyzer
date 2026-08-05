@@ -629,34 +629,33 @@ fn f() {
             4382..4395 'person_weight': f32
             4403..4409 'person': ref<private, S, read_write>
             4403..4416 'person.weight': ref<private, f32, read_write>
-            4524..4530 'uv_ptr': ptr<function, vec2<f32>, read_write>
-            4533..4536 '&uv': ptr<function, vec2<f32>, read_write>
-            4534..4536 'uv': ref<function, vec2<f32>, read_write>
-            5281..5288 '*uv_ptr': ref<function, vec2<f32>, read_write>
-            5282..5288 'uv_ptr': ptr<function, vec2<f32>, read_write>
+            4524..4530 'uv_ptr': [error]
+            4533..4536 '&uv': [error]
+            4534..4536 'uv': [error]
+            5281..5288 '*uv_ptr': [error]
+            5282..5288 'uv_ptr': [error]
             5291..5306 'vec2f(1.0, 2.0)': vec2<f32>
             5297..5300 '1.0': float
             5302..5305 '2.0': float
-            6017..6023 'uv_ptr': ptr<function, vec2<f32>, read_write>
-            6017..6025 'uv_ptr.x': ref<function, f32, read_write>
+            6017..6023 'uv_ptr': [error]
             6028..6031 '1.0': float
-            6706..6712 'uv_ptr': ptr<function, vec2<f32>, read_write>
-            6706..6715 'uv_ptr[1]': ref<function, f32, read_write>
+            6706..6712 'uv_ptr': [error]
+            6706..6715 'uv_ptr[1]': [error]
             6713..6714 '1': integer
             6718..6721 '2.0': float
-            6732..6737 'm_ptr': ptr<function, mat3x2<f32>, read_write>
-            6740..6742 '&m': ptr<function, mat3x2<f32>, read_write>
-            6741..6742 'm': ref<function, mat3x2<f32>, read_write>
+            6732..6737 'm_ptr': [error]
+            6740..6742 '&m': [error]
+            6741..6742 'm': [error]
             7611..7619 'p_m_col2': vec2<f32>
-            7633..7638 'm_ptr': ptr<function, mat3x2<f32>, read_write>
-            7633..7641 'm_ptr[2]': ref<function, vec2<f32>, read_write>
+            7633..7638 'm_ptr': [error]
+            7633..7641 'm_ptr[2]': [error]
             7639..7640 '2': integer
-            7652..7657 'A_ptr': ptr<function, array<i32, 5>, read_write>
-            7660..7662 '&A': ptr<function, array<i32, 5>, read_write>
-            7661..7662 'A': ref<function, array<i32, 5>, read_write>
+            7652..7657 'A_ptr': [error]
+            7660..7662 '&A': [error]
+            7661..7662 'A': [error]
             8440..8449 'A_4_value': i32
-            8457..8462 'A_ptr': ptr<function, array<i32, 5>, read_write>
-            8457..8465 'A_ptr[4]': ref<function, i32, read_write>
+            8457..8462 'A_ptr': [error]
+            8457..8465 'A_ptr[4]': [error]
             8463..8464 '4': integer
             8476..8486 'person_ptr': ptr<private, S, read_write>
             8489..8496 '&person': ptr<private, S, read_write>
@@ -664,6 +663,18 @@ fn f() {
             9329..9342 'person_weight': f32
             9350..9360 'person_ptr': ptr<private, S, read_write>
             9350..9367 'person...weight': ref<private, f32, read_write>
+            InvalidType { error: TypeLoweringError { container: Expression(Idx::<Expression>(20)), kind: UnresolvedPath { path: Path(ModPath("uv")), failed_segment: 0 } } } in Body
+            ExpectedLoweredKind { expression: Idx::<Expression>(20), expected: Variable, actual: Type, path: Path(ModPath("uv")) } in Body
+            AssignmentNotAReference { left_side: Idx::<Expression>(23), actual: Type(3002) } in Body
+            AssignmentNotAReference { left_side: Idx::<Expression>(28), actual: Type(3002) } in Body
+            ArrayAccessInvalidType { expression: Idx::<Expression>(32), type: Type(3002) } in Body
+            AssignmentNotAReference { left_side: Idx::<Expression>(32), actual: Type(3002) } in Body
+            InvalidType { error: TypeLoweringError { container: Expression(Idx::<Expression>(34)), kind: UnresolvedPath { path: Path(ModPath("m")), failed_segment: 0 } } } in Body
+            ExpectedLoweredKind { expression: Idx::<Expression>(34), expected: Variable, actual: Type, path: Path(ModPath("m")) } in Body
+            ArrayAccessInvalidType { expression: Idx::<Expression>(38), type: Type(3002) } in Body
+            InvalidType { error: TypeLoweringError { container: Expression(Idx::<Expression>(40)), kind: UnresolvedPath { path: Path(ModPath("A")), failed_segment: 0 } } } in Body
+            ExpectedLoweredKind { expression: Idx::<Expression>(40), expected: Variable, actual: Type, path: Path(ModPath("A")) } in Body
+            ArrayAccessInvalidType { expression: Idx::<Expression>(44), type: Type(3002) } in Body
         "#]],
     );
 }
@@ -754,10 +765,13 @@ fn struct_constructor_unrefs() {
             93..96 '1.0': float
             98..101 '2.0': float
             103..106 '3.0': float
-            117..118 's': S
-            121..128 'S(u, a)': S
-            123..124 'u': ref<function, u32, read_write>
+            117..118 's': [error]
+            121..128 'S(u, a)': [error]
+            123..124 'u': [error]
             126..127 'a': ref<function, array<f32, 3>, read_write>
+            InvalidType { error: TypeLoweringError { container: Expression(Idx::<Expression>(7)), kind: UnresolvedPath { path: Path(ModPath("u")), failed_segment: 0 } } } in Body
+            ExpectedLoweredKind { expression: Idx::<Expression>(7), expected: Variable, actual: Type, path: Path(ModPath("u")) } in Body
+            123..124 'u': expected u32 but got [error]
         "#]],
     );
 }
@@ -1774,32 +1788,48 @@ fn add_refs_and_ptrs() {
             187..191 'data': ptr<storage, MyData, read_write>
             187..193 'data.a': ref<storage, u32, read_write>
             206..207 't': ref<function, u32, read_write>
-            206..216 't + data.b': u32
-            210..214 'data': ptr<storage, MyData, read_write>
-            210..216 'data.b': ref<storage, u32, read_write>
+            206..216 't + data.b': [error]
+            210..214 'data': [error]
+            InvalidType { error: TypeLoweringError { container: Expression(Idx::<Expression>(7)), kind: UnresolvedPath { path: Path(ModPath("data")), failed_segment: 0 } } } in Body
+            ExpectedLoweredKind { expression: Idx::<Expression>(7), expected: Variable, actual: Type, path: Path(ModPath("data")) } in Body
             240..245 'a_ref': ref<function, i32, read_write>
             248..249 '1': integer
             259..264 'b_ref': ref<function, i32, read_write>
             267..268 '1': integer
-            279..284 'a_ptr': ptr<function, i32, read_write>
-            287..293 '&a_ref': ptr<function, i32, read_write>
-            288..293 'a_ref': ref<function, i32, read_write>
-            303..308 'b_ptr': ptr<function, i32, read_write>
-            311..317 '&b_ref': ptr<function, i32, read_write>
-            312..317 'b_ref': ref<function, i32, read_write>
-            328..333 'test1': i32
-            336..341 'a_ref': ref<function, i32, read_write>
-            336..349 'a_ref + b_ref': i32
-            344..349 'b_ref': ref<function, i32, read_write>
-            359..364 'test2': ptr<function, i32, read_write>
-            367..372 'a_ptr': ptr<function, i32, read_write>
-            367..380 'a_ptr + b_ptr': ptr<function, i32, read_write>
-            375..380 'b_ptr': ptr<function, i32, read_write>
+            279..284 'a_ptr': [error]
+            287..293 '&a_ref': [error]
+            288..293 'a_ref': [error]
+            303..308 'b_ptr': [error]
+            311..317 '&b_ref': [error]
+            312..317 'b_ref': [error]
+            328..333 'test1': [error]
+            336..341 'a_ref': [error]
+            336..349 'a_ref + b_ref': [error]
+            344..349 'b_ref': [error]
+            359..364 'test2': [error]
+            367..372 'a_ptr': [error]
+            367..380 'a_ptr + b_ptr': [error]
+            375..380 'b_ptr': [error]
             390..395 'test3': [error]
-            398..403 'a_ptr': ptr<function, i32, read_write>
+            398..403 'a_ptr': [error]
             398..411 'a_ptr + b_ref': [error]
-            406..411 'b_ref': ref<function, i32, read_write>
-            NoBuiltinOverload { expression: Idx::<Expression>(14), builtin: BuiltinId(3800), name: Some("+"), parameters: [Type(3012), Type(3010)] } in Body
+            406..411 'b_ref': [error]
+            InvalidType { error: TypeLoweringError { container: Expression(Idx::<Expression>(2)), kind: UnresolvedPath { path: Path(ModPath("a_ref")), failed_segment: 0 } } } in Body
+            ExpectedLoweredKind { expression: Idx::<Expression>(2), expected: Variable, actual: Type, path: Path(ModPath("a_ref")) } in Body
+            InvalidType { error: TypeLoweringError { container: Expression(Idx::<Expression>(4)), kind: UnresolvedPath { path: Path(ModPath("b_ref")), failed_segment: 0 } } } in Body
+            ExpectedLoweredKind { expression: Idx::<Expression>(4), expected: Variable, actual: Type, path: Path(ModPath("b_ref")) } in Body
+            InvalidType { error: TypeLoweringError { container: Expression(Idx::<Expression>(6)), kind: UnresolvedPath { path: Path(ModPath("a_ref")), failed_segment: 0 } } } in Body
+            ExpectedLoweredKind { expression: Idx::<Expression>(6), expected: Variable, actual: Type, path: Path(ModPath("a_ref")) } in Body
+            InvalidType { error: TypeLoweringError { container: Expression(Idx::<Expression>(7)), kind: UnresolvedPath { path: Path(ModPath("b_ref")), failed_segment: 0 } } } in Body
+            ExpectedLoweredKind { expression: Idx::<Expression>(7), expected: Variable, actual: Type, path: Path(ModPath("b_ref")) } in Body
+            InvalidType { error: TypeLoweringError { container: Expression(Idx::<Expression>(9)), kind: UnresolvedPath { path: Path(ModPath("a_ptr")), failed_segment: 0 } } } in Body
+            ExpectedLoweredKind { expression: Idx::<Expression>(9), expected: Variable, actual: Type, path: Path(ModPath("a_ptr")) } in Body
+            InvalidType { error: TypeLoweringError { container: Expression(Idx::<Expression>(10)), kind: UnresolvedPath { path: Path(ModPath("b_ptr")), failed_segment: 0 } } } in Body
+            ExpectedLoweredKind { expression: Idx::<Expression>(10), expected: Variable, actual: Type, path: Path(ModPath("b_ptr")) } in Body
+            InvalidType { error: TypeLoweringError { container: Expression(Idx::<Expression>(12)), kind: UnresolvedPath { path: Path(ModPath("a_ptr")), failed_segment: 0 } } } in Body
+            ExpectedLoweredKind { expression: Idx::<Expression>(12), expected: Variable, actual: Type, path: Path(ModPath("a_ptr")) } in Body
+            InvalidType { error: TypeLoweringError { container: Expression(Idx::<Expression>(13)), kind: UnresolvedPath { path: Path(ModPath("b_ref")), failed_segment: 0 } } } in Body
+            ExpectedLoweredKind { expression: Idx::<Expression>(13), expected: Variable, actual: Type, path: Path(ModPath("b_ref")) } in Body
         "#]],
     );
 }
@@ -1854,10 +1884,79 @@ fn shift_operator_inference() {
             34..35 '4': integer
             45..46 'y': i32
             49..50 '5': integer
-            60..61 'z': i32
-            64..65 'x': i32
-            64..69 'x & y': i32
+            60..61 'z': [error]
+            64..65 'x': [error]
+            64..69 'x & y': [error]
             68..69 'y': i32
+            InvalidType { error: TypeLoweringError { container: Expression(Idx::<Expression>(4)), kind: UnresolvedPath { path: Path(ModPath("x")), failed_segment: 0 } } } in Body
+            ExpectedLoweredKind { expression: Idx::<Expression>(4), expected: Variable, actual: Type, path: Path(ModPath("x")) } in Body
+        "#]],
+    );
+}
+
+#[test]
+fn scope_invalid() {
+    check_infer(
+        ExtensionsConfig::default(),
+        "
+        fn foo() { { var x = 0; } x++; }
+        ",
+        expect![[r#"
+            17..18 'x': ref<function, i32, read_write>
+            21..22 '0': integer
+            26..27 'x': [error]
+            InvalidType { error: TypeLoweringError { container: Expression(Idx::<Expression>(1)), kind: UnresolvedPath { path: Path(ModPath("x")), failed_segment: 0 } } } in Body
+            ExpectedLoweredKind { expression: Idx::<Expression>(1), expected: Variable, actual: Type, path: Path(ModPath("x")) } in Body
+            AssignmentNotAReference { left_side: Idx::<Expression>(1), actual: Type(2400) } in Body
+        "#]],
+    );
+}
+
+#[test]
+fn scope_valid() {
+    check_infer(
+        ExtensionsConfig::default(),
+        "
+        fn foo() { var x = 0; x++; }
+        ",
+        expect![[r#"
+            15..16 'x': ref<function, i32, read_write>
+            19..20 '0': integer
+            22..23 'x': ref<function, i32, read_write>
+        "#]],
+    );
+}
+
+#[test]
+fn declaration_order_valid() {
+    check_infer(
+        ExtensionsConfig::default(),
+        "
+        fn foo() { var x = 0; var y = x; }
+        ",
+        expect![[r#"
+            15..16 'x': ref<function, i32, read_write>
+            19..20 '0': integer
+            26..27 'y': ref<function, i32, read_write>
+            30..31 'x': ref<function, i32, read_write>
+        "#]],
+    );
+}
+
+#[test]
+fn declaration_order_invalid() {
+    check_infer(
+        ExtensionsConfig::default(),
+        "
+        fn foo() { var y = x; var x = 0; }
+        ",
+        expect![[r#"
+            15..16 'y': ref<function, [error], read_write>
+            19..20 'x': [error]
+            26..27 'x': ref<function, i32, read_write>
+            30..31 '0': integer
+            InvalidType { error: TypeLoweringError { container: Expression(Idx::<Expression>(0)), kind: UnresolvedPath { path: Path(ModPath("x")), failed_segment: 0 } } } in Body
+            ExpectedLoweredKind { expression: Idx::<Expression>(0), expected: Variable, actual: Type, path: Path(ModPath("x")) } in Body
         "#]],
     );
 }

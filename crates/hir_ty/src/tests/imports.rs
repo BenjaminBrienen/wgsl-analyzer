@@ -472,7 +472,7 @@ fn import_with_dependencies() {
         //- /package.wesl package:my_shaders edition:2026_pre dependencies:nested
         import nested;
         const a = nested::myValue;
-        
+
         //- /foo.wesl
         const a = nested::myValue;
 

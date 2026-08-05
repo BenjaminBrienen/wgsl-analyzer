@@ -3,10 +3,12 @@ use either::Either;
 use syntax::{
     HasAttributes as _, HasName as _, HasTemplateParameters as _, ast, pointer::AstPointer,
 };
+use triomphe::Arc;
 
 use super::{Binding, BindingId, Body, BodySourceMap, SyntheticSyntax};
 use crate::{
-    database::DefDatabase,
+    AstIdMap, InFile,
+    database::{CompoundStatementId, CompoundStatementLocation, DefDatabase, Location},
     expression::{ExpressionId, Statement, StatementId, SwitchCaseSelector},
     expression_store::{ExpressionStoreSource, lower::ExprCollector},
     item_tree::Name,
@@ -57,7 +59,7 @@ struct Collector<'database> {
     expressions: ExprCollector<'database>,
     database: &'database dyn DefDatabase,
     body: Body,
-    source_map: BodySourceMap,
+    ast_id_map: Arc<AstIdMap>,
     file_id: EditionedFileId,
 }
 
@@ -69,8 +71,8 @@ impl Collector<'_> {
         Collector {
             expressions: ExprCollector::new(database, ExpressionStoreSource::Body),
             database,
+            ast_id_map: database.ast_id_map(file_id),
             body: Body::default(),
-            source_map: BodySourceMap::default(),
             file_id,
         }
     }
@@ -85,9 +87,18 @@ impl Collector<'_> {
         self.body.root = body
             .map(|body| self.collect_compound_statement(&body))
             .map(Either::Left);
-        (self.body.store, self.source_map.expressions) = self.expressions.finish();
-
-        (self.body, self.source_map)
+        let (expression_store, expression_source_map) = self.expressions.finish();
+        self.body.store = expression_store;
+        (
+            self.body,
+            BodySourceMap {
+                expressions: expression_source_map,
+                statement_map: Default::default(),
+                statement_map_back: Default::default(),
+                binding_map: Default::default(),
+                binding_map_back: Default::default(),
+            },
+        )
     }
 
     fn collect_function_param_list(
@@ -180,27 +191,26 @@ impl Collector<'_> {
         }
     }
 
-    fn collect_compound_statement_opt(
-        &mut self,
-        compound_statement: Option<ast::CompoundStatement>,
-    ) -> StatementId {
-        match compound_statement {
-            Some(statement) => self.collect_compound_statement(&statement),
-            None => self.missing_statement(),
-        }
-    }
-
     fn collect_compound_statement(
         &mut self,
         compound_statement: &ast::CompoundStatement,
-    ) -> StatementId {
+    ) -> CompoundStatementId {
         let statements = compound_statement
             .statements()
             .filter_map(|statement| self.collect_statement(&statement))
             .collect();
+        let id = (|| {
+            let file_local_id = self.ast_id_map.try_ast_id(compound_statement)?;
+            let ast_id = InFile::new(self.file_id, file_local_id);
+            let id = self
+                .database
+                .intern_compound_statement(CompoundStatementLocation { ast_id });
+            Some(id)
+        })();
         self.body
             .statements
-            .alloc(Statement::Compound { statements })
+            .alloc(Statement::Compound { id, statements });
+        id.unwrap()
     }
 
     fn collect_conditional_compound_statement(
@@ -286,9 +296,13 @@ impl Collector<'_> {
                 if let Some(mut attributes) = statement.attributes()
                     && attributes.any(|attribute| attribute.is_conditional_compilation())
                 {
-                    return Some(self.collect_conditional_compound_statement(compound_statement));
+                    return Some(Either::Right(
+                        self.collect_conditional_compound_statement(compound_statement),
+                    ));
                 }
-                return Some(self.collect_compound_statement(compound_statement));
+                return Some(Either::Right(
+                    self.collect_compound_statement(compound_statement),
+                ));
             },
             ast::Statement::ReturnStatement(ret_statement) => {
                 let expression = ret_statement
@@ -332,18 +346,23 @@ impl Collector<'_> {
                         .if_block()
                         .and_then(|if_clause| if_clause.condition()),
                 );
-                let block = self.collect_compound_statement_opt(
-                    if_statement
-                        .if_block()
-                        .and_then(|if_clause| if_clause.block()),
-                );
+                let block = if_statement
+                    .if_block()
+                    .and_then(|if_clause| if_clause.block())
+                    .map(|block| self.collect_compound_statement(&block));
                 let else_if_blocks = if_statement
                     .else_if_blocks()
-                    .map(|block| self.collect_compound_statement_opt(block.block()))
+                    .map(|block| {
+                        block
+                            .block()
+                            .map(|block| self.collect_compound_statement(&block))
+                    })
                     .collect();
-                let else_block = if_statement
-                    .else_block()
-                    .map(|block| self.collect_compound_statement_opt(block.block()));
+                let else_block = if_statement.else_block().map(|block| {
+                    block
+                        .block()
+                        .map(|block| self.collect_compound_statement(&block))
+                });
                 Statement::If {
                     condition,
                     block,
@@ -480,23 +499,23 @@ impl Collector<'_> {
         binding: Binding,
         source: AstPointer<ast::Name>,
     ) -> BindingId {
-        let id = self.make_binding(binding, Ok(source.clone()));
+        let id = self.alloc_binding(binding, Ok(source.clone()));
         self.source_map.binding_map.insert(source, id);
         id
     }
 
-    fn make_binding(
+    fn alloc_binding(
         &mut self,
         binding: Binding,
         source: Result<AstPointer<ast::Name>, SyntheticSyntax>,
     ) -> BindingId {
-        let id = self.body.bindings.alloc(binding);
+        let id = self.body.store.bindings.alloc(binding);
         self.source_map.binding_map_back.insert(id, source);
         id
     }
 
     fn missing_binding(&mut self) -> la_arena::Idx<Binding> {
-        self.make_binding(
+        self.alloc_binding(
             Binding {
                 name: Name::missing(),
             },

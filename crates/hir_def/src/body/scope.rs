@@ -1,14 +1,19 @@
 use std::{iter, ops::Index};
 
+use base_db::SourceDatabase;
 use either::Either;
-use la_arena::{Arena, Idx};
+use la_arena::{Arena, ArenaMap, Idx, IdxRange, RawIdx};
 use rustc_hash::FxHashMap;
+use syntax::ast;
 use triomphe::Arc;
 
 use super::{BindingId, Body};
 use crate::{
-    database::{DefDatabase, DefinitionWithBodyId},
+    FileAstId,
+    body::Binding,
+    database::{CompoundStatementId, DefDatabase, DefinitionWithBodyId},
     expression::{ExpressionId, Statement, StatementId, SwitchCaseSelector},
+    expression_store::ExpressionStore,
     item_tree::Name,
 };
 
@@ -17,15 +22,28 @@ pub type ScopeId = Idx<ScopeData>;
 #[derive(Debug, PartialEq, Eq)]
 pub struct ExprScopes {
     scopes: Arena<ScopeData>,
-    pub(crate) scope_by_expression: FxHashMap<ExpressionId, ScopeId>,
-    scope_by_statement: FxHashMap<StatementId, ScopeId>,
+    scope_by_expression: ArenaMap<ExpressionId, ScopeId>,
+    scope_entries: Arena<ScopeEntry>,
 }
 
-#[derive(Debug, PartialEq, Eq, Default)]
+/// All scopes are block scopes in WGSL.
+#[derive(Debug, PartialEq, Eq)]
 pub struct ScopeData {
     parent: Option<ScopeId>,
-    pub(crate) entries: Vec<ScopeEntry>,
+    kind: ScopeKind,
+    entries: IdxRange<ScopeEntry>,
 }
+
+#[derive(Debug, PartialEq, Eq)]
+enum ScopeKind {
+    None,
+    CompoundStatement(StatementId), // Statement should be CompoundStatement
+}
+
+/// `AstId` points to an AST node in any file.
+///
+/// It is stable across reparses, and can be used as salsa key/value.
+pub type AstId<N> = crate::InFile<FileAstId<N>>;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct ScopeEntry {
@@ -44,6 +62,10 @@ impl Index<ScopeId> for ExprScopes {
     }
 }
 
+fn empty_entries(idx: usize) -> IdxRange<ScopeEntry> {
+    IdxRange::new(Idx::from_raw(RawIdx::from(idx as u32))..Idx::from_raw(RawIdx::from(idx as u32)))
+}
+
 impl ExprScopes {
     pub fn expression_scopes_query(
         database: &dyn DefDatabase,
@@ -57,13 +79,13 @@ impl ExprScopes {
     pub fn new(body: &Body) -> Self {
         let mut scopes = Self {
             scopes: Arena::default(),
-            scope_by_expression: FxHashMap::default(),
-            scope_by_statement: FxHashMap::default(),
+            scope_by_expression: ArenaMap::with_capacity(body.expressions.len()),
+            scope_entries: Arena::default(),
         };
 
         let root = scopes.root_scope();
 
-        scopes.add_param_bindings(body, root, &body.parameters);
+        scopes.add_parameter_bindings(body, root, &body.parameters);
 
         if let Some(statement) = body.root {
             match statement {
@@ -84,17 +106,10 @@ impl ExprScopes {
         &self,
         expression: ExpressionId,
     ) -> Option<ScopeId> {
-        self.scope_by_expression.get(&expression).copied()
+        self.scope_by_expression.get(expression).copied()
     }
 
-    #[must_use]
-    pub fn scope_for_statement(
-        &self,
-        statement: StatementId,
-    ) -> Option<ScopeId> {
-        self.scope_by_statement.get(&statement).copied()
-    }
-
+    /// Returns the scopes in ascending order.
     pub fn scope_chain(
         &self,
         scope: Option<ScopeId>,
@@ -107,7 +122,7 @@ impl ExprScopes {
         &self,
         scope: ScopeId,
     ) -> &[ScopeEntry] {
-        &self.scopes[scope].entries
+        &self.scope_entries[self.scopes[scope].entries.clone()]
     }
 
     #[must_use]
@@ -121,7 +136,11 @@ impl ExprScopes {
     }
 
     fn root_scope(&mut self) -> ScopeId {
-        self.scopes.alloc(ScopeData::default())
+        self.scopes.alloc(ScopeData {
+            parent: None,
+            kind: ScopeKind::None,
+            entries: empty_entries(self.scope_entries.len()),
+        })
     }
 
     fn set_scope_expression(
@@ -129,50 +148,82 @@ impl ExprScopes {
         expression: ExpressionId,
         scope: ScopeId,
     ) {
-        self.scope_by_expression.insert(expression, scope);
+        _ = self.scope_by_expression.insert(expression, scope);
     }
 
-    fn set_scope_statement(
-        &mut self,
-        statement: StatementId,
-        scope: ScopeId,
-    ) {
-        self.scope_by_statement.insert(statement, scope);
-    }
-
-    fn add_param_bindings(
+    fn add_parameter_bindings(
         &mut self,
         body: &Body,
-        root: Idx<ScopeData>,
+        root: ScopeId,
         parameters: &[BindingId],
     ) {
         for parameter in parameters {
-            self.add_binding(body, *parameter, root);
+            self.add_binding(&body.store, root, *parameter);
         }
     }
 
     fn add_binding(
         &mut self,
-        body: &Body,
-        binding_id: BindingId,
+        store: &ExpressionStore,
         scope: ScopeId,
+        binding: BindingId,
     ) {
-        let binding = &body.bindings[binding_id];
-        let entry = ScopeEntry {
-            name: binding.name.clone(),
-            binding: binding_id,
-        };
-        self.scopes[scope].entries.push(entry);
+        let Binding { name, .. } = &store[binding];
+        let entry = self.scope_entries.alloc(ScopeEntry {
+            name: name.clone(),
+            binding,
+        });
+        self.scopes[scope].entries =
+            IdxRange::new_inclusive(self.scopes[scope].entries.start()..=entry);
     }
 
-    fn new_block_scope(
+    fn new_compound_scope(
+        &mut self,
+        compound_statement: Option<StatementId>,
+        parent: ScopeId,
+    ) -> ScopeId {
+        let kind = match compound_statement {
+            Some(id) => ScopeKind::CompoundStatement(id),
+            None => ScopeKind::None,
+        };
+        self.scopes.alloc(ScopeData {
+            parent: Some(parent),
+            kind,
+            entries: empty_entries(self.scope_entries.len()),
+        })
+    }
+
+    fn new_scope(
         &mut self,
         parent: ScopeId,
     ) -> ScopeId {
         self.scopes.alloc(ScopeData {
             parent: Some(parent),
-            entries: vec![],
+            kind: ScopeKind::None,
+            entries: empty_entries(self.scope_entries.len()),
         })
+    }
+
+    pub fn scope_for(
+        &self,
+        expression: ExpressionId,
+    ) -> Option<ScopeId> {
+        self.scope_by_expression.get(expression).copied()
+    }
+
+    pub fn scope_by_expression(&self) -> &ArenaMap<ExpressionId, ScopeId> {
+        &self.scope_by_expression
+    }
+
+    fn shrink_to_fit(&mut self) {
+        let ExprScopes {
+            scopes,
+            scope_entries,
+            scope_by_expression,
+        } = self;
+        scopes.shrink_to_fit();
+        scope_entries.shrink_to_fit();
+        scope_by_expression.shrink_to_fit();
     }
 }
 
@@ -188,20 +239,17 @@ fn compute_compound_statement_scopes(
 }
 
 #[expect(clippy::too_many_lines, reason = "Long but simple match")]
+#[must_use]
 fn compute_statement_scopes(
     statement_id: StatementId,
     body: &Body,
     scopes: &mut ExprScopes,
     scope: ScopeId,
 ) -> ScopeId {
-    scopes.set_scope_statement(statement_id, scope);
-
     let statement = &body.statements[statement_id];
-
     match statement {
-        Statement::Compound { statements } => {
-            let new_scope = scopes.new_block_scope(scope);
-            scopes.set_scope_statement(statement_id, new_scope);
+        Statement::Compound { id, statements } => {
+            let new_scope = scopes.new_compound_scope(*id, scope);
             compute_compound_statement_scopes(statements, body, scopes, new_scope);
         },
         Statement::ConditionalCompound { statements } => {
@@ -225,8 +273,8 @@ fn compute_statement_scopes(
             if let Some(init) = initializer {
                 compute_expression_scopes(*init, body, scopes, scope);
             }
-            let scope = scopes.new_block_scope(scope);
-            scopes.add_binding(body, *binding_id, scope);
+            let scope = scopes.new_scope(scope);
+            scopes.add_binding(body, scope, *binding_id);
             return scope;
         },
         Statement::Assignment {
@@ -277,7 +325,7 @@ fn compute_statement_scopes(
                     }
                 }
 
-                let case_scope = scopes.new_block_scope(scope);
+                let case_scope = scopes.new_compound_scope(case, scope);
                 compute_statement_scopes(*case, body, scopes, case_scope);
             }
         },

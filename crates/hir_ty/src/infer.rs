@@ -786,7 +786,6 @@ impl<'database> InferenceContext<'database> {
             },
             Statement::IncrDecr { expression, .. } => {
                 let left_type = self.infer_expression(*expression, body);
-
                 let left_kind = left_type.kind(self.database);
                 let left_inner = if let TypeKind::Reference(reference) = left_kind {
                     reference.inner
