@@ -5,6 +5,7 @@ use base_db::Lookup as _;
 use either::Either;
 use la_arena::{Arena, ArenaMap, Idx};
 use rustc_hash::FxHashMap;
+use smallvec::SmallVec;
 use syntax::{ast, pointer::AstPointer};
 use triomphe::Arc;
 
@@ -56,13 +57,73 @@ impl std::ops::Deref for Body {
 /// file, so that we do not recompute types whenever some whitespace is typed.
 #[derive(Debug, PartialEq, Eq)]
 pub struct BodySourceMap {
-    expressions: ExpressionSourceMap,
+    expressions: ExpressionStoreSourceMap,
+}
 
-    statement_map: FxHashMap<AstPointer<ast::Statement>, StatementId>,
-    statement_map_back: ArenaMap<StatementId, Result<AstPointer<ast::Statement>, SyntheticSyntax>>,
+// statement_map: FxHashMap<AstPointer<ast::Statement>, StatementId>,
+// statement_map_back: ArenaMap<StatementId, Result<AstPointer<ast::Statement>, SyntheticSyntax>>,
 
-    binding_map: FxHashMap<AstPointer<ast::Name>, BindingId>,
-    binding_map_back: ArenaMap<BindingId, Result<AstPointer<ast::Name>, SyntheticSyntax>>,
+#[derive(Debug, Eq, Default)]
+struct ExpressionOnlySourceMap {
+    expression_map: FxHashMap<ExprSource, ExpressionId>,
+    expression_map_back: ArenaMap<ExpressionId, ExprSource>,
+
+    binding_definitions:
+        ArenaMap<BindingId, SmallVec<[PatId; 2 * size_of::<usize>() / size_of::<PatId>()]>>,
+
+    field_map_back: FxHashMap<ExprId, FieldSource>,
+
+    /// Diagnostics accumulated during lowering. These contain `AstPtr`s and so are stored in
+    /// the source map (since they're just as volatile).
+    //
+    // We store diagnostics on the `ExpressionOnlySourceMap` because diagnostics are rare.
+    diagnostics: ThinVec<ExpressionStoreDiagnostics>,
+}
+
+impl PartialEq for ExpressionOnlySourceMap {
+    fn eq(
+        &self,
+        other: &Self,
+    ) -> bool {
+        // we only need to compare one of the two mappings
+        // as the other is a reverse mapping and thus will compare
+        // the same as normal mapping
+        let Self {
+            expression_map: _,
+            expression_map_back,
+            binding_definitions: _,
+            field_map_back: _,
+            diagnostics,
+        } = self;
+        *expression_map_back == other.expression_map_back && *diagnostics == other.diagnostics
+    }
+}
+
+// binding_map: FxHashMap<AstPointer<ast::Name>, BindingId>,
+// binding_map_back: ArenaMap<BindingId, Result<AstPointer<ast::Name>, SyntheticSyntax>>,
+#[derive(Debug, Eq, Default)]
+pub struct ExpressionStoreSourceMap {
+    expressions_only: Option<Box<ExpressionOnlySourceMap>>,
+    // types_map_back: ArenaMap<TypeRefId, TypeSource>,
+    // types_map: FxHashMap<TypeSource, TypeRefId>,
+}
+
+impl PartialEq for ExpressionStoreSourceMap {
+    fn eq(
+        &self,
+        other: &Self,
+    ) -> bool {
+        // we only need to compare one of the two mappings
+        // as the other is a reverse mapping and thus will compare
+        // the same as normal mapping
+        let Self {
+            expr_only,
+            // types_map_back,
+            // types_map: _,
+        } = self;
+        *expr_only == other.expr_only
+        // && *types_map_back == other.types_map_back
+    }
 }
 
 impl Body {
@@ -76,7 +137,7 @@ impl Body {
     pub fn body_with_source_map_query(
         database: &dyn DefDatabase,
         definition: DefinitionWithBodyId,
-    ) -> (Arc<Self>, Arc<BodySourceMap>) {
+    ) -> (Arc<Self>, Arc<ExpressionSourceMap>) {
         let file_id = definition.file_id(database);
         let (body, source_map) = match definition {
             DefinitionWithBodyId::Function(id) => {

@@ -99,6 +99,7 @@ pub enum Statement {
         statements: Vec<StatementId>,
     },
     ConditionalCompound {
+        id: Option<CompoundStatementId>,
         statements: Vec<StatementId>,
     },
     Let {
@@ -146,24 +147,24 @@ pub enum Statement {
         initializer: Option<StatementId>,
         condition: Option<ExpressionId>,
         continuing_part: Option<StatementId>,
-        block: CompoundStatementId,
+        block: Option<CompoundStatementId>,
     },
     While {
         condition: ExpressionId,
-        block: CompoundStatementId,
+        block: Option<CompoundStatementId>,
     },
     Switch {
         expression: ExpressionId,
-        case_blocks: Vec<(Vec<SwitchCaseSelector>, CompoundStatementId)>,
+        case_blocks: Vec<(Vec<SwitchCaseSelector>, Option<CompoundStatementId>)>,
     },
     Loop {
-        body: CompoundStatementId,
+        body: Option<CompoundStatementId>,
     },
     Discard,
     Break,
     Continue,
     Continuing {
-        block: CompoundStatementId,
+        block: Option<CompoundStatementId>,
     },
     BreakIf {
         condition: ExpressionId,

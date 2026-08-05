@@ -3,13 +3,12 @@ use syntax::{HasName as _, HasTemplateParameters as _, ast, pointer::AstPointer}
 use triomphe::Arc;
 
 use crate::{
-    InFile,
-    database::DefDatabase,
-    expression::{Expression, ExpressionId, parse_literal},
-    expression_store::{
-        ExpressionSourceMap, ExpressionStoreBuilder, ExpressionStoreSource, SyntheticSyntax,
-        path::Path,
-    },
+    AstIdMap, InFile,
+    database::{CompoundStatementId, CompoundStatementLocation, DefDatabase, Location},
+    expression::{Expression, parse_literal},
+    expression::{ExpressionId, Statement, StatementId, SwitchCaseSelector},
+    expression_store::{ExpressionSourceMap, ExpressionStoreSource},
+    expression_store::{ExpressionStoreBuilder, SyntheticSyntax, path::Path},
     item_tree::Name,
     mod_path::ModPath,
     signature::{
@@ -249,6 +248,59 @@ impl ExprCollector<'_> {
     #[must_use]
     pub fn finish(self) -> (super::ExpressionStore, ExpressionSourceMap) {
         self.store.finish()
+    }
+
+    fn allocate_statement(
+        &mut self,
+        statement: Statement,
+        source: AstPointer<ast::Statement>,
+    ) -> StatementId {
+        let id = self.make_statement(statement, Ok(source.clone()));
+        self.store.statement_map.insert(source, id);
+        id
+    }
+
+    fn make_statement(
+        &mut self,
+        statement: Statement,
+        source: Result<AstPointer<ast::Statement>, SyntheticSyntax>,
+    ) -> StatementId {
+        let id = self.body.statements.alloc(statement);
+        self.store.statement_map_back.insert(id, source);
+        id
+    }
+
+    fn alloc_name(
+        &mut self,
+        binding: Binding,
+        source: AstPointer<ast::Name>,
+    ) -> BindingId {
+        let id = self.alloc_binding(binding, Ok(source.clone()));
+        self.source_map.binding_map.insert(source, id);
+        id
+    }
+
+    fn alloc_binding(
+        &mut self,
+        binding: Binding,
+        source: Result<AstPointer<ast::Name>, SyntheticSyntax>,
+    ) -> BindingId {
+        let id = self.body.store.bindings.alloc(binding);
+        self.source_map.binding_map_back.insert(id, source);
+        id
+    }
+
+    fn missing_binding(&mut self) -> la_arena::Idx<Binding> {
+        self.alloc_binding(
+            Binding {
+                name: Name::missing(),
+            },
+            Err(SyntheticSyntax),
+        )
+    }
+
+    fn missing_statement(&mut self) -> StatementId {
+        self.make_statement(Statement::Missing, Err(SyntheticSyntax))
     }
 }
 

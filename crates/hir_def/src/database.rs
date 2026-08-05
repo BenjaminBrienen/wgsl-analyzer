@@ -56,7 +56,7 @@ pub trait DefDatabase: InternDatabase + SourceDatabase {
     fn body_with_source_map(
         &self,
         key: DefinitionWithBodyId,
-    ) -> (Arc<Body>, Arc<BodySourceMap>);
+    ) -> (Arc<Body>, Arc<ExpressionSourceMap>);
 
     #[salsa::invoke(Body::body_query)]
     fn body(

@@ -962,7 +962,7 @@ fn check_type_errors(
             match diagnostics::any_diag_from_infer_diagnostic(
                 &diagnostic.kind,
                 match diagnostic.source {
-                    ExpressionStoreSource::Body => source_map.expression_source_map(),
+                    ExpressionStoreSource::Body => &source_map,
                     ExpressionStoreSource::Signature => &signature_map,
                 },
                 file,
@@ -975,11 +975,7 @@ fn check_type_errors(
         }
 
         diagnostics::precedence::collect(database, definition, |diagnostic| {
-            match diagnostics::any_diag_from_shift(
-                &diagnostic,
-                source_map.expression_source_map(),
-                file,
-            ) {
+            match diagnostics::any_diag_from_shift(&diagnostic, &source_map, file) {
                 Some(diagnostic) => accumulator.push(diagnostic),
                 None => {
                     tracing::warn!("could not create diagnostic from {:?}", diagnostic);
