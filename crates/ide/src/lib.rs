@@ -21,8 +21,8 @@ mod view_syntax_tree;
 use std::panic;
 
 use base_db::{
-    EditionedFileId, FilePosition, FileRange, FileSet, RangeInfo, SourceDatabase as _, SourceRoot,
-    TextRange, change::Change, input::SourceRootId,
+    EditionedFileId, FilePosition, FileRange, FileSet, Package, RangeInfo, SourceDatabase as _,
+    SourceRoot, TextRange, change::Change, input::SourceRootId, relevant_packages,
 };
 use hir_def::database::DefDatabase as _;
 use ide_completion::{CompletionConfig, item::CompletionItem};
@@ -31,6 +31,7 @@ use ide_diagnostics::{Diagnostic, DiagnosticsConfig};
 pub use line_index::{LineCol, LineIndex};
 use rustc_hash::FxHashMap;
 use salsa::{Cancelled, Database as _, Durability};
+use stdx::itertools::Itertools;
 use syntax::{ExtensionsConfig, Parse, SyntaxNode};
 use triomphe::Arc;
 use vfs::{FileId, VfsPath};

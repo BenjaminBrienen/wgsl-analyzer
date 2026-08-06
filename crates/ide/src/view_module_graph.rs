@@ -1,4 +1,4 @@
-use base_db::{EditionedFileId, Package, file_package};
+use base_db::{EditionedFileId, Package, relevant_packages};
 use dot::{Id, LabelText};
 use hir_def::{
     FxIndexMap,
@@ -26,8 +26,8 @@ pub(crate) fn view_module_graph(
     file_id: FileId,
 ) -> Option<String> {
     // TODO: This only renders the children. It should render an edge for each import and inline usage of another module.
-    let package = file_package(database, file_id)?;
-    let modules_to_render = ModulesMap::of(database, package);
+    let package = relevant_packages(database, file_id).first()?;
+    let modules_to_render = ModulesMap::of(database, *package);
     let graph = DotModuleGraph::new(database, modules_to_render);
 
     let mut dot = Vec::new();

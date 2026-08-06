@@ -267,7 +267,8 @@ pub struct SourceRootInput {
     pub source_root: Arc<SourceRoot>,
 }
 
-#[salsa_macros::input(debug)]
+#[salsa_macros::input]
+#[derive(Debug, PartialOrd, Ord)]
 pub struct Package {
     #[returns(ref)]
     pub data: PackageData,
@@ -508,35 +509,41 @@ pub struct InternedSourceRootId {
     pub id: SourceRootId,
 }
 
-#[salsa::tracked]
-pub fn source_root_package<'db>(
-    database: &'db dyn SourceDatabase,
-    id: InternedSourceRootId<'db>,
-) -> Option<Package> {
-    let packages = AllPackages::get(database).packages(database);
-    let id = id.id(database);
-
-    packages.iter().copied().find(|package| {
-        let manifest_file = package.data(database).manifest_file_id;
-        database
-            .file_source_root(manifest_file)
-            .source_root_id(database)
-            == id
-    })
+/// Packages whose root file is in `id`.
+pub fn source_root_packages(
+    database: &dyn SourceDatabase,
+    id: SourceRootId,
+) -> &[Package] {
+    #[salsa::tracked(returns(deref))]
+    pub fn source_root_packages<'db>(
+        database: &'db dyn SourceDatabase,
+        id: InternedSourceRootId<'db>,
+    ) -> Box<[Package]> {
+        let packages = AllPackages::get(database).packages(database);
+        let id = id.id(database);
+        packages
+            .iter()
+            .copied()
+            .filter(|&krate| {
+                let manifest_file = krate.data(database).manifest_file_id;
+                database
+                    .file_source_root(manifest_file)
+                    .source_root_id(database)
+                    == id
+            })
+            .collect()
+    }
+    source_root_packages(database, InternedSourceRootId::new(database, id))
 }
 
-/// Returns the package for a given file, if the file is a part of one.
-pub fn file_package(
-    database: &dyn SourceDatabase,
-    file_id: vfs::FileId,
-) -> Option<Package> {
-    let _p = tracing::info_span!("file_package").entered();
+pub fn relevant_packages(
+    db: &dyn SourceDatabase,
+    file_id: FileId,
+) -> &[Package] {
+    let _p = tracing::info_span!("relevant_packages").entered();
 
-    let source_root = database.file_source_root(file_id);
-    source_root_package(
-        database,
-        InternedSourceRootId::new(database, source_root.source_root_id(database)),
-    )
+    let source_root = db.file_source_root(file_id);
+    source_root_packages(db, source_root.source_root_id(db))
 }
 
 /// This construction is used for incremental package lookups.

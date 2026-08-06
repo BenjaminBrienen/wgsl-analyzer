@@ -1,4 +1,4 @@
-use base_db::{EditionedFileId, Package, file_package, input::PackageId};
+use base_db::{EditionedFileId, Package, input::PackageId, relevant_packages};
 use triomphe::Arc;
 
 use crate::{
@@ -195,7 +195,9 @@ impl Resolver {
 
                     resolve_path_to_item(database, module_import.package, absolute_path.segments())
                 } else {
-                    let package = file_package(database, self.file_id.file_id(database))
+                    let package = relevant_packages(database, self.file_id.file_id(database))
+                        .iter()
+                        .next()
                         .ok_or(ResolutionDiagnostic::DetachedFile)?;
 
                     let resolved_dependency = package
@@ -213,10 +215,12 @@ impl Resolver {
                 }
             },
             PathKind::Super(levels) => {
-                let package = file_package(database, self.file_id.file_id(database))
+                let package = relevant_packages(database, self.file_id.file_id(database))
+                    .iter()
+                    .next()
                     .ok_or(ResolutionDiagnostic::DetachedFile)?;
 
-                let mut mod_path = AbsoluteModPath::for_file(database, package, self.file_id)
+                let mut mod_path = AbsoluteModPath::for_file(database, *package, self.file_id)
                     .ok_or(ResolutionDiagnostic::DetachedFile)?;
 
                 for level in 0..levels {
@@ -229,12 +233,14 @@ impl Resolver {
                     mod_path.push_segment(segment.clone());
                 }
 
-                resolve_path_to_item(database, package, mod_path.segments())
+                resolve_path_to_item(database, *package, mod_path.segments())
             },
             PathKind::Package => {
-                let package = file_package(database, self.file_id.file_id(database))
+                let package = relevant_packages(database, self.file_id.file_id(database))
+                    .iter()
+                    .next()
                     .ok_or(ResolutionDiagnostic::DetachedFile)?;
-                resolve_path_to_item(database, package, path.segments())
+                resolve_path_to_item(database, *package, path.segments())
             },
         }
     }

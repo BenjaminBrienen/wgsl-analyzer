@@ -1,4 +1,4 @@
-use base_db::{ExtraPackageData, Package, file_package, input::PackageData};
+use base_db::{ExtraPackageData, Package, input::PackageData, relevant_packages};
 use ide_db::RootDatabase;
 use itertools::Itertools as _;
 use stdx::format_to;
@@ -32,9 +32,11 @@ pub(crate) fn status(
 
     if let Some(file_id) = file_id {
         format_to!(buffer, "\nPackage for file {}:\n", file_id.index());
-        let package: Option<Package> = file_package(database, file_id);
-
-        if let Some(package_id) = package {
+        let packages = relevant_packages(database, file_id);
+        if packages.is_empty() {
+            format_to!(buffer, "Does not belong to any package");
+        }
+        for package_id in packages {
             let PackageData {
                 manifest_file_id,
                 root,
@@ -68,8 +70,6 @@ pub(crate) fn status(
                 .map(|dep| format!("{}={:?}", dep.name, dep.package_id))
                 .format(", ");
             format_to!(buffer, "    Dependencies: {}\n", deps);
-        } else {
-            format_to!(buffer, "Does not belong to any package");
         }
     }
 

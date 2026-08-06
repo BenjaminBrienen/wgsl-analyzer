@@ -1,4 +1,4 @@
-use base_db::{EditionedFileId, Intern as _, Package, file_package, input::PackageData};
+use base_db::{EditionedFileId, Intern as _, Package, input::PackageData, relevant_packages};
 use itertools::Itertools as _;
 use syntax::ast;
 use vfs::VfsPath;
@@ -205,7 +205,9 @@ impl ModCollector<'_> {
         location: Location<ast::ImportStatement>,
         import: &FlatImport,
     ) -> Result<(Package, AbsoluteModPath), DefDiagnostic> {
-        let package = file_package(self.database, self.file_id.file_id(self.database))
+        let package = relevant_packages(self.database, self.file_id.file_id(self.database))
+            .iter()
+            .next()
             .ok_or_else(|| DefDiagnostic::detached_file(self.file_id, location))?;
 
         match import.path.kind() {
@@ -236,7 +238,7 @@ impl ModCollector<'_> {
                 ))
             },
             PathKind::Super(levels) => {
-                let mut mod_path = AbsoluteModPath::for_file(self.database, package, self.file_id)
+                let mut mod_path = AbsoluteModPath::for_file(self.database, *package, self.file_id)
                     .ok_or_else(|| DefDiagnostic::detached_file(self.file_id, location))?;
 
                 for _ in 0..levels {
@@ -249,10 +251,13 @@ impl ModCollector<'_> {
                     mod_path.push_segment(segment.clone());
                 }
 
-                Ok((package, AbsoluteModPath::from_segments(mod_path.segments())))
+                Ok((
+                    *package,
+                    AbsoluteModPath::from_segments(mod_path.segments()),
+                ))
             },
             PathKind::Package => Ok((
-                package,
+                *package,
                 AbsoluteModPath::from_segments(import.path.segments()),
             )),
         }

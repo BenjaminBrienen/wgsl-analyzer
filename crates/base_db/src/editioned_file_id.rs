@@ -6,7 +6,7 @@ use syntax::{Diagnostic, ast};
 pub use syntax::{Edition, ExtensionsConfig};
 use vfs::FileId;
 
-use crate::{SourceDatabase, SourceRoot, file_package};
+use crate::{SourceDatabase, SourceRoot, relevant_packages};
 
 /// File together with an edition.
 /// Simpler than Rust-Analyzer, because we do not macros.
@@ -100,12 +100,12 @@ impl EditionedFileId {
         match extension {
             FileExtension::Wgsl => Self::new_unchecked(database, file_id, Edition::DEFAULT),
             FileExtension::Wesl => {
-                if let Some(package) = file_package(database, file_id) {
-                    Self::new_unchecked(database, file_id, package.data(database).edition)
-                } else {
+                let edition = relevant_packages(database, file_id)
+                    .first()
+                    .copied()
                     // Assume latest WESL for standalone files
-                    Self::new_unchecked(database, file_id, Edition::LATEST)
-                }
+                    .map_or(Edition::LATEST, |package| package.data(database).edition);
+                Self::new_unchecked(database, file_id, edition)
             },
         }
     }
