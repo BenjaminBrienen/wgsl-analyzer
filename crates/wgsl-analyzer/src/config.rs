@@ -30,7 +30,7 @@ use ide::{
 };
 use ide_completion::{CompletionConfig, CompletionFieldsToResolve};
 use ide_db::SnippetCapability;
-use ide_diagnostics::{DiagnosticsConfig, NagaVersion};
+use ide_diagnostics::DiagnosticsConfig;
 use itertools::Itertools as _;
 use lsp_types::{ClientCapabilities as LspClientCapabilities, ClientInfo};
 use paths::Utf8PathBuf;
@@ -68,8 +68,6 @@ config_data! {
         diagnostics_external_naga_parsing: bool = true,
         /// Whether to show diagnostics from naga about validation.
         diagnostics_external_naga_validation_errors: bool = true,
-        /// Naga version used for validation.
-        diagnostics_external_naga_version: NagaVersionConfig = NagaVersionConfig::default(),
         /// Whether to show Tint shader compiler's messages.
         diagnostics_external_tintErrors: bool = false,
         /// The path to the tint binary.
@@ -107,21 +105,6 @@ config_data! {
         /// One of: `"off"`, `"messages"`, or `"verbose"`.
         trace_server: TraceServer = TraceServer::Off,
     }
-}
-
-#[derive(
-    Clone, Copy, Debug, Serialize, Deserialize, Default, Hash, PartialEq, Eq, PartialOrd, Ord,
-)]
-pub enum NagaVersionConfig {
-    #[serde(rename = "0.27")]
-    Naga27,
-    #[serde(rename = "0.28")]
-    Naga28,
-    #[default]
-    #[serde(rename = "0.29")]
-    Naga29,
-    #[serde(rename = "main")]
-    NagaMain,
 }
 
 #[derive(
@@ -597,12 +580,6 @@ impl Config {
             semantic_enabled: *self.diagnostics_semanticErrors(),
             naga_parsing_enabled: *self.diagnostics_external_naga_parsing(),
             naga_validation_enabled: *self.diagnostics_external_naga_validation_errors(),
-            naga_version: match self.diagnostics_external_naga_version() {
-                NagaVersionConfig::Naga27 => NagaVersion::Naga27,
-                NagaVersionConfig::Naga28 => NagaVersion::Naga28,
-                NagaVersionConfig::Naga29 => NagaVersion::Naga29,
-                NagaVersionConfig::NagaMain => NagaVersion::NagaMain,
-            },
             tint_enabled: *self.diagnostics_external_tintErrors(),
             tint_path: Some(tint_path.to_owned()),
         }
@@ -958,16 +935,6 @@ fn field_props(
                         "Use the number of logical cores",
                     ],
                 },
-            ],
-        },
-        "NagaVersionConfig" => set! {
-            "type": "string",
-            "enum": ["0.27", "0.28", "0.29", "main"],
-            "enumDescriptions": [
-                "Naga version 27",
-                "Naga version 28",
-                "Naga version 29",
-                "Version of Naga on main (most recent stable version)"
             ],
         },
         "InlayHintsTypeVerbosity" => set! {

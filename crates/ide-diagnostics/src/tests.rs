@@ -118,8 +118,8 @@ fn no_builtin_overload() {
     check_diagnostics(
         "fn foo() { var x = 1f + mat2x2f(); }",
         expect![[r#"
-        19..33 wesl-rs Error 22: cannot use binary operator `+` with operands `f32` and `mat2x2<f32>`
-    "#]],
+            19..33 wesl-rs Error 22: cannot use binary operator `+` with operands `f32` and `mat2x2<f32>`
+        "#]],
     );
 }
 
@@ -128,8 +128,8 @@ fn deref_not_a_pointer() {
     check_diagnostics(
         "fn foo() { var x = *1f; }",
         expect![[r#"
-        20..22 wesl-rs Error 22: cannot use unary operator `*` on type `f32`
-    "#]],
+            20..22 wesl-rs Error 22: cannot use unary operator `*` on type `f32`
+        "#]],
     );
 }
 

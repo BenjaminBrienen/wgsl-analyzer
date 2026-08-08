@@ -17,12 +17,6 @@ Default: `true`
 
 Whether to show diagnostics from naga about validation.
 
-## wgsl-analyzer.diagnostics.external.naga.version
-
-Default: `"0.29"`
-
-Naga version used for validation.
-
 ## wgsl-analyzer.diagnostics.external.tintErrors
 
 Default: `false`

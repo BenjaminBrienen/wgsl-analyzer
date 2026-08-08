@@ -22,19 +22,7 @@ use rowan::NodeOrToken;
 use syntax::{AstNode as _, Edition};
 use vfs::FileId;
 
-use crate::{
-    naga::{Naga27, Naga28, Naga29, NagaMain, naga_diagnostics},
-    tint::tint_diagnostics,
-};
-
-#[derive(Clone, Copy, Debug, Default)]
-pub enum NagaVersion {
-    Naga27,
-    Naga28,
-    #[default]
-    Naga29,
-    NagaMain,
-}
+use crate::{naga::naga_diagnostics, tint::tint_diagnostics};
 
 #[derive(Clone, Debug)]
 pub struct DiagnosticsConfig {
@@ -44,7 +32,6 @@ pub struct DiagnosticsConfig {
     pub parse_enabled: bool,
     pub naga_parsing_enabled: bool,
     pub naga_validation_enabled: bool,
-    pub naga_version: NagaVersion,
     pub tint_enabled: bool,
     pub tint_path: Option<Utf8PathBuf>,
 }
@@ -56,7 +43,6 @@ impl DiagnosticsConfig {
         parse_enabled: false,
         naga_parsing_enabled: false,
         naga_validation_enabled: false,
-        naga_version: NagaVersion::Naga29, // no const default :(
         tint_enabled: false,
         tint_path: None,
     };
@@ -70,7 +56,6 @@ impl Default for DiagnosticsConfig {
             parse_enabled: true,
             naga_parsing_enabled: true,
             naga_validation_enabled: true,
-            naga_version: NagaVersion::default(),
             tint_enabled: false,
             tint_path: None,
         }
@@ -196,20 +181,7 @@ pub fn diagnostics(
 
     let edition = file_id.edition(database);
     if edition == Edition::Wgsl && (config.naga_parsing_enabled || config.naga_validation_enabled) {
-        match &config.naga_version {
-            NagaVersion::Naga27 => {
-                naga_diagnostics::<Naga27>(database, file_id, config, &mut diagnostics);
-            },
-            NagaVersion::Naga28 => {
-                naga_diagnostics::<Naga28>(database, file_id, config, &mut diagnostics);
-            },
-            NagaVersion::Naga29 => {
-                naga_diagnostics::<Naga29>(database, file_id, config, &mut diagnostics);
-            },
-            NagaVersion::NagaMain => {
-                naga_diagnostics::<NagaMain>(database, file_id, config, &mut diagnostics);
-            },
-        }
+        naga_diagnostics(database, file_id, config, &mut diagnostics);
     }
 
     if edition == Edition::Wgsl && config.tint_enabled {

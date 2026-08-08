@@ -1,27 +1,55 @@
-mod naga27;
-mod naga28;
-mod naga29;
-mod naga_main;
-
 use std::{error, range::Range};
 
 use base_db::{EditionedFileId, FileRange};
 use hir::{HirDatabase, diagnostics::AnyDiagnostic};
-pub(crate) use naga_main::NagaMain;
-pub(crate) use naga27::Naga27;
-pub(crate) use naga28::Naga28;
-pub(crate) use naga29::Naga29;
 use rowan::{TextRange, TextSize};
 
 use crate::DiagnosticsConfig;
 
-pub(crate) trait Naga {
-    type Module;
-    type ParseError: NagaError;
-    type ValidationError: NagaError;
+type Module = naga::Module;
+type ParseError = naga::front::wgsl::ParseError;
+type ValidationError = naga::WithSpan<naga::valid::ValidationError>;
 
-    fn parse(source: &str) -> Result<Self::Module, Self::ParseError>;
-    fn validate(module: &Self::Module) -> Result<(), Self::ValidationError>;
+fn parse(source: &str) -> Result<Module, ParseError> {
+    naga::front::wgsl::parse_str(source)
+}
+
+fn validate(module: &Module) -> Result<(), ValidationError> {
+    let flags = naga::valid::ValidationFlags::all();
+    let capabilities = naga::valid::Capabilities::all();
+    let mut validator = naga::valid::Validator::new(flags, capabilities);
+    validator.validate(module).map(drop)
+}
+
+impl NagaError for naga::front::wgsl::ParseError {
+    fn spans(&self) -> Box<dyn Iterator<Item = (Option<Range<usize>>, String)> + '_> {
+        Box::new(
+            self.labels()
+                .map(|(span, label)| (to_range(span), label.to_owned())),
+        )
+    }
+
+    fn location(&self) -> Option<Range<usize>> {
+        let (span, _) = self.labels().next()?;
+        to_range(span)
+    }
+}
+
+impl NagaError for naga::WithSpan<naga::valid::ValidationError> {
+    fn spans(&self) -> Box<dyn Iterator<Item = (Option<Range<usize>>, String)> + '_> {
+        Box::new(
+            self.spans()
+                .map(move |(span, label)| (to_range(*span), label.clone())),
+        )
+    }
+
+    fn location(&self) -> Option<Range<usize>> {
+        self.spans().next().and_then(|(span, _)| to_range(*span))
+    }
+}
+
+fn to_range(span: naga::Span) -> Option<Range<usize>> {
+    span.to_range().map(Range::from)
 }
 
 pub(crate) trait NagaError: error::Error {
@@ -72,23 +100,21 @@ fn emit<Error>(
     });
 }
 
-pub(crate) fn naga_diagnostics<Naga>(
+pub(crate) fn naga_diagnostics(
     database: &dyn HirDatabase,
     file_id: EditionedFileId,
     config: &DiagnosticsConfig,
     accumulator: &mut Vec<AnyDiagnostic>,
-) where
-    Naga: self::Naga,
-{
+) {
     let source: &str = database.file_text(file_id.file_id(database)).text(database);
     let full_range = TextRange::up_to(TextSize::of(source));
 
-    match Naga::parse(source) {
+    match parse(source) {
         Ok(module) => {
             if !config.naga_validation_enabled {
                 return;
             }
-            if let Err(error) = Naga::validate(&module) {
+            if let Err(error) = validate(&module) {
                 emit(database, &error, file_id, full_range, accumulator);
             }
         },
