@@ -1,38 +1,39 @@
+/** biome-ignore-all lint/style/useNamingConvention: intentional naming */
 import * as vscode from "vscode";
 
-import type { InitializedContext } from "./context";
+import type { InitializedContext } from "./context.ts";
 
-import * as wa from "./lsp_ext";
-import { isWeslEditor, setContextValue } from "./utilities";
+import * as wa from "./lsp_ext.ts";
+import { isWeslEditor, setContextValue } from "./utilities.ts";
 
 export class SyntaxTreeProvider implements vscode.TreeDataProvider<SyntaxElement> {
-	private _onDidChangeTreeData: vscode.EventEmitter<SyntaxElement | undefined> =
+	private readonly _onDidChangeTreeData: vscode.EventEmitter<SyntaxElement | undefined> =
 		new vscode.EventEmitter<SyntaxElement | undefined>();
 
-	readonly onDidChangeTreeData: vscode.Event<SyntaxElement | undefined> =
+	public readonly onDidChangeTreeData: vscode.Event<SyntaxElement | undefined> =
 		this._onDidChangeTreeData.event;
 
-	context: InitializedContext;
-	root: SyntaxNode | undefined;
-	hideWhitespace: boolean = false;
+	public context: InitializedContext;
+	public root: SyntaxNode | undefined;
+	public hideWhitespace: boolean = false;
 
-	constructor(context: InitializedContext) {
+	public constructor(context: InitializedContext) {
 		this.context = context;
 	}
 
-	getTreeItem(element: SyntaxElement): vscode.TreeItem {
+	public getTreeItem(element: SyntaxElement): vscode.TreeItem {
 		return new SyntaxTreeItem(element);
 	}
 
-	getChildren(element?: SyntaxElement): vscode.ProviderResult<SyntaxElement[]> {
+	public getChildren(element?: SyntaxElement): vscode.ProviderResult<SyntaxElement[]> {
 		return this.getRawChildren(element);
 	}
 
-	getParent(element: SyntaxElement): vscode.ProviderResult<SyntaxElement> {
+	public getParent(element: SyntaxElement): vscode.ProviderResult<SyntaxElement> {
 		return element.parent;
 	}
 
-	resolveTreeItem(
+	public resolveTreeItem(
 		item: SyntaxTreeItem,
 		element: SyntaxElement,
 		_token: vscode.CancellationToken,
@@ -58,16 +59,15 @@ export class SyntaxTreeProvider implements vscode.TreeDataProvider<SyntaxElement
 			case "Token":
 				return [];
 			case undefined: {
-				if (this.root !== undefined) {
-					return [this.root];
-				} else {
+				if (this.root === undefined) {
 					return [];
 				}
+				return [this.root];
 			}
 		}
 	}
 
-	async refresh(): Promise<void> {
+	public async refresh(): Promise<void> {
 		const editor = vscode.window.activeTextEditor;
 
 		if (editor && isWeslEditor(editor)) {
@@ -82,12 +82,12 @@ export class SyntaxTreeProvider implements vscode.TreeDataProvider<SyntaxElement
 					// This is something other than a RawElement.
 					return value;
 				}
-				const [start_offset, start_line, start_column] = value.start;
-				const [end_offset, end_line, end_column] = value.end;
-				const range = new vscode.Range(start_line, start_column, end_line, end_column);
+				const [startOffset, startLine, startColumn] = value.start;
+				const [endOffset, endLine, endColumn] = value.end;
+				const range = new vscode.Range(startLine, startColumn, endLine, endColumn);
 				const offsets = {
-					start: start_offset,
-					end: end_offset,
+					start: startOffset,
+					end: endOffset,
 				};
 
 				let inner:
@@ -99,16 +99,16 @@ export class SyntaxTreeProvider implements vscode.TreeDataProvider<SyntaxElement
 							range: vscode.Range;
 					  }
 					| undefined;
-				if (value.start_index && value.end_index) {
-					const [start_offset, start_line, start_column] = value.start_index;
-					const [end_offset, end_line, end_column] = value.end_index;
+				if (value.istart && value.iend) {
+					const [istartOffset, istartLine, istartCol] = value.istart;
+					const [iendOffset, iendLine, iendCol] = value.iend;
 
 					inner = {
 						offsets: {
-							start: start_offset,
-							end: end_offset,
+							start: istartOffset,
+							end: iendOffset,
 						},
-						range: new vscode.Range(start_line, start_column, end_line, end_column),
+						range: new vscode.Range(istartLine, istartCol, iendLine, iendCol),
 					};
 				}
 
@@ -129,17 +129,16 @@ export class SyntaxTreeProvider implements vscode.TreeDataProvider<SyntaxElement
 					}
 
 					return result;
-				} else {
-					return {
-						type: value.type,
-						kind: value.kind,
-						offsets,
-						range,
-						inner,
-						parent: undefined,
-						document: editor.document,
-					};
 				}
+				return {
+					type: value.type,
+					kind: value.kind,
+					offsets,
+					range,
+					inner,
+					parent: undefined,
+					document: editor.document,
+				};
 			});
 		} else {
 			this.root = undefined;
@@ -148,7 +147,7 @@ export class SyntaxTreeProvider implements vscode.TreeDataProvider<SyntaxElement
 		this._onDidChangeTreeData.fire(undefined);
 	}
 
-	getElementByRange(target: vscode.Range): SyntaxElement | undefined {
+	public getElementByRange(target: vscode.Range): SyntaxElement | undefined {
 		if (this.root === undefined) {
 			return undefined;
 		}
@@ -172,17 +171,16 @@ export class SyntaxTreeProvider implements vscode.TreeDataProvider<SyntaxElement
 
 					if (child.type === "Token") {
 						return result;
-					} else {
-						children = this.getRawChildren(child);
-						continue outer;
 					}
+					children = this.getRawChildren(child);
+					continue outer;
 				}
 			}
 			return result;
 		}
 	}
 
-	async toggleWhitespace() {
+	public async toggleWhitespace() {
 		this.hideWhitespace = !this.hideWhitespace;
 		this._onDidChangeTreeData.fire(undefined);
 		await setContextValue("weslSyntaxTree.hideWhitespace", this.hideWhitespace);
@@ -237,8 +235,8 @@ type RawNode = {
 	kind: string;
 	start: [number, number, number];
 	end: [number, number, number];
-	start_index?: [number, number, number];
-	end_index?: [number, number, number];
+	istart?: [number, number, number];
+	iend?: [number, number, number];
 	children: SyntaxElement[];
 };
 
@@ -247,14 +245,15 @@ type RawToken = {
 	kind: string;
 	start: [number, number, number];
 	end: [number, number, number];
-	start_index?: [number, number, number];
-	end_index?: [number, number, number];
+	istart?: [number, number, number];
+	iend?: [number, number, number];
 };
 
 type RawElement = RawNode | RawToken;
 
 export class SyntaxTreeItem extends vscode.TreeItem {
-	constructor(private readonly element: SyntaxElement) {
+	// biome-ignore lint/style/noParameterProperties: todo
+	public constructor(private readonly element: SyntaxElement) {
 		super(element.kind);
 		const icon = getIcon(this.element.kind);
 		if (this.element.type === "Node") {

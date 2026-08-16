@@ -1,15 +1,16 @@
 import { spawn } from "node:child_process";
+import process from "node:process";
 import { text } from "node:stream/consumers";
 import * as vscode from "vscode";
 import type * as lc from "vscode-languageclient/node";
-import { bootstrap } from "./bootstrap";
-import { createClient } from "./client";
-import { Config, prepareVSCodeConfig } from "./config";
-import type { ServerStatusParameters } from "./lsp_ext";
-import * as wa from "./lsp_ext";
-import type { WgslAnalyzerExtensionApi } from "./main";
-import { PersistentState } from "./persistent_state";
-import { type SyntaxElement, SyntaxTreeProvider } from "./syntax_tree_provider";
+import { bootstrap } from "./bootstrap.ts";
+import { createClient } from "./client.ts";
+import { Config, prepareVsCodeConfig } from "./config.ts";
+import type { ServerStatusParameters } from "./lsp_ext.ts";
+import * as wa from "./lsp_ext.ts";
+import type { WgslAnalyzerExtensionApi } from "./main.ts";
+import { PersistentState } from "./persistent_state.ts";
+import { type SyntaxElement, SyntaxTreeProvider } from "./syntax_tree_provider.ts";
 import {
 	isWeslDocument,
 	isWeslEditor,
@@ -17,7 +18,7 @@ import {
 	LazyOutputChannel,
 	log,
 	type WeslEditor,
-} from "./utilities";
+} from "./utilities.ts";
 
 // We only support local folders, not eg. Live Share (`vlsl:` scheme), so do not activate if
 // only those are in use. We use "Empty" to represent these scenarios.
@@ -35,12 +36,13 @@ export function fetchWorkspace(): Workspace {
 	const weslDocuments = vscode.workspace.textDocuments.filter((document) =>
 		isWeslDocument(document),
 	);
-
-	return folders.length === 0
-		? weslDocuments.length === 0
-			? { kind: "Empty" }
-			: { kind: "Detached Files", files: weslDocuments }
-		: { kind: "Workspace Folder" };
+	if (folders.length > 0) {
+		return { kind: "Workspace Folder" };
+	}
+	if (weslDocuments.length > 0) {
+		return { kind: "Detached Files", files: weslDocuments };
+	}
+	return { kind: "Empty" };
 }
 
 export type CommandFactory = {
@@ -53,51 +55,52 @@ export type InitializedContext = Context & {
 };
 
 export class Context implements WgslAnalyzerExtensionApi {
-	readonly statusBar: vscode.StatusBarItem;
-	readonly config: Config;
-	readonly workspace: Workspace;
-	readonly version: string;
+	public readonly statusBar: vscode.StatusBarItem;
+	public readonly config: Config;
+	public readonly workspace: Workspace;
+	public readonly version: string;
 
 	private _client: lc.LanguageClient | undefined;
 	private _serverPath: string | undefined;
 	private traceOutputChannel: vscode.LogOutputChannel | undefined;
-	private testController: vscode.TestController | undefined;
+	private readonly testController: vscode.TestController | undefined;
 	private outputChannel: vscode.LogOutputChannel | undefined;
 	private clientSubscriptions: Disposable[];
-	private state: PersistentState;
-	private commandFactories: Record<string, CommandFactory>;
+	private readonly state: PersistentState;
+	private readonly commandFactories: Record<string, CommandFactory>;
 	private commandDisposables: Disposable[];
-	private unlinkedFiles: vscode.Uri[];
+	private readonly unlinkedFiles: vscode.Uri[];
 	private _syntaxTreeProvider: SyntaxTreeProvider | undefined;
 	private _syntaxTreeView: vscode.TreeView<SyntaxElement> | undefined;
 	private lastStatus: ServerStatusParameters | { health: "stopped" } = {
 		health: "stopped",
 	};
 	private _serverVersion: string;
-	private statusBarActiveEditorListener: Disposable;
+	private readonly statusBarActiveEditorListener: Disposable;
 
-	get serverPath(): string | undefined {
+	public get serverPath(): string | undefined {
 		return this._serverPath;
 	}
 
-	get serverVersion(): string | undefined {
+	public get serverVersion(): string | undefined {
 		return this._serverVersion;
 	}
 
-	get client() {
+	public get client() {
 		return this._client;
 	}
 
-	get syntaxTreeView() {
+	public get syntaxTreeView() {
 		return this._syntaxTreeView;
 	}
 
-	get syntaxTreeProvider() {
+	public get syntaxTreeProvider() {
 		return this._syntaxTreeProvider;
 	}
 
-	constructor(
-		readonly extCtx: vscode.ExtensionContext,
+	public constructor(
+		// biome-ignore lint/style/noParameterProperties: TODO
+		public readonly extCtx: vscode.ExtensionContext,
 		commandFactories: Record<string, CommandFactory>,
 		workspace: Workspace,
 	) {
@@ -123,29 +126,31 @@ export class Context implements WgslAnalyzerExtensionApi {
 		});
 	}
 
-	dispose() {
+	public dispose() {
 		this.config.dispose();
 		this.statusBar.dispose();
 		this.statusBarActiveEditorListener.dispose();
 		this.testController?.dispose();
 		void this.disposeClient();
-		this.commandDisposables.forEach((disposable) => {
+		for (const disposable of this.commandDisposables) {
 			disposable.dispose();
-		});
+		}
 	}
 
-	async onWorkspaceFolderChanges() {
+	public async onWorkspaceFolderChanges() {
 		const workspace = fetchWorkspace();
-		if (workspace.kind === "Detached Files" && this.workspace.kind === "Detached Files") {
-			if (workspace.files !== this.workspace.files) {
-				if (this.client?.isRunning()) {
-					// Ideally we would not need to tear down the server here, but currently detached files
-					// are only specified at server start
-					await this.stopAndDispose();
-					await this.start();
-				}
-				return;
+		if (
+			workspace.kind === "Detached Files"
+			&& this.workspace.kind === "Detached Files"
+			&& workspace.files !== this.workspace.files
+		) {
+			if (this.client?.isRunning()) {
+				// Ideally we would not need to tear down the server here, but currently detached files
+				// are only specified at server start
+				await this.stopAndDispose();
+				await this.start();
 			}
+			return;
 		}
 		if (workspace.kind === "Workspace Folder" && this.workspace.kind === "Workspace Folder") {
 			return;
@@ -168,7 +173,7 @@ export class Context implements WgslAnalyzerExtensionApi {
 			this._serverPath = await this.bootstrap();
 			text(spawn(this._serverPath, ["--version"]).stdout.setEncoding("utf-8")).then(
 				(data) => {
-					const prefix = `wgsl-analyzer `;
+					const prefix = "wgsl-analyzer ";
 					this._serverVersion = data.slice(data.startsWith(prefix) ? prefix.length : 0).trim();
 					this.refreshServerStatus();
 				},
@@ -178,7 +183,7 @@ export class Context implements WgslAnalyzerExtensionApi {
 					this.refreshServerStatus();
 				},
 			);
-			const newEnv = Object.assign({}, process.env, this.config.serverExtraEnv);
+			const newEnv = { ...process.env, ...this.config.serverExtraEnv };
 			const run: lc.Executable = {
 				command: this._serverPath,
 				options: { env: newEnv },
@@ -197,7 +202,7 @@ export class Context implements WgslAnalyzerExtensionApi {
 				};
 			}
 
-			const initializationOptions = prepareVSCodeConfig(rawInitializationOptions);
+			const initializationOptions = prepareVsCodeConfig(rawInitializationOptions);
 
 			this._client = createClient(
 				this.getTraceOutputChannel(),
@@ -252,7 +257,7 @@ export class Context implements WgslAnalyzerExtensionApi {
 		});
 	}
 
-	async start() {
+	public async start() {
 		log.info("Starting language client");
 		const client = await this.getOrCreateClient();
 		if (!client) {
@@ -266,7 +271,7 @@ export class Context implements WgslAnalyzerExtensionApi {
 	}
 
 	private prepareSyntaxTreeView(client: lc.LanguageClient) {
-		const ctxInit: InitializedContext = Object.assign({}, this, { client });
+		const ctxInit: InitializedContext = { ...this, client };
 		this._syntaxTreeProvider = new SyntaxTreeProvider(ctxInit);
 		this._syntaxTreeView = vscode.window.createTreeView("weslSyntaxTree", {
 			treeDataProvider: this._syntaxTreeProvider,
@@ -295,7 +300,7 @@ export class Context implements WgslAnalyzerExtensionApi {
 		});
 
 		vscode.window.onDidChangeTextEditorSelection(async (event) => {
-			if (!this.syntaxTreeView?.visible || !isWeslEditor(event.textEditor)) {
+			if (!(this.syntaxTreeView?.visible && isWeslEditor(event.textEditor))) {
 				return;
 			}
 
@@ -317,13 +322,13 @@ export class Context implements WgslAnalyzerExtensionApi {
 		});
 	}
 
-	async restart() {
+	public async restart() {
 		// FIXME: We should re-use the client, that is context.deactivate() if none of the configs have changed
 		await this.stopAndDispose();
 		await this.start();
 	}
 
-	async stop() {
+	public async stop() {
 		if (!this._client) {
 			return;
 		}
@@ -332,51 +337,52 @@ export class Context implements WgslAnalyzerExtensionApi {
 		await this._client.stop();
 	}
 
-	async stopAndDispose() {
+	public async stopAndDispose() {
 		if (!this._client) {
 			return;
 		}
 		log.info("Disposing language client");
 		this.updateCommands("disable");
 		// we give the server 100ms to stop gracefully
-		await this.client?.stop(100).catch((_: unknown) => {
+		const timeoutMilliseconds = 100;
+		await this.client?.stop(timeoutMilliseconds).catch((_: unknown) => {
 			// failing to stop is not worth handling
 		});
 		await this.disposeClient();
 	}
 
 	private async disposeClient() {
-		this.clientSubscriptions.forEach((disposable) => {
+		for (const disposable of this.clientSubscriptions) {
 			disposable.dispose();
-		});
+		}
 		this.clientSubscriptions = [];
 		await this._client?.dispose();
 		this._serverPath = undefined;
 		this._client = undefined;
 	}
 
-	get activeWeslEditor(): WeslEditor | undefined {
+	public get activeWeslEditor(): WeslEditor | undefined {
 		const editor = vscode.window.activeTextEditor;
 		return editor && isWeslEditor(editor) ? editor : undefined;
 	}
 
-	get activeWeslTomlEditor(): vscode.TextEditor | undefined {
+	public get activeWeslTomlEditor(): vscode.TextEditor | undefined {
 		const editor = vscode.window.activeTextEditor;
 		return editor && isWeslTomlEditor(editor) ? editor : undefined;
 	}
 
-	get extensionPath(): string {
+	public get extensionPath(): string {
 		return this.extCtx.extensionPath;
 	}
 
-	get subscriptions(): Disposable[] {
+	public get subscriptions(): Disposable[] {
 		return this.extCtx.subscriptions;
 	}
 
 	private updateCommands(forceDisable?: "disable") {
-		this.commandDisposables.forEach((disposable) => {
+		for (const disposable of this.commandDisposables) {
 			disposable.dispose();
-		});
+		}
 		this.commandDisposables = [];
 
 		const clientRunning = (!forceDisable && this._client?.isRunning()) ?? false;
@@ -402,12 +408,12 @@ export class Context implements WgslAnalyzerExtensionApi {
 		}
 	}
 
-	setServerStatus(status: ServerStatusParameters | { health: "stopped" }) {
+	public setServerStatus(status: ServerStatusParameters | { health: "stopped" }) {
 		this.lastStatus = status;
 		this.updateStatusBarItem();
 	}
 
-	refreshServerStatus() {
+	public refreshServerStatus() {
 		this.updateStatusBarItem();
 	}
 
@@ -468,19 +474,20 @@ export class Context implements WgslAnalyzerExtensionApi {
 				+ "\n\n"
 				+ '[$(debug-restart) Restart server](command:wgsl-analyzer.restartServer "Restart the server")',
 		);
+		// biome-ignore lint/security/noSecrets: not a secret
 		if (!status.quiescent) icon = "$(loading~spin) ";
 		statusBar.text = `${icon}wgsl-analyzer`;
 	}
 
 	private updateStatusBarVisibility(editor: vscode.TextEditor | undefined) {
 		const showStatusBar = this.config.statusBarShowStatusBar;
-		if (showStatusBar == null || showStatusBar === "never") {
+		if (showStatusBar === undefined || showStatusBar === "never") {
 			this.statusBar.hide();
 		} else if (showStatusBar === "always") {
 			this.statusBar.show();
 		} else {
 			const documentSelector = showStatusBar.documentSelector;
-			if (editor != null && vscode.languages.match(documentSelector, editor.document) > 0) {
+			if (editor !== undefined && vscode.languages.match(documentSelector, editor.document) > 0) {
 				this.statusBar.show();
 			} else {
 				this.statusBar.hide();
@@ -488,17 +495,18 @@ export class Context implements WgslAnalyzerExtensionApi {
 		}
 	}
 
-	pushExtCleanup(d: Disposable) {
+	public pushExtCleanup(d: Disposable) {
 		this.extCtx.subscriptions.push(d);
 	}
 
-	pushClientCleanup(d: Disposable) {
+	public pushClientCleanup(d: Disposable) {
 		this.clientSubscriptions.push(d);
 	}
 }
 
+// biome-ignore lint/style/useConsistentTypeDefinitions: behavior
 export interface Disposable {
-	dispose(): void;
+	dispose: () => void;
 }
 
 // biome-ignore lint/suspicious/noExplicitAny: Signature comes from upstream

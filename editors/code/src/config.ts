@@ -1,16 +1,15 @@
 import * as os from "node:os";
 import * as path from "node:path";
+import process from "node:process";
 import type { Disposable } from "vscode";
 import * as vscode from "vscode";
-import * as Is from "./is";
-
-import type { Env } from "./utilities";
-
-import { expectNotUndefined, log, unwrapUndefinable } from "./utilities";
+import * as Is from "./is.ts";
+import type { Env } from "./utilities.ts";
+import { expectNotUndefined, log, unwrapUndefinable } from "./utilities.ts";
 
 export type RunnableEnvCfgItem = {
 	mask?: string;
-	env: { [key: string]: { toString(): string } | null };
+	env: { [key: string]: { toString: () => string } | null };
 	platform?: string | string[];
 };
 
@@ -27,22 +26,22 @@ export type ConfigurationValue =
 type ShowStatusBar = "always" | "never" | { documentSelector: vscode.DocumentSelector };
 
 export class Config {
-	readonly extensionId = "wgsl-analyzer.wgsl-analyzer";
-	configureLang: vscode.Disposable | undefined;
+	public readonly extensionId = "wgsl-analyzer.wgsl-analyzer";
+	public configureLang: vscode.Disposable | undefined;
 
-	readonly rootSection = "wgsl-analyzer";
+	public readonly rootSection = "wgsl-analyzer";
 
 	private readonly requiresServerReloadOpts = ["serverPath", "server", "files", "cfg"].map(
 		(opt) => `${this.rootSection}.${opt}`,
 	);
 
-	constructor(disposables: Disposable[]) {
+	public constructor(disposables: Disposable[]) {
 		vscode.workspace.onDidChangeConfiguration(this.onDidChangeConfiguration, this, disposables);
 		this.refreshLogging();
 		this.configureLanguage();
 	}
 
-	dispose() {
+	public dispose() {
 		this.configureLang?.dispose();
 	}
 
@@ -173,11 +172,11 @@ export class Config {
 		});
 	}
 
-	get previewWeslRsOutput() {
+	public get previewWeslRsOutput() {
 		return this.get<boolean>("diagnostics.previewWeslRsOutput");
 	}
 
-	get useWeslRsErrorCode() {
+	public get useWeslRsErrorCode() {
 		return this.get<boolean>("diagnostics.useWeslRsErrorCode");
 	}
 
@@ -205,27 +204,27 @@ export class Config {
 	 * So this getter handles this quirk by not requiring the caller to use postfix `!`
 	 */
 	private get<T>(path: string): T | undefined {
-		return prepareVSCodeConfig(this.cfg.get<T>(path));
+		return prepareVsCodeConfig(this.cfg.get<T>(path));
 	}
 
-	get serverPath() {
+	public get serverPath() {
 		return this.get<null | string>("server.path") ?? this.get<null | string>("serverPath");
 	}
 
-	get serverExtraEnv(): Env {
+	public get serverExtraEnv(): Env {
 		const extraEnv = this.get<{ [key: string]: string | number } | null>("server.extraEnv") ?? {};
 		return substituteVariablesInEnv(
 			Object.fromEntries(
-				Object.entries(extraEnv).map(([k, v]) => [k, typeof v !== "string" ? v.toString() : v]),
+				Object.entries(extraEnv).map(([k, v]) => [k, typeof v === "string" ? v : v.toString()]),
 			),
 		);
 	}
 
-	get checkOnSave() {
+	public get checkOnSave() {
 		return this.get<boolean>("checkOnSave") ?? false;
 	}
 
-	async toggleCheckOnSave() {
+	public async toggleCheckOnSave() {
 		const config = this.cfg.inspect<boolean>("checkOnSave") ?? {
 			key: "checkOnSave",
 		};
@@ -251,26 +250,26 @@ export class Config {
 			overrideInLanguage = config.defaultLanguageValue;
 			value = config.defaultValue || config.defaultLanguageValue;
 		}
-		await this.cfg.update("checkOnSave", !(value || false), target || null, overrideInLanguage);
+		await this.cfg.update("checkOnSave", !value, target || null, overrideInLanguage);
 	}
 
-	get problemMatcher(): string[] {
+	public get problemMatcher(): string[] {
 		return this.get<string[]>("runnables.problemMatcher") || [];
 	}
 
-	get testExplorer() {
+	public get testExplorer() {
 		return this.get<boolean | undefined>("testExplorer");
 	}
 
-	get restartServerOnConfigChange() {
+	public get restartServerOnConfigChange() {
 		return this.get<boolean>("restartServerOnConfigChange");
 	}
 
-	get typingContinueCommentsOnNewline() {
+	public get typingContinueCommentsOnNewline() {
 		return this.get<boolean>("typing.continueCommentsOnNewline");
 	}
 
-	get debug() {
+	public get debug() {
 		let sourceFileMap = this.get<Record<string, string> | "auto">("debug.sourceFileMap");
 		if (sourceFileMap !== "auto") {
 			// "/wesl/<id>" used by suggestions only.
@@ -285,11 +284,11 @@ export class Config {
 			engineSettings: this.get<object>("debug.engineSettings") ?? {},
 			openDebugPane: this.get<boolean>("debug.openDebugPane"),
 			buildBeforeRestart: this.get<boolean>("debug.buildBeforeRestart"),
-			sourceFileMap: sourceFileMap,
+			sourceFileMap,
 		};
 	}
 
-	get hoverActions() {
+	public get hoverActions() {
 		return {
 			enable: this.get<boolean>("hover.actions.enable"),
 			implementations: this.get<boolean>("hover.actions.implementations.enable"),
@@ -300,45 +299,47 @@ export class Config {
 		};
 	}
 
-	get showSyntaxTree() {
+	public get showSyntaxTree() {
 		return this.get<boolean>("showSyntaxTree");
 	}
 
-	get statusBarClickAction() {
+	public get statusBarClickAction() {
 		return this.get<string>("statusBar.clickAction");
 	}
 
-	get statusBarShowStatusBar() {
+	public get statusBarShowStatusBar() {
 		return this.get<ShowStatusBar>("statusBar.showStatusBar");
 	}
 
-	get initializeStopped() {
+	public get initializeStopped() {
 		return this.get<boolean>("initializeStopped");
 	}
 
-	get askBeforeUpdateTest() {
+	public get askBeforeUpdateTest() {
 		return this.get<boolean>("runnables.askBeforeUpdateTest");
 	}
 
-	async setAskBeforeUpdateTest(value: boolean) {
+	public async setAskBeforeUpdateTest(value: boolean) {
 		await this.cfg.update("runnables.askBeforeUpdateTest", value, true);
 	}
 }
 
-export function prepareVSCodeConfig<T>(response: T): T {
+export function prepareVsCodeConfig<T>(response: T): T {
 	if (Is.string(response)) {
-		return substituteVSCodeVariableInString(response) as T;
-		// biome-ignore lint/suspicious/noExplicitAny: Signature comes from upstream
-	} else if (response && Is.array<any>(response)) {
-		return response.map((value) => {
-			return prepareVSCodeConfig(value);
-		}) as T;
-	} else if (response && typeof response === "object") {
+		return substituteVsCodeVariableInString(response) as T;
+	}
+	// biome-ignore lint/suspicious/noExplicitAny: Signature comes from upstream
+	if (response && Is.array<any>(response)) {
+		return response.map((value) => prepareVsCodeConfig(value)) as T;
+	}
+	if (response && typeof response === "object") {
 		// biome-ignore lint/suspicious/noExplicitAny: Signature comes from upstream
 		const result: { [key: string]: any } = {};
+		// biome-ignore lint/suspicious/noForIn: intentional
+		// biome-ignore lint/suspicious/useGuardForIn: intentional
 		for (const key in response) {
 			const value = response[key];
-			result[key] = prepareVSCodeConfig(value);
+			result[key] = prepareVsCodeConfig(value);
 		}
 		return result as T;
 	}
@@ -428,13 +429,12 @@ export function substituteVariablesInEnv(env: Env): Env {
 
 const VarRegex = new RegExp(/\$\{(.+?)\}/g);
 
-function substituteVSCodeVariableInString(value: string): string {
+function substituteVsCodeVariableInString(value: string): string {
 	return value.replace(VarRegex, (substring: string, varName) => {
 		if (Is.string(varName)) {
 			return computeVscodeVar(varName) || substring;
-		} else {
-			return substring;
 		}
+		return substring;
 	});
 }
 
@@ -458,9 +458,7 @@ function computeVscodeVar(varName: string): string | null {
 	const supportedVariables: { [k: string]: () => string } = {
 		workspaceFolder,
 
-		workspaceFolderBasename: () => {
-			return path.basename(workspaceFolder());
-		},
+		workspaceFolderBasename: () => path.basename(workspaceFolder()),
 
 		cwd: () => process.cwd(),
 		userHome: () => os.homedir(),
@@ -481,8 +479,7 @@ function computeVscodeVar(varName: string): string | null {
 			`${varName} should not be undefined here`,
 		);
 		return fn();
-	} else {
-		// return "${" + varName + "}";
-		return null;
 	}
+	// return "${" + varName + "}";
+	return null;
 }

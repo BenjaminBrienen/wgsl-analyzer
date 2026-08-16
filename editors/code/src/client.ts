@@ -3,12 +3,15 @@ import anser from "anser";
 import * as vscode from "vscode";
 import { WorkspaceEdit } from "vscode";
 import * as lc from "vscode-languageclient/node";
-import { type Config, prepareVSCodeConfig } from "./config";
-import * as diagnostics from "./diagnostics";
-import * as Is from "./is";
-import { WaLanguageClient } from "./lang_client";
-import * as wa from "./lsp_ext";
-import { assert } from "./utilities";
+import { type Config, prepareVsCodeConfig } from "./config.ts";
+import * as diagnostics from "./diagnostics.ts";
+import * as Is from "./is.ts";
+import { WaLanguageClient } from "./lang_client.ts";
+import * as wa from "./lsp_ext.ts";
+import { assert } from "./utilities.ts";
+
+const noteOrHelp = /^(?:note|help):/m;
+const renderedPrefix = /^ -->[^\n]+\n/m;
 
 export function createClient(
 	traceOutputChannel: vscode.LogOutputChannel,
@@ -35,12 +38,9 @@ export function createClient(
 			) {
 				const response = await next(parameters, token);
 				if (response && Array.isArray(response)) {
-					return response.map((value) => {
-						return prepareVSCodeConfig(value);
-					});
-				} else {
-					return response;
+					return response.map((value) => prepareVsCodeConfig(value));
 				}
+				return response;
 			},
 		},
 		handleDiagnostics(
@@ -69,8 +69,8 @@ export function createClient(
 						unlinkedFiles.push(uri);
 						const folder = vscode.workspace.getWorkspaceFolder(uri)?.uri.fsPath;
 						if (folder) {
-							const parentBackslash = uri.fsPath.lastIndexOf(`${pathSeparator}src`);
-							const parent = uri.fsPath.substring(0, parentBackslash);
+							const parentBackslash = uri.fsPath.lastIndexOf(`${pathSeparator}shaders`);
+							const parent = uri.fsPath.slice(0, parentBackslash);
 
 							if (parent.startsWith(folder)) {
 								const path = vscode.Uri.file(`${parent}${pathSeparator}wesl.toml`);
@@ -87,7 +87,7 @@ export function createClient(
 										case "No":
 											break;
 										case "Yes": {
-											const pathToInsert = `.${parent.substring(folder.length)}${pathSeparator}wesl.toml`;
+											const pathToInsert = `.${parent.slice(folder.length)}${pathSeparator}wesl.toml`;
 											const value = config
 												// biome-ignore lint/suspicious/noExplicitAny: Signature comes from upstream
 												.get<any[]>("linkedProjects")
@@ -117,8 +117,8 @@ export function createClient(
 				if (rendered) {
 					if (preview) {
 						const decolorized = anser.ansiToText(rendered);
-						const index = decolorized.match(/^(?:note|help):/m)?.index || rendered.length;
-						diagnostic.message = decolorized.substring(0, index).replace(/^ -->[^\n]+\n/m, "");
+						const index = decolorized.match(noteOrHelp)?.index ?? rendered.length;
+						diagnostic.message = decolorized.slice(0, index).replace(renderedPrefix, "");
 					}
 					diagnostic.code = {
 						target: vscode.Uri.from({
@@ -179,7 +179,7 @@ export function createClient(
 			const callback = async (
 				values: (lc.Command | lc.CodeAction | object)[] | null,
 			): Promise<(vscode.Command | vscode.CodeAction)[] | undefined> => {
-				if (values === null) return undefined;
+				if (values === null) return;
 				const result: (vscode.CodeAction | vscode.Command)[] = [];
 				const groups = new Map<
 					string,
@@ -214,14 +214,14 @@ export function createClient(
 
 					if (group) {
 						let entry = groups.get(group);
-						if (!entry) {
-							entry = { primary: mkAction(), items: [] };
-							groups.set(group, entry);
-						} else {
+						if (entry) {
 							entry.items.push({
 								label: item.title,
 								arguments: item,
 							});
+						} else {
+							entry = { primary: mkAction(), items: [] };
+							groups.set(group, entry);
 						}
 					} else {
 						result.push(mkAction());
@@ -229,7 +229,7 @@ export function createClient(
 				}
 				for (const [group, { items, primary }] of groups) {
 					// This group contains more than one item, so rewrite it to be a group action
-					if (items.length !== 0) {
+					if (items.length > 0) {
 						const args = [
 							{
 								label: primary.title,
@@ -285,15 +285,16 @@ export function createClient(
 class ExperimentalFeatures implements lc.StaticFeature {
 	private readonly testExplorer: boolean;
 
-	constructor(config: Config) {
+	public constructor(config: Config) {
+		// biome-ignore lint/complexity/useSimplifiedLogicExpression: false positive https://github.com/biomejs/biome/issues/11351
 		this.testExplorer = config.testExplorer || false;
 	}
 
-	getState(): lc.FeatureState {
+	public getState(): lc.FeatureState {
 		return { kind: "static" };
 	}
 
-	fillClientCapabilities(capabilities: lc.ClientCapabilities): void {
+	public fillClientCapabilities(capabilities: lc.ClientCapabilities): void {
 		capabilities.experimental = {
 			snippetTextEdit: true,
 			codeActionGroup: true,
@@ -315,48 +316,48 @@ class ExperimentalFeatures implements lc.StaticFeature {
 		};
 	}
 
-	initialize(
+	public initialize(
 		_capabilities: lc.ServerCapabilities,
 		_documentSelector: lc.DocumentSelector | undefined,
 	): void {
 		// nothing needs to be initialized
 	}
 
-	dispose(): void {
+	public dispose(): void {
 		// nothing needs to be disposed
 	}
 
-	clear(): void {
+	public clear(): void {
 		// nothing needs to be cleared
 	}
 }
 
 class OverrideFeatures implements lc.StaticFeature {
-	getState(): lc.FeatureState {
+	public getState(): lc.FeatureState {
 		return { kind: "static" };
 	}
 
-	fillClientCapabilities(capabilities: lc.ClientCapabilities): void {
+	public fillClientCapabilities(capabilities: lc.ClientCapabilities): void {
 		// Force disable `augmentsSyntaxTokens`, VS Code's textmate grammar is somewhat incomplete
 		// making the experience generally worse
-		const semantic_tokens_client_capabilities = capabilities.textDocument?.semanticTokens;
-		if (semantic_tokens_client_capabilities) {
-			semantic_tokens_client_capabilities.augmentsSyntaxTokens = false;
+		const semanticTokensClientCapabilities = capabilities.textDocument?.semanticTokens;
+		if (semanticTokensClientCapabilities) {
+			semanticTokensClientCapabilities.augmentsSyntaxTokens = false;
 		}
 	}
 
-	initialize(
+	public initialize(
 		_capabilities: lc.ServerCapabilities,
 		_documentSelector: lc.DocumentSelector | undefined,
 	): void {
 		// nothing to initialize
 	}
 
-	clear(): void {
+	public clear(): void {
 		// nothing to clear
 	}
 
-	dispose(): void {
+	public dispose(): void {
 		// nothing to dispose
 	}
 }
@@ -388,16 +389,16 @@ function assertIsCodeActionWithoutEditsAndCommands(
 // to proxy around that. We store the last hover's reference command link
 // here, as only one hover can be active at a time, and we do not need to
 // keep a history of these.
-export let HOVER_REFERENCE_COMMAND: wa.CommandLink[] = [];
+export let HoverReferenceCommand: wa.CommandLink[] = [];
 
 function renderCommand(cmd: wa.CommandLink): string {
-	HOVER_REFERENCE_COMMAND.push(cmd);
-	return `[${cmd.title}](command:wgsl-analyzer.hoverRefCommandProxy?${HOVER_REFERENCE_COMMAND.length - 1} '${cmd.tooltip}')`;
+	HoverReferenceCommand.push(cmd);
+	return `[${cmd.title}](command:wgsl-analyzer.hoverRefCommandProxy?${HoverReferenceCommand.length - 1} '${cmd.tooltip}')`;
 }
 
 function renderHoverActions(actions: wa.CommandLinkGroup[]): vscode.MarkdownString {
 	// clean up the previous hover ref command
-	HOVER_REFERENCE_COMMAND = [];
+	HoverReferenceCommand = [];
 	const text = actions
 		.map(
 			(group) =>

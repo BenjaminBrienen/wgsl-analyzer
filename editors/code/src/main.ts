@@ -1,17 +1,17 @@
-import * as assert from "node:assert";
+import * as assert from "node:assert/strict";
 import * as vscode from "vscode";
 import * as lc from "vscode-languageclient/node";
-import * as commands from "./commands";
-import { type CommandFactory, Context, fetchWorkspace } from "./context";
-import * as diagnostics from "./diagnostics";
-import { setContextValue } from "./utilities";
+import * as commands from "./commands.ts";
+import { type CommandFactory, Context, fetchWorkspace } from "./context.ts";
+import * as diagnostics from "./diagnostics.ts";
+import { setContextValue } from "./utilities.ts";
 
 const WESL_PROJECT_CONTEXT_NAME = "inWeslProject";
 
-export interface WgslAnalyzerExtensionApi {
+export type WgslAnalyzerExtensionApi = {
 	// FIXME: this should be non-optional
 	readonly client?: lc.LanguageClient;
-}
+};
 
 export async function deactivate() {
 	await setContextValue(WESL_PROJECT_CONTEXT_NAME, undefined);
@@ -203,7 +203,7 @@ function checkConflictingExtensions() {
 				() => {
 					// no action needed
 				},
-				// biome-ignore lint/suspicious/noConsole: nothing else we can do here
+				// biome-ignore lint/suspicious/noConsole: does the correct thing here
 				console.error,
 			);
 	}

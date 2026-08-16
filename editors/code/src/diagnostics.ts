@@ -8,32 +8,33 @@ import {
 	window,
 } from "vscode";
 
-import type { Context } from "./context";
+import type { Context } from "./context.ts";
 
-import { unwrapUndefinable } from "./utilities";
+import { unwrapUndefinable } from "./utilities.ts";
 
 export const URI_SCHEME = "wgsl-analyzer-diagnostics-view";
 
 export class TextDocumentProvider implements vscode.TextDocumentContentProvider {
-	private _onDidChange = new vscode.EventEmitter<vscode.Uri>();
+	private readonly _onDidChange = new vscode.EventEmitter<vscode.Uri>();
 
+	// biome-ignore lint/style/noParameterProperties: TODO
 	public constructor(private readonly context: Context) {}
 
-	get onDidChange(): vscode.Event<vscode.Uri> {
+	public get onDidChange(): vscode.Event<vscode.Uri> {
 		return this._onDidChange.event;
 	}
 
-	triggerUpdate(uri: vscode.Uri) {
+	public triggerUpdate(uri: vscode.Uri) {
 		if (uri.scheme === URI_SCHEME) {
 			this._onDidChange.fire(uri);
 		}
 	}
 
-	dispose() {
+	public dispose() {
 		this._onDidChange.dispose();
 	}
 
-	provideTextDocumentContent(uri: vscode.Uri): string {
+	public provideTextDocumentContent(uri: vscode.Uri): string {
 		const contents = getRenderedDiagnostic(this.context, uri);
 		return anser.ansiToText(contents);
 	}
@@ -45,7 +46,7 @@ function getRenderedDiagnostic(context: Context, uri: vscode.Uri): string {
 		return "Unable to find original diagnostic";
 	}
 
-	const diagnostic = diagnostics[parseInt(uri.query, 10)];
+	const diagnostic = diagnostics[Number.parseInt(uri.query, 10)];
 	if (!diagnostic) {
 		return "Unable to find original diagnostic";
 	}
@@ -58,20 +59,23 @@ function getRenderedDiagnostic(context: Context, uri: vscode.Uri): string {
 	return rendered;
 }
 
-interface AnserStyle {
+type AnserStyle = {
 	fg: string;
 	bg: string;
+	// biome-ignore lint/style/useNamingConvention: it's fine
 	fg_truecolor: string;
+	// biome-ignore lint/style/useNamingConvention: it's fine
 	bg_truecolor: string;
-	decorations: Array<anser.DecorationName>;
-}
+	decorations: anser.DecorationName[];
+};
 
 export class AnsiDecorationProvider implements vscode.Disposable {
-	private _decorationTypes = new Map<AnserStyle, TextEditorDecorationType>();
+	private readonly _decorationTypes = new Map<AnserStyle, TextEditorDecorationType>();
 
+	// biome-ignore lint/style/noParameterProperties: TODO
 	public constructor(private readonly context: Context) {}
 
-	dispose(): void {
+	public dispose(): void {
 		for (const decorationType of this._decorationTypes.values()) {
 			decorationType.dispose();
 		}
@@ -79,7 +83,7 @@ export class AnsiDecorationProvider implements vscode.Disposable {
 		this._decorationTypes.clear();
 	}
 
-	async provideDecorations(editor: vscode.TextEditor) {
+	public async provideDecorations(editor: vscode.TextEditor) {
 		if (editor.document.uri.scheme !== URI_SCHEME) {
 			return;
 		}
@@ -104,6 +108,7 @@ export class AnsiDecorationProvider implements vscode.Disposable {
 
 		for (const [lineNumber, line] of lines.entries()) {
 			const totalEscapeLength = 0;
+			// biome-ignore lint/style/useNamingConvention: API from anser
 			const parsed = anser.ansiToJson(line, { use_classes: true });
 			let offset = 0;
 
@@ -159,7 +164,7 @@ export class AnsiDecorationProvider implements vscode.Disposable {
 
 	// NOTE: This could just be a kebab-case to camelCase conversion, but I think it is
 	// a short enough list to just write these by hand
-	static readonly _anserToThemeColor: Record<string, ThemeColor> = {
+	public static readonly _anserToThemeColor: Record<string, ThemeColor> = {
 		"ansi-cyan": { id: "ansiCyan" },
 		"ansi-green": { id: "ansiGreen" },
 		"ansi-magenta": { id: "ansiMagenta" },
@@ -195,6 +200,7 @@ export class AnsiDecorationProvider implements vscode.Disposable {
 			return `rgb(${truecolor})`;
 		}
 
+		// biome-ignore lint/performance/useTopLevelRegex: don't care
 		const paletteMatch = color.match(/ansi-palette-(.+)/);
 		if (paletteMatch) {
 			const paletteColor = paletteMatch[1];

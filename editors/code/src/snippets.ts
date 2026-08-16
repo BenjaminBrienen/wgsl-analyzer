@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import { assert, unwrapUndefinable } from "./utilities";
+import { assert, unwrapUndefinable } from "./utilities.ts";
 
 export type SnippetTextDocumentEdit = [vscode.Uri, (vscode.TextEdit | vscode.SnippetTextEdit)[]];
 
@@ -51,8 +51,9 @@ export async function applySnippetTextEdits(editor: vscode.TextEditor, edits: vs
 }
 
 function hasSnippet(snip: string): boolean {
+	// biome-ignore lint/performance/useTopLevelRegex: not a concern
 	const m = snip.match(/\$\d+|\{\d+:[^}]*\}/);
-	return m != null;
+	return m !== null;
 }
 
 function toSnippetTextEdits(
@@ -64,9 +65,8 @@ function toSnippetTextEdits(
 		// treated as if it had a tab stop at the end.
 		if (hasSnippet(textEdit.newText)) {
 			return new vscode.SnippetTextEdit(textEdit.range, new vscode.SnippetString(textEdit.newText));
-		} else {
-			return textEdit;
 		}
+		return textEdit;
 	});
 }
 
@@ -115,23 +115,22 @@ function removeLeadingWhitespace(
 			}
 
 			return snippetEdit;
-		} else {
-			return edit;
 		}
+		return edit;
 	});
 }
 
 // based on https://github.com/microsoft/vscode/blob/main/src/vs/base/common/strings.ts#L284
 function getLeadingWhitespace(str: string, start: number = 0, end: number = str.length): string {
-	for (let i = start; i < end; i++) {
+	for (let i = start; i < end; i += 1) {
 		const chCode = str.charCodeAt(i);
 		if (chCode !== " ".charCodeAt(0) && chCode !== " ".charCodeAt(0)) {
-			return str.substring(start, i);
+			return str.slice(start, i);
 		}
 	}
-	return str.substring(start, end);
+	return str.slice(start, end);
 }
 
 function splitAt(str: string, index: number): [string, string] {
-	return [str.substring(0, index), str.substring(index)];
+	return [str.slice(0, index), str.slice(index)];
 }

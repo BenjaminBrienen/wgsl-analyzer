@@ -1,39 +1,40 @@
+/** biome-ignore-all lint/correctness/noGlobalDirnameFilename: CommonJS */
 import * as assert from "node:assert/strict";
 import { readdir } from "node:fs/promises";
 import * as path from "node:path";
 import { pathToFileURL } from "node:url";
 
 class Test {
-	readonly name: string;
-	readonly promise: Promise<void>;
+	public readonly name: string;
+	public readonly promise: Promise<void>;
 
-	constructor(name: string, promise: Promise<void>) {
+	public constructor(name: string, promise: Promise<void>) {
 		this.name = name;
 		this.promise = promise;
 	}
 }
 
 class Suite {
-	tests: Test[];
+	public tests: Test[];
 
-	constructor() {
+	public constructor() {
 		this.tests = [];
 	}
 
-	private addTestInternal(name: string, test_function: () => Promise<void>): void {
-		const test = new Test(name, test_function());
+	private addTestInternal(name: string, testFunction: () => Promise<void>): void {
+		const test = new Test(name, testFunction());
 		this.tests.push(test);
 	}
 
-	public addSyncTest(name: string, test_function: () => void): void {
+	public addSyncTest(name: string, testFunction: () => void): void {
 		this.addTestInternal(name, () => {
-			test_function();
+			testFunction();
 			return Promise.resolve();
 		});
 	}
 
-	public addTest(name: string, test_function: () => Promise<void>): void {
-		this.addTestInternal(name, test_function);
+	public addTest(name: string, testFunction: () => Promise<void>): void {
+		this.addTestInternal(name, testFunction);
 	}
 
 	public async run(): Promise<void> {

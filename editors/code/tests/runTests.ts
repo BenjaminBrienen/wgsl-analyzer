@@ -1,5 +1,7 @@
+/** biome-ignore-all lint/correctness/noGlobalDirnameFilename: CommonJS build output */
 import * as fs from "node:fs";
 import * as path from "node:path";
+import process from "node:process";
 import { runTests, type TestOptions } from "@vscode/test-electron";
 import { fold } from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
@@ -21,7 +23,7 @@ async function main() {
 		PackageJson.decode(JSON.parse(jsonData)),
 		fold(
 			(errors) => {
-				throw Error(`Invalid package.json: ${JSON.stringify(errors)}`);
+				throw new Error(`Invalid package.json: ${JSON.stringify(errors)}`);
 			},
 			(parsed) => {
 				const { vscode } = parsed.engines;
@@ -58,7 +60,7 @@ async function main() {
 }
 
 main().catch((error: unknown) => {
-	// biome-ignore lint/suspicious/noConsole: needed here
+	// biome-ignore lint/suspicious/noConsole: test runner output
 	console.error("Failed to run tests", error);
 	process.exit(1);
 });

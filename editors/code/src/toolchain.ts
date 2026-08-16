@@ -1,20 +1,20 @@
 import * as os from "node:os";
 import * as path from "node:path";
+import process from "node:process";
 import * as vscode from "vscode";
+import { log, memoizeAsync } from "./utilities.ts";
 
-import { log, memoizeAsync } from "./utilities";
-
-interface CompilationArtifact {
+type CompilationArtifact = {
 	fileName: string;
 	name: string;
 	kind: string;
 	isTest: boolean;
-}
+};
 
-export interface ArtifactSpec {
+export type ArtifactSpec = {
 	cargoArgs: string[];
 	filter?: (artifacts: CompilationArtifact[]) => CompilationArtifact[];
-}
+};
 
 // FIXME: The server should provide this
 export function weslPath(env?: Record<string, string>): Promise<string> {

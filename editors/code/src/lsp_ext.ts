@@ -113,13 +113,13 @@ export type AnalyzerStatusParameters = {
 
 export type FetchDependencyListParameters = {};
 
-export interface FetchDependencyListResult {
+export type FetchDependencyListResult = {
 	crates: {
 		name?: string;
 		version?: string;
 		path: string;
 	}[];
-}
+};
 
 export const fetchDependencyList = new lc.RequestType<
 	FetchDependencyListParameters,
@@ -129,12 +129,12 @@ export const fetchDependencyList = new lc.RequestType<
 
 export type FetchModuleGraphParameters = {};
 
-export interface FetchModuleGraphResult {
+export type FetchModuleGraphResult = {
 	modules: {
 		name: string;
 		path: string;
 	}[];
-}
+};
 
 export const fetchModuleGraph = new lc.RequestType<
 	FetchModuleGraphParameters,
@@ -144,13 +144,13 @@ export const fetchModuleGraph = new lc.RequestType<
 
 export type FetchPackageGraphParameters = {};
 
-export interface FetchPackageGraphResult {
+export type FetchPackageGraphResult = {
 	packages: {
 		name: string;
 		version: string;
 		path: string;
 	}[];
-}
+};
 
 export const fetchPackageGraph = new lc.RequestType<
 	FetchPackageGraphParameters,
@@ -195,10 +195,10 @@ export const openWeslToml = new lc.RequestType<OpenWeslTomlParameters, lc.Locati
 	"experimental/openWeslToml",
 );
 
-export interface DocsUrls {
+export type DocsUrls = {
 	local?: string;
 	web?: string;
-}
+};
 
 export const openDocs = new lc.RequestType<lc.TextDocumentPositionParams, DocsUrls, void>(
 	"experimental/externalDocs",
@@ -314,32 +314,32 @@ export type SsrParameters = {
 };
 
 export type RecursiveMemoryLayoutNode = {
-	item_name: string;
+	itemName: string;
 	typename: string;
 	size: number;
 	alignment: number;
 	offset: number;
-	parent_index: number;
-	children_start: number;
-	children_len: number;
+	parentIdx: number;
+	childrenStart: number;
+	childrenLen: number;
 };
 
 export type RecursiveMemoryLayout = {
 	nodes: RecursiveMemoryLayoutNode[];
 };
 
-export interface FullSourceParameters {
+export type FullSourceParameters = {
 	textDocument: lc.TextDocumentIdentifier;
-}
+};
 
 export const fullSource = new lc.RequestType<FullSourceParameters, string, void>(
 	"wgsl-analyzer/fullSource",
 );
 
-export interface InlayHintsParameters {
+export type InlayHintsParameters = {
 	textDocument: lc.TextDocumentIdentifier;
 	range: lc.Range;
-}
+};
 export const inlayHints = new lc.RequestType<InlayHintsParameters, InlayHint[], void>(
 	"experimental/inlayHints",
 );

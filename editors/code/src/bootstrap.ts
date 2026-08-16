@@ -1,11 +1,10 @@
 import { exec } from "node:child_process";
 import * as os from "node:os";
+import process from "node:process";
 import * as vscode from "vscode";
-
-import type { Config } from "./config";
-import type { PersistentState } from "./persistent_state";
-
-import { type Env, log, spawnAsync } from "./utilities";
+import type { Config } from "./config.ts";
+import type { PersistentState } from "./persistent_state.ts";
+import { type Env, log, spawnAsync } from "./utilities.ts";
 
 export async function bootstrap(
 	context: vscode.ExtensionContext,
@@ -22,7 +21,7 @@ export async function bootstrap(
 
 	log.info("Using server binary at", path);
 
-	if (!isValidExecutable(path, config.serverExtraEnv)) {
+	if (!(await isValidExecutable(path, config.serverExtraEnv))) {
 		throw new Error(
 			`Failed to execute ${path} --version.`
 				+ (config.serverPath
@@ -72,7 +71,6 @@ async function getServer(
 				ext,
 				state,
 				bundled,
-				server,
 			);
 			await state.updateServerVersion(packageJson.version);
 		}
@@ -99,11 +97,9 @@ async function fileExists(uri: vscode.Uri) {
 
 export async function isValidExecutable(path: string, extraEnv: Env): Promise<boolean> {
 	log.debug("Checking availability of a binary at", path);
-
 	const result = await spawnAsync(path, ["--version"], {
 		env: { ...process.env, ...extraEnv },
 	});
-
 	if (result.error) {
 		log.warn(path, "--version:", result);
 	} else {
@@ -118,7 +114,6 @@ async function getNixOsServer(
 	ext: string,
 	state: PersistentState,
 	bundled: vscode.Uri,
-	server: vscode.Uri,
 ) {
 	await vscode.workspace.fs.createDirectory(globalStorageUri).then();
 	const destination = vscode.Uri.joinPath(globalStorageUri, `wgsl-analyzer${ext}`);
@@ -134,8 +129,7 @@ async function getNixOsServer(
 		await vscode.workspace.fs.copy(bundled, destination);
 		await patchelf(destination);
 	}
-	server = destination;
-	return server;
+	return destination;
 }
 
 async function isNixOs(): Promise<boolean> {
@@ -180,10 +174,10 @@ async function patchelf(destination: vscode.Uri): Promise<void> {
 					const handle = exec(
 						`nix-build -E - --argstr srcStr '${originalFile.fsPath}' -o '${destination.fsPath}'`,
 						(error, stdout, stderr) => {
-							if (error != null) {
-								reject(Error(stderr));
-							} else {
+							if (error === null) {
 								resolve(stdout);
+							} else {
+								reject(new Error(stderr));
 							}
 						},
 					);

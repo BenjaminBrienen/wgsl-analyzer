@@ -1,7 +1,10 @@
 // biome-ignore-all lint/suspicious/noTemplateCurlyInString: intentional
-import * as assert from "node:assert";
-import { substituteVariablesInEnv } from "../../src/config";
-import type { Context } from ".";
+/** biome-ignore-all lint/style/useNamingConvention: many intentional instances */
+/** biome-ignore-all lint/suspicious/noMisplacedAssertion: this is a test file */
+import * as assert from "node:assert/strict";
+import process from "node:process";
+import { substituteVariablesInEnv } from "../../src/config.ts";
+import type { Context } from "./index.ts";
 
 export async function getTests(context: Context) {
 	await context.suite("Server Env Settings", (suite) => {
@@ -57,6 +60,7 @@ export async function getTests(context: Context) {
 
 		suite.addSyncTest("should support VSCode variables", () => {
 			const envJson = {
+				// biome-ignore lint/security/noSecrets: not a secret
 				USING_VSCODE_VAR: "${workspaceFolderBasename}",
 			};
 			const actualEnv = substituteVariablesInEnv(envJson);

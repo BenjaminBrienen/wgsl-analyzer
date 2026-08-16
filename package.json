@@ -1,19 +1,20 @@
 {
 	"scripts": {
-		"update": "pnpm --dir editors/code update --save --latest",
-		"install": "pnpm --dir editors/code install",
-		"build-base": "pnpm --dir editors/code run build-base",
-		"build": "pnpm --dir editors/code run build",
-		"check": "pnpm --dir editors/code run check",
-		"ci": "pnpm --dir editors/code run ci",
-		"format:check": "pnpm --dir editors/code run format:check",
-		"format": "pnpm --dir editors/code run format",
-		"fix": "pnpm --dir editors/code run fix",
-		"lint": "pnpm --dir editors/code run lint",
-		"package": "pnpm --dir editors/code run package",
-		"pretest": "pnpm --dir editors/code run pretest",
-		"test": "pnpm --dir editors/code run test",
-		"typecheck": "pnpm --dir editors/code run typecheck",
-		"watch": "pnpm --dir editors/code run watch"
+		"cd": "cd editors/code",
+		"update": "pnpm --dir editors/code --workspace-root=false update --save --latest",
+		"install": "pnpm --dir editors/code --workspace-root=false install",
+		"build-base": "pnpm --dir editors/code --workspace-root=false run build-base",
+		"build": "pnpm --dir editors/code --workspace-root=false run build",
+		"check": "pnpm --dir editors/code --workspace-root=false run check",
+		"ci": "pnpm --dir editors/code --workspace-root=false run ci",
+		"format:check": "pnpm --dir editors/code --workspace-root=false run format:check",
+		"format": "pnpm --dir editors/code --workspace-root=false run format",
+		"fix": "pnpm --dir editors/code --workspace-root=false run fix",
+		"lint": "pnpm --dir editors/code --workspace-root=false run lint",
+		"package": "pnpm --dir editors/code --workspace-root=false run package",
+		"pretest": "pnpm --dir editors/code --workspace-root=false run pretest",
+		"test": "pnpm --dir editors/code --workspace-root=false run test",
+		"typecheck": "pnpm --dir editors/code --workspace-root=false run typecheck",
+		"watch": "pnpm --dir editors/code --workspace-root=false run watch"
 	}
 }

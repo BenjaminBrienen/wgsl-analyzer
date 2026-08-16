@@ -1,4 +1,4 @@
-import { strict as nativeAssert } from "node:assert";
+import { strict as nativeAssert } from "node:assert/strict";
 import {
 	type ExecOptionsWithStringEncoding,
 	exec,
@@ -12,7 +12,7 @@ export function assert(condition: boolean, explanation: string): asserts conditi
 	try {
 		nativeAssert(condition, explanation);
 	} catch (error) {
-		log.error(`Assertion failed:`, explanation);
+		log.error("Assertion failed:", explanation);
 		throw error;
 	}
 }
@@ -26,23 +26,23 @@ class Log {
 		log: true,
 	});
 
-	trace(...messages: [unknown, ...unknown[]]): void {
+	public trace(...messages: [unknown, ...unknown[]]): void {
 		this.output.trace(this.stringify(messages));
 	}
 
-	debug(...messages: [unknown, ...unknown[]]): void {
+	public debug(...messages: [unknown, ...unknown[]]): void {
 		this.output.debug(this.stringify(messages));
 	}
 
-	info(...messages: [unknown, ...unknown[]]): void {
+	public info(...messages: [unknown, ...unknown[]]): void {
 		this.output.info(this.stringify(messages));
 	}
 
-	warn(...messages: [unknown, ...unknown[]]): void {
+	public warn(...messages: [unknown, ...unknown[]]): void {
 		this.output.warn(this.stringify(messages));
 	}
 
-	error(...messages: [unknown, ...unknown[]]): void {
+	public error(...messages: [unknown, ...unknown[]]): void {
 		this.output.error(this.stringify(messages));
 		this.output.show(true);
 	}
@@ -120,12 +120,12 @@ export function setContextValue(key: string, value: any): Thenable<void> {
  * Returns a higher-order function that caches the results of invoking the
  * underlying async function.
  */
-export function memoizeAsync<Ret, TThis, Parameter extends string>(
-	func: (this: TThis, argument: Parameter) => Promise<Ret>,
+export function memoizeAsync<Ret, This, Parameter extends string>(
+	func: (this: This, argument: Parameter) => Promise<Ret>,
 ) {
 	const cache = new Map<string, Ret>();
 
-	return async function (this: TThis, argument: Parameter) {
+	return async function (this: This, argument: Parameter) {
 		const cached = cache.get(argument);
 		if (cached) return cached;
 
@@ -158,71 +158,72 @@ export function execute(command: string, options: ExecOptionsWithStringEncoding)
 }
 
 export class LazyOutputChannel implements vscode.LogOutputChannel {
-	constructor(name: string) {
+	public constructor(name: string) {
 		this.name = name;
 	}
-	name: string;
-	_channel: vscode.LogOutputChannel | undefined;
+	public name: string;
+	public _channel: vscode.LogOutputChannel | undefined;
 
-	get channel(): vscode.LogOutputChannel {
+	public get channel(): vscode.LogOutputChannel {
 		if (!this._channel) {
 			this._channel = vscode.window.createOutputChannel(this.name, { log: true });
 		}
 		return this._channel;
 	}
-	get logLevel(): vscode.LogLevel {
+
+	public get logLevel(): vscode.LogLevel {
 		return this.channel.logLevel;
 	}
-	get onDidChangeLogLevel(): vscode.Event<vscode.LogLevel> {
+	public get onDidChangeLogLevel(): vscode.Event<vscode.LogLevel> {
 		return this.channel.onDidChangeLogLevel;
 	}
 
 	// biome-ignore lint/suspicious/noExplicitAny: Signature comes from upstream
-	trace(message: string, ...args: any[]): void {
+	public trace(message: string, ...args: any[]): void {
 		this.channel.trace(message, ...args);
 	}
 
 	// biome-ignore lint/suspicious/noExplicitAny: Signature comes from upstream
-	debug(message: string, ...args: any[]): void {
+	public debug(message: string, ...args: any[]): void {
 		this.channel.debug(message, ...args);
 	}
 
 	// biome-ignore lint/suspicious/noExplicitAny: Signature comes from upstream
-	info(message: string, ...args: any[]): void {
+	public info(message: string, ...args: any[]): void {
 		this.channel.info(message, ...args);
 	}
 
 	// biome-ignore lint/suspicious/noExplicitAny: Signature comes from upstream
-	warn(message: string, ...args: any[]): void {
+	public warn(message: string, ...args: any[]): void {
 		this.channel.warn(message, ...args);
 	}
 
 	// biome-ignore lint/suspicious/noExplicitAny: Signature comes from upstream
-	error(error: string | Error, ...args: any[]): void {
+	public error(error: string | Error, ...args: any[]): void {
 		this.channel.error(error, ...args);
 	}
 
-	append(value: string): void {
+	public append(value: string): void {
 		this.channel.append(value);
 	}
 
-	appendLine(value: string): void {
+	public appendLine(value: string): void {
 		this.channel.appendLine(value);
 	}
 
-	replace(value: string): void {
+	public replace(value: string): void {
 		this.channel.replace(value);
 	}
 
-	clear(): void {
+	public clear(): void {
 		if (this._channel) {
 			this._channel.clear();
 		}
 	}
 
-	show(preserveFocus?: boolean): void;
-	show(column: vscode.ViewColumn, preserveFocus?: boolean): void;
-	show(arg1?: boolean | vscode.ViewColumn, arg2?: boolean): void {
+	public show(preserveFocus?: boolean): void;
+	public show(column: vscode.ViewColumn, preserveFocus?: boolean): void;
+	public show(arg1?: boolean | vscode.ViewColumn, arg2?: boolean): void {
 		let preserveFocus: boolean;
 		if (typeof arg1 === "boolean") {
 			preserveFocus = arg1;
@@ -232,13 +233,13 @@ export class LazyOutputChannel implements vscode.LogOutputChannel {
 		this.channel.show(preserveFocus);
 	}
 
-	hide(): void {
+	public hide(): void {
 		if (this._channel) {
 			this._channel.hide();
 		}
 	}
 
-	dispose(): void {
+	public dispose(): void {
 		if (this._channel) {
 			this._channel.dispose();
 		}
@@ -261,7 +262,7 @@ function expectNotNull<T>(input: Nullable<T>, message: string): NotNull<T> {
 	throw new TypeError(message);
 }
 export function unwrapNullable<T>(input: Nullable<T>): NotNull<T> {
-	return expectNotNull(input, `unwrapping \`null\``);
+	return expectNotNull(input, "unwrapping `null`");
 }
 
 export type NotUndefined<T> = T extends undefined ? never : T;
@@ -280,26 +281,26 @@ export function expectNotUndefined<T>(input: Undefinable<T>, message: string): N
 }
 
 export function unwrapUndefinable<T>(input: Undefinable<T>): NotUndefined<T> {
-	return expectNotUndefined(input, `unwrapping \`undefined\``);
+	return expectNotUndefined(input, "unwrapping `undefined`");
 }
 
-interface SpawnAsyncReturns {
+type SpawnAsyncReturns = {
 	stdout: string;
 	stderr: string;
 	status: number | null;
 	error?: Error | undefined;
-}
+};
 
 export async function spawnAsync(
 	path: string,
-	inputs?: ReadonlyArray<string>,
+	inputs?: readonly string[],
 	options?: SpawnOptionsWithoutStdio,
 ): Promise<SpawnAsyncReturns> {
 	const child = spawn(path, inputs, options);
 	// biome-ignore lint/suspicious/noExplicitAny: Signature comes from upstream
-	const stdout: Array<Buffer<any>> = [];
+	const stdout: Buffer<any>[] = [];
 	// biome-ignore lint/suspicious/noExplicitAny: Signature comes from upstream
-	const stderr: Array<Buffer<any>> = [];
+	const stderr: Buffer<any>[] = [];
 	try {
 		const result = await new Promise<{
 			status: null | number;

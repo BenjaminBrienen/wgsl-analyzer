@@ -1,7 +1,8 @@
-import * as assert from "node:assert";
+/** biome-ignore-all lint/suspicious/noMisplacedAssertion: this is a test file */
+import * as assert from "node:assert/strict";
 import * as vscode from "vscode";
-import { targetToExecution } from "../../src/tasks";
-import type { Context } from ".";
+import { targetToExecution } from "../../src/tasks.ts";
+import type { Context } from "./index.ts";
 
 export async function getTests(context: Context) {
 	await context.suite("Tasks", (suite) => {
@@ -91,7 +92,7 @@ export async function getTests(context: Context) {
 					},
 				},
 			];
-			tasks.map(to_test_execution).forEach((actual, i) => {
+			tasks.map(toTestExecution).forEach((actual, i) => {
 				const expected = expectedTasks[i];
 				assert.deepStrictEqual(actual, expected);
 			});
@@ -99,7 +100,7 @@ export async function getTests(context: Context) {
 	});
 }
 
-function to_test_execution(task: vscode.Task): {
+function toTestExecution(task: vscode.Task): {
 	definition: vscode.TaskDefinition;
 	name: string;
 	execution: {
@@ -135,10 +136,9 @@ function executionToSimple(
 				return argument.value;
 			}),
 		};
-	} else {
-		return {
-			process: exec.process,
-			args: exec.args,
-		};
 	}
+	return {
+		process: exec.process,
+		args: exec.args,
+	};
 }
