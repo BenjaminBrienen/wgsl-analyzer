@@ -392,6 +392,33 @@ impl TypeKind {
         }
     }
 
+    /// Useful for validating the immediate address space according to naga.
+    pub fn is_or_contains_f16(
+        &self,
+        db: &dyn HirDatabase,
+    ) -> bool {
+        match self {
+            Self::Scalar(ScalarType::F16) => true,
+            Self::Vector(VectorType { component_type, .. }) => {
+                component_type.kind(db).is_or_contains_f16(db)
+            },
+            Self::Matrix(MatrixType { inner, .. })
+            | Self::Atomic(AtomicType { inner })
+            | Self::Array(ArrayType { inner, .. })
+            | Self::Reference(Reference { inner, .. })
+            | Self::Pointer(Pointer { inner, .. }) => inner.kind(db).is_or_contains_f16(db),
+            Self::Struct(r#struct) => db
+                .field_types(*r#struct)
+                .0
+                .iter()
+                .all(|(_, r#type)| r#type.kind(db).is_or_contains_f16(db)),
+            Self::BuiltinStruct(BuiltinStruct { fields, .. }) => fields
+                .iter()
+                .any(|(_, r#type)| r#type.kind(db).is_or_contains_f16(db)),
+            Self::Scalar(_) | Self::Texture(_) | Self::Sampler(_) | Self::Error => false,
+        }
+    }
+
     pub fn contains_runtime_sized_array(
         &self,
         db: &dyn HirDatabase,

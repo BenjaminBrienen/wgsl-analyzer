@@ -185,6 +185,12 @@ pub fn validate_address_space<DiagnosticBuilder>(
             }
         },
         AddressSpace::Immediate => {
+            if (!r#type.is_host_shareable(db) || !r#type.is_constructable()) && (!matches!(*r#type, TypeKind::Array(_))) {
+
+            }
+            if r#type.is_or_contains_f16(db) {
+                // naga says this is not allowed
+            }
             // TODO: validate immediates
             // See: https://github.com/wgsl-analyzer/wgsl-analyzer/issues/682
         },
