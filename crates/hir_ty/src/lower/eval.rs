@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use base_db::Intern as _;
 use hir_def::expression::{BinaryOperation, Expression, ExpressionId, UnaryOperator};
-use wgsl_types::inst::{Instance, LiteralInstance};
+use wgsl_types::inst::Instance;
 
 use crate::{
     lower::{
@@ -44,38 +44,7 @@ impl TypeLoweringContext<'_> {
             | Expression::IdentExpression(_) => {
                 return None;
             },
-            #[expect(
-                clippy::cast_possible_truncation,
-                clippy::cast_possible_wrap,
-                clippy::as_conversions,
-                reason = "TODO: make invalid state unrepresentable; see: https://github.com/wgsl-analyzer/wgsl-analyzer/issues/675"
-            )]
-            Expression::Literal(literal) => {
-                use hir_def::expression::{BuiltinInt, Literal};
-                match literal {
-                    Literal::Int(value, BuiltinInt::I32) => {
-                        Instance::Literal(LiteralInstance::I32(*value as i32))
-                    },
-                    Literal::Int(value, BuiltinInt::U32) => {
-                        Instance::Literal(LiteralInstance::U32(*value as u32))
-                    },
-                    Literal::Int(value, BuiltinInt::I64) => {
-                        Instance::Literal(LiteralInstance::I64(*value as i64))
-                    },
-                    Literal::Int(value, BuiltinInt::U64) => {
-                        Instance::Literal(LiteralInstance::U64(*value))
-                    },
-                    Literal::Int(value, BuiltinInt::Abstract) => {
-                        Instance::Literal(LiteralInstance::AbstractInt(*value as i64))
-                    },
-                    Literal::Float(_, _) => {
-                        // TODO: const evaluation not implemented
-                        // See: https://github.com/wgsl-analyzer/wgsl-analyzer/issues/670
-                        return None;
-                    },
-                    Literal::Bool(value) => Instance::Literal(LiteralInstance::Bool(*value)),
-                }
-            },
+            Expression::Literal(literal) => Instance::Literal(*literal),
         };
 
         Some(instance)

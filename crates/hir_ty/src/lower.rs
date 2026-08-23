@@ -112,6 +112,8 @@ pub enum TypeLoweringErrorKind {
     ExpectedType(Path),
     /// A function was provided but not called.
     ExpectedFunctionToBeCalled(Path),
+    InvalidLiteral(String),
+    Unsupported(String),
     // TODO: Change this to a strongly typed wgsl_types::Error
     // The challenge here is that wgsl_types::Error doesn't implement Eq,
     // However the inference result keeps track of all the diagnostics and is cached
@@ -151,7 +153,6 @@ impl TypeLoweringErrorKind {
             Self::Resolution(ResolutionDiagnostic::UnresolvedPackage { name }) => {
                 format!("package `{}` not found", name.as_str())
             },
-            Self::WgslError(error) => error.clone(),
             Self::UnexpectedTemplateArgument(expected, actual) => {
                 format!(
                     "unexpected template argument, expected {expected}, actual: {}",
@@ -189,6 +190,8 @@ impl TypeLoweringErrorKind {
             Self::ExpectedFunctionToBeCalled(path) => {
                 format!("{0:} was written, write {0:}() instead", path.mod_path())
             },
+            Self::InvalidLiteral(reason) => format!("not a valid literal value because {reason}"),
+            Self::WgslError(error) | Self::Unsupported(error) => error.clone(),
         }
     }
 }
@@ -538,6 +541,7 @@ impl<'db> WgslTypeConverter<'db> {
             TypeKind::Scalar(ScalarType::U32) => wgsl_types::Type::U32,
             TypeKind::Scalar(ScalarType::I64) => wgsl_types::Type::I64,
             TypeKind::Scalar(ScalarType::U64) => wgsl_types::Type::U64,
+            TypeKind::Scalar(ScalarType::F64) => wgsl_types::Type::F64,
             TypeKind::Atomic(AtomicType { inner }) => {
                 wgsl_types::Type::Atomic(Box::new(self.to_wgsl_types(inner)))
             },

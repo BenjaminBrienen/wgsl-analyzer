@@ -28,7 +28,7 @@ pub struct ParameterId {
 
 pub type LocalParameterId = Idx<ParamData>;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub struct FunctionSignature {
     pub name: Name,
     pub store: Arc<ExpressionStore>,
@@ -71,7 +71,7 @@ pub struct FieldId {
 
 pub type LocalFieldId = Idx<FieldData>;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub struct StructSignature {
     pub name: Name,
     pub store: Arc<ExpressionStore>,
@@ -132,7 +132,7 @@ impl StructSignature {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub struct TypeAliasSignature {
     pub name: Name,
     pub store: Arc<ExpressionStore>,
@@ -161,7 +161,7 @@ impl TypeAliasSignature {
 }
 
 /// The signature of a global variable.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub struct VariableSignature {
     pub name: Name,
     pub store: Arc<ExpressionStore>,
@@ -191,7 +191,7 @@ impl VariableSignature {
 }
 
 /// The signature of a global constant.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub struct ConstantSignature {
     pub name: Name,
     pub store: Arc<ExpressionStore>,
@@ -219,7 +219,7 @@ impl ConstantSignature {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub struct OverrideSignature {
     pub name: Name,
     pub store: Arc<ExpressionStore>,
@@ -247,7 +247,7 @@ impl OverrideSignature {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub struct AssertStatementSignature {
     pub store: Arc<ExpressionStore>,
 }

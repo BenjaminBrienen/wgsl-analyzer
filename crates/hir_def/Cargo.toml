@@ -26,6 +26,7 @@ smol_str.workspace = true
 syntax.workspace = true
 triomphe.workspace = true
 wgsl-types.workspace = true
+half   = "2.7.1"
 
 [dev-dependencies]
 expect-test.workspace = true

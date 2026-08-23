@@ -189,6 +189,7 @@ fn write_type(
         TypeKind::Scalar(ScalarType::U32) => write!(formatter, "u32"),
         TypeKind::Scalar(ScalarType::I64) => write!(formatter, "i64"),
         TypeKind::Scalar(ScalarType::U64) => write!(formatter, "u64"),
+        TypeKind::Scalar(ScalarType::F64) => write!(formatter, "f64"),
         TypeKind::Scalar(ScalarType::F32) => write!(formatter, "f32"),
         TypeKind::Scalar(ScalarType::F16) => write!(formatter, "f16"),
         TypeKind::Atomic(atomic) => {

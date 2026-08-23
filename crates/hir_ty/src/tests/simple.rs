@@ -839,7 +839,7 @@ fn const_u32_as_array_size() {
             6..15 'maxLayers': u32
             18..21 '12u': u32
             27..33 'layers': ref<handle, [error], read>
-            46..55 'maxLayers': unexpected template argument, expected a `u32` or a `i32` greater than `0`, actual: [error]
+            46..55 'maxLayers': unexpected template argument, expected an integer greater than `0`, actual: [error]
         "#]],
     );
 }

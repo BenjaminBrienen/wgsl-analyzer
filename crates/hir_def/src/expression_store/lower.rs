@@ -68,8 +68,7 @@ impl ExprCollector<'_> {
                     })
             },
             ast::Expression::Literal(literal) => {
-                let literal = literal.kind();
-                Expression::Literal(parse_literal(literal))
+                self.alloc_expression(Expression::Literal(literal), syntax_pointer)
             },
             ast::Expression::ParenthesisExpression(expression) => {
                 let inner = self.collect_expression_opt(expression.inner());

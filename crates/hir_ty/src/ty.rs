@@ -568,6 +568,7 @@ pub enum ScalarType {
     // SHADER_INT64
     I64,
     U64,
+    F64,
 }
 
 impl ScalarType {
@@ -583,6 +584,7 @@ impl ScalarType {
             Self::F16 => "f16",
             Self::I64 => "i64",
             Self::U64 => "u64",
+            Self::F64 => "lf",
         }
     }
 

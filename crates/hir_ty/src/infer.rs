@@ -23,6 +23,7 @@ use itertools::Itertools as _;
 use la_arena::ArenaMap;
 use rustc_hash::FxHashMap;
 use wgsl_types::{
+    inst::LiteralInstance,
     syntax::{AccessMode, AddressSpace, Enumerant},
     tplt::TpltParam,
     ty::Ty as _,
@@ -1140,21 +1141,19 @@ impl<'db> InferenceContext<'db> {
                 }
             },
             Expression::Literal(literal) => {
-                use hir_def::expression::{BuiltinFloat, BuiltinInt, Literal};
                 let type_kind = match literal {
-                    Literal::Int(_, BuiltinInt::I32) => TypeKind::Scalar(ScalarType::I32),
-                    Literal::Int(_, BuiltinInt::U32) => TypeKind::Scalar(ScalarType::U32),
-                    Literal::Int(_, BuiltinInt::I64) => TypeKind::Scalar(ScalarType::I64),
-                    Literal::Int(_, BuiltinInt::U64) => TypeKind::Scalar(ScalarType::U64),
-                    Literal::Int(_, BuiltinInt::Abstract) => {
-                        TypeKind::Scalar(ScalarType::AbstractInt)
-                    },
-                    Literal::Float(_, BuiltinFloat::F16) => TypeKind::Scalar(ScalarType::F16),
-                    Literal::Float(_, BuiltinFloat::F32) => TypeKind::Scalar(ScalarType::F32),
-                    Literal::Float(_, BuiltinFloat::Abstract) => {
+                    LiteralInstance::I32(_) => TypeKind::Scalar(ScalarType::I32),
+                    LiteralInstance::U32(_) => TypeKind::Scalar(ScalarType::U32),
+                    LiteralInstance::I64(_) => TypeKind::Scalar(ScalarType::I64),
+                    LiteralInstance::U64(_) => TypeKind::Scalar(ScalarType::U64),
+                    LiteralInstance::AbstractInt(_) => TypeKind::Scalar(ScalarType::AbstractInt),
+                    LiteralInstance::F16(_) => TypeKind::Scalar(ScalarType::F16),
+                    LiteralInstance::F32(_) => TypeKind::Scalar(ScalarType::F32),
+                    LiteralInstance::F64(_) => TypeKind::Scalar(ScalarType::F64),
+                    LiteralInstance::AbstractFloat(_) => {
                         TypeKind::Scalar(ScalarType::AbstractFloat)
                     },
-                    Literal::Bool(_) => TypeKind::Scalar(ScalarType::Bool),
+                    LiteralInstance::Bool(_) => TypeKind::Scalar(ScalarType::Bool),
                 };
                 type_kind.intern(self.db)
             },

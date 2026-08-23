@@ -25,7 +25,7 @@ pub struct Attribute {
 }
 
 // for example, @group(0) @location(0)
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Debug)]
 pub struct AttributeList {
     pub attributes: Vec<Attribute>,
     pub store: Arc<ExpressionStore>,
@@ -163,7 +163,7 @@ pub enum AttributeDefId {
     GlobalVariable(GlobalVariableId),
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Debug)]
 pub struct AttributesWithOwner {
     pub attribute_list: AttributeList,
     pub owner: AttributeDefId,

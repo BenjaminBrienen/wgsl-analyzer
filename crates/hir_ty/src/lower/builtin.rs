@@ -1,4 +1,7 @@
-use std::{num::NonZeroU32, str::FromStr};
+use std::{
+    num::{NonZeroU32, NonZeroU64},
+    str::FromStr,
+};
 
 use base_db::{CapabilitiesInput, Intern as _};
 use either::Either;
@@ -725,49 +728,66 @@ impl TypeLoweringContext<'_> {
                 TypeKind::Error.intern(self.db)
             },
         };
-        let size = if template_parameters.has_next() {
-            match template_parameters.next_as_instance() {
-                Ok((Some(Instance::Literal(LiteralInstance::I32(number))), _))
-                    if let Ok(validated) = u32::try_from(number).and_then(NonZeroU32::try_from) =>
-                {
-                    ArraySize::Constant(validated)
-                },
-                Ok((Some(Instance::Literal(LiteralInstance::U32(number))), _))
-                    if let Ok(validated) = NonZeroU32::try_from(number) =>
-                {
-                    ArraySize::Constant(validated)
-                },
-                Ok((
-                    Some(Instance::Literal(
-                        LiteralInstance::AbstractInt(number) | LiteralInstance::I64(number),
-                    )),
-                    _,
-                )) if let Ok(validated) = u32::try_from(number).and_then(NonZeroU32::try_from) => {
-                    // skips handling array<E, 1li>() or array<E, 99999999999999999999999999>()
-                    ArraySize::Constant(validated)
-                },
-                Ok((Some(Instance::Literal(LiteralInstance::U64(number))), _))
-                    if let Ok(validated) = u32::try_from(number).and_then(NonZeroU32::try_from) =>
-                {
-                    // skips handling array<E, 1uL>() or array<E, 99999999999999999999999999uL>()
-                    ArraySize::Constant(validated)
-                },
-                Ok((instance, expression)) => {
-                    let error = TypeLoweringError {
+        let size = match template_parameters.next_as_instance() {
+            Some(Ok((Some(Instance::Literal(LiteralInstance::I32(number))), _)))
+                if let Ok(validated) = u32::try_from(number).and_then(NonZeroU32::try_from) =>
+            {
+                ArraySize::Constant(validated)
+            },
+            Some(Ok((Some(Instance::Literal(LiteralInstance::U32(number))), _)))
+                if let Ok(validated) = NonZeroU32::try_from(number) =>
+            {
+                ArraySize::Constant(validated)
+            },
+            Some(Ok((
+                Some(Instance::Literal(
+                    LiteralInstance::AbstractInt(number) | LiteralInstance::I64(number),
+                )),
+                expression,
+            ))) if let Ok(validated) = u64::try_from(number).and_then(NonZeroU64::try_from) => {
+                if let Ok(small) = NonZeroU32::try_from(validated) {
+                    ArraySize::Constant(small)
+                } else {
+                    self.diagnostics.push(TypeLoweringError {
                         container: TypeContainer::Expression(expression),
-                        kind: TypeLoweringErrorKind::UnexpectedTemplateArgument(
-                            "a `u32` or a `i32` greater than `0`".to_owned(),
-                            instance.into(),
+                        kind: TypeLoweringErrorKind::Unsupported(
+                            "64-bit length arrays are unsupported".to_owned(),
                         ),
-                    };
-                    return Err(error);
-                },
-                Err(error) => {
-                    return Err(error);
-                },
-            }
-        } else {
-            ArraySize::Dynamic
+                    });
+                    ArraySize::Constant(NonZeroU32::MAX)
+                }
+            },
+            Some(Ok((Some(Instance::Literal(LiteralInstance::U64(number))), expression)))
+                if let Ok(validated) = NonZeroU64::try_from(number) =>
+            {
+                if let Ok(small) = NonZeroU32::try_from(validated) {
+                    ArraySize::Constant(small)
+                } else {
+                    self.diagnostics.push(TypeLoweringError {
+                        container: TypeContainer::Expression(expression),
+                        kind: TypeLoweringErrorKind::Unsupported(
+                            "64-bit length arrays are unsupported".to_owned(),
+                        ),
+                    });
+                    ArraySize::Constant(NonZeroU32::MAX)
+                }
+            },
+            Some(Ok((instance, expression))) => {
+                // if instance.is_none() {
+                //     return // we shouldn't give an "extra" error here
+                // }
+                return Err(TypeLoweringError {
+                    container: TypeContainer::Expression(expression),
+                    kind: TypeLoweringErrorKind::UnexpectedTemplateArgument(
+                        "an integer greater than `0`".to_owned(),
+                        instance.into(),
+                    ),
+                });
+            },
+            Some(Err(error)) => {
+                return Err(error);
+            },
+            None => ArraySize::Dynamic,
         };
 
         Ok(ArrayTemplate { r#type, size })

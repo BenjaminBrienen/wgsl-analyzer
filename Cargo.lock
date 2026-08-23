@@ -507,6 +507,7 @@ dependencies = [
  "camino",
  "either",
  "expect-test",
+ "half",
  "indexmap",
  "itertools 0.15.0",
  "la-arena",

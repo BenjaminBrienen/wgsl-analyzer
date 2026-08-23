@@ -24,7 +24,7 @@ pub struct Binding {
     pub name: Name,
 }
 
-#[derive(Default, Debug, PartialEq, Eq)]
+#[derive(Default, Debug, PartialEq)]
 pub struct Body {
     pub store: ExpressionStore,
     pub attributes: Arena<Attribute>,

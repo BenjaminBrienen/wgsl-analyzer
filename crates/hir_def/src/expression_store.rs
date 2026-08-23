@@ -23,7 +23,7 @@ use crate::{
 pub struct SyntheticSyntax;
 
 /// An arena with expressions.
-#[derive(Default, Debug, PartialEq, Eq)]
+#[derive(Default, Debug, PartialEq)]
 pub struct ExpressionStore {
     pub exprs: Arena<Expression>,
     pub types: Arena<TypeSpecifier>,
@@ -164,7 +164,7 @@ impl PartialEq for ExpressionSourceMap {
 }
 
 /// The body of an item (function, const etc.).
-#[derive(Debug, Eq, PartialEq, Default)]
+#[derive(Debug, PartialEq, Default)]
 pub struct ExpressionStoreBuilder {
     exprs: Arena<Expression>,
     types: Arena<TypeSpecifier>,

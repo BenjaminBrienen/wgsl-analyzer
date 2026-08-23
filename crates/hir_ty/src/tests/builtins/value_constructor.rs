@@ -2155,3 +2155,77 @@ fn f() {
         "#]],
     );
 }
+
+#[test]
+fn array_unsupported() {
+    check_infer_with_capabilities(
+        Capabilities {
+            shader_int64: true,
+            ..Default::default()
+        },
+        "
+fn foo() {
+    let i_max = array<i32, 2147483647i>();
+    let u_max = array<i32, 4294967295u>();
+    let li_half_max = array<i32, 4294967295li>();
+    let li_unsupported = array<i32, 4294967296li>();
+    let lu_half_max = array<i32, 4294967295lu>();
+    let lu_unsupported = array<i32, 4294967296lu>();
+    let a_half_max = array<i32, 4294967295>();
+    let a_unsupported = array<i32, 4294967296>();
+}
+",
+        expect![[r#"
+            19..24 'i_max': array<i32, 2147483647>
+            27..52 'array<...47i>()': array<i32, 2147483647>
+            62..67 'u_max': array<i32, 4294967295>
+            70..95 'array<...95u>()': array<i32, 4294967295>
+            105..116 'li_half_max': array<i32, 4294967295>
+            119..145 'array<...5li>()': array<i32, 4294967295>
+            155..169 'li_unsupported': array<i32, 4294967295>
+            172..198 'array<...6li>()': array<i32, 4294967295>
+            208..219 'lu_half_max': array<i32, 4294967295>
+            222..248 'array<...5lu>()': array<i32, 4294967295>
+            258..272 'lu_unsupported': array<i32, 4294967295>
+            275..301 'array<...6lu>()': array<i32, 4294967295>
+            311..321 'a_half_max': array<i32, 4294967295>
+            324..348 'array<...295>()': array<i32, 4294967295>
+            358..371 'a_unsupported': array<i32, 4294967295>
+            374..398 'array<...296>()': array<i32, 4294967295>
+            183..195 '4294967296li': 64-bit length arrays are unsupported
+            286..298 '4294967296lu': 64-bit length arrays are unsupported
+            385..395 '4294967296': 64-bit length arrays are unsupported
+        "#]],
+    );
+}
+
+#[test]
+fn invalid_literal() {
+    check_infer_with_capabilities(
+        Capabilities {
+            shader_int64: true,
+            ..Default::default()
+        },
+        "
+fn foo() {
+    let i_invalid = 2147483648i;
+    let u_invalid = 4294967296u;
+    let li_invalid = 2147483648li;
+    let lu_invalid = 4294967296lu;
+    let a_invalid = 4294967296;
+}
+",
+        expect![[r#"
+            19..28 'i_invalid': i32
+            31..42 '2147483648i': i32
+            52..61 'u_invalid': u32
+            64..75 '4294967296u': u32
+            85..95 'li_invalid': i64
+            98..110 '2147483648li': i64
+            120..130 'lu_invalid': u64
+            133..145 '4294967296lu': u64
+            155..164 'a_invalid': i32
+            167..177 '4294967296': integer
+        "#]],
+    );
+}

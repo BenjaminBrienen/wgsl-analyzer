@@ -67,20 +67,17 @@ impl TemplateParameters {
 
     pub fn next_as_instance(
         &mut self
-    ) -> Result<(Option<Instance>, ExpressionId), TypeLoweringError> {
+    ) -> Option<Result<(Option<Instance>, ExpressionId), TypeLoweringError>> {
         match self.take_next() {
-            Some((TemplateParameter::Instance(instance), id)) => Ok((instance, id)),
-            Some((parameter, id)) => Err(TypeLoweringError {
+            Some((TemplateParameter::Instance(instance), id)) => Some(Ok((instance, id))),
+            Some((parameter, id)) => Some(Err(TypeLoweringError {
                 container: TypeContainer::Expression(id),
                 kind: TypeLoweringErrorKind::UnexpectedTemplateArgument(
                     "an instance".to_owned(),
                     parameter.into(),
                 ),
-            }),
-            None => Err(TypeLoweringError {
-                container: self.container,
-                kind: TypeLoweringErrorKind::MissingTemplateArgument("an instance".to_owned()),
-            }),
+            })),
+            None => None,
         }
     }
 
