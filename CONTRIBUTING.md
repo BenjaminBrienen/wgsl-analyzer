@@ -29,3 +29,11 @@ If a feature issue is already open but it is unclear whether it is considered ac
 
 [Contributing]: https://wgsl-analyzer.github.io/book/contributing
 [wgsl-analyzer Discord server]: https://discord.gg/3QUGyyz984
+
+## AI Usage Policy
+
+Do not submit work that reveals AI use. You must review and meaningfully own everything you submit.
+
+You may submit (self-reviewed) AI-generated code as a draft PR or link your fork branch in an issue for someone else to adopt and adapt into a valid submission.
+
+If you submit an AI-***authored*** commit in a *published* PR *ready for review*, we will immediately close the PR and issue a moderation warning.
