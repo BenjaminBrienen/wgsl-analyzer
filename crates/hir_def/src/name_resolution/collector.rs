@@ -214,6 +214,7 @@ impl ModCollector<'_> {
         item: ModuleItem,
         item_id: ModuleItemId,
     ) {
+        self.item_scope.declare(item.definition);
         let previous = self.item_scope.push_item(name.clone(), item);
         if previous.is_some() {
             self.item_scope

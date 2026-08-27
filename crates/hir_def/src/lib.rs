@@ -13,6 +13,8 @@ pub mod resolver;
 pub mod signature;
 #[cfg(test)]
 mod test_db;
+#[cfg(test)]
+mod tests;
 pub mod type_specifier;
 pub mod visibility;
 use base_db::{AstIdMap, EditionedFileId, FileAstId, FileRange, SourceDatabase, TextRange};

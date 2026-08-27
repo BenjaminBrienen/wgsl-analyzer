@@ -1,6 +1,6 @@
 use base_db::{EditionedFileId, FileExtension, Package, SourceDatabase};
 
-use crate::{FxIndexMap, mod_path::AbsoluteModPath};
+use crate::{FxIndexMap, item_scope::ItemScope, mod_path::AbsoluteModPath};
 
 /// A map of all modules and their children in a package.
 ///
@@ -17,6 +17,7 @@ pub struct ModulesMap {
 pub struct ModuleData {
     /// The file of the module.
     pub file: Option<EditionedFileId>,
+    pub scope: ItemScope,
 }
 
 #[salsa::tracked]
@@ -25,9 +26,21 @@ impl ModulesMap {
     pub fn of(
         db: &dyn SourceDatabase,
         package: Package,
-    ) -> ModulesMap {
+    ) -> Self {
         modules_map_query(db, package)
     }
+}
+
+impl ModuleData {
+    pub(crate) fn new(
+        file: Option<EditionedFileId>,
+    ) -> Self {
+        Self {
+            file,
+            scope: ItemScope::default(),
+        }
+    }
+
 }
 
 fn modules_map_query(
@@ -45,9 +58,7 @@ fn modules_map_query(
             let mod_path = AbsoluteModPath::for_file(db, package, file_id)?;
             Some((
                 mod_path,
-                ModuleData {
-                    file: Some(file_id),
-                },
+                ModuleData::new(Some(file_id)),
                 extension,
             ))
         })
@@ -55,7 +66,7 @@ fn modules_map_query(
 
     // Invariant: If a module path exists, then the parent module path exists.
     let mut modules = FxIndexMap::default();
-    modules.insert(AbsoluteModPath::new_root(), ModuleData { file: None });
+    modules.insert(AbsoluteModPath::new_root(), ModuleData::new(None));
 
     for (module_path, module, extension) in base_modules {
         // Insert modules, making sure to shadow WGSL files
@@ -70,7 +81,7 @@ fn modules_map_query(
         while let Some(_) = parent_path.pop_segment()
             && !modules.contains_key(&parent_path)
         {
-            modules.insert(parent_path.clone(), ModuleData { file: None });
+            modules.insert(parent_path.clone(), ModuleData::new(None));
         }
     }
 

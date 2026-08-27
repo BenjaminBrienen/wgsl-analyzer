@@ -480,6 +480,7 @@ impl<'db> TypeLoweringContext<'db> {
     }
 }
 
+#[derive(Debug)]
 pub(crate) struct WgslTypeConverter<'db> {
     db: &'db dyn HirDatabase,
     interned_structs: Vec<StructId>,

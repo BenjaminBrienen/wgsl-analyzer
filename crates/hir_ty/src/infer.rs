@@ -252,6 +252,7 @@ impl Index<BindingId> for InferenceResult {
 }
 
 /// Runs inference for items that have a body, such as functions.
+#[derive(Debug)]
 pub struct InferenceContext<'db> {
     db: &'db dyn HirDatabase,
     owner: ModuleDefinitionId,

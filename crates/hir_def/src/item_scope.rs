@@ -24,7 +24,7 @@ pub struct ModuleImportPath {
     pub import: ImportId,
 }
 
-#[derive(Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct ItemScope {
     /// An import statement results in one or more import paths being brought into scope.
     /// They live in a different namespace from other items.
@@ -42,6 +42,10 @@ pub struct ItemScope {
     /// Items visible in this scope. Includes both declarations and imported items.
     pub items: FxHashMap<Name, ModuleItem>,
 
+    /// The definitions declared in this scope.
+    /// Each definition has a single scope where it is declared.
+    pub declarations: Vec<ModuleDefinitionId>,
+
     /// The diagnostics that need to be emitted for this module.
     pub diagnostics: Vec<DefDiagnostic>,
 }
@@ -58,6 +62,10 @@ impl ItemScope {
 }
 
 impl ItemScope {
+    pub(crate) fn declare(&mut self, definition: ModuleDefinitionId) {
+        self.declarations.push(definition);
+    }
+
     /// Pushes an item and returns the old value if there is one.
     #[must_use]
     pub(crate) fn push_item(
@@ -156,9 +164,11 @@ impl ItemScope {
             import_paths,
             items,
             diagnostics,
+            declarations,
         } = self;
         import_paths.shrink_to_fit();
         items.shrink_to_fit();
         diagnostics.shrink_to_fit();
+        declarations.shrink_to_fit();
     }
 }

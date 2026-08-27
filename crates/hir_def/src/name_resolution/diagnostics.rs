@@ -3,13 +3,13 @@ use syntax::ast;
 
 use crate::{db::Location, item_tree::Name};
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DefDiagnostic {
     pub in_module: EditionedFileId,
     pub kind: DefDiagnosticKind,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum DefDiagnosticKind {
     /// Currently cannot be triggered, as the grammar guarantees that import statements have a name.
     /// May be triggered in the future if a `self` keyword is added. See <https://github.com/webgpu-tools/wesl-spec/issues/120>.
