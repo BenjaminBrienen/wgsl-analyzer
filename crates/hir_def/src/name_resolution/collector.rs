@@ -17,6 +17,7 @@ pub fn collect_module(
     file_id: EditionedFileId,
 ) -> ItemScope {
     let item_tree = ItemTree::of(db, file_id);
+    dbg!(&item_tree);
 
     let mut collector = ModCollector {
         db,
@@ -318,7 +319,7 @@ impl ModCollector<'_> {
             Ok(item)
         } else {
             let modules_map = ModulesMap::of(self.db, package);
-            if modules_map.modules.contains_key(path) {
+            if modules_map.inner.contains_key(path) {
                 Ok(None)
             } else {
                 Err(DefDiagnostic::unresolved_import(self.file_id, location))

@@ -368,6 +368,7 @@ impl GlobalState {
                     .collect();
 
                 Some(PackageData {
+                    root_file_id: manifest_file_id,
                     manifest_file_id,
                     root: vfs::VfsPath::from(package.root.clone()),
                     edition: package.edition,

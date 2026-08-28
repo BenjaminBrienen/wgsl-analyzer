@@ -282,6 +282,13 @@ pub struct Package {
     pub package_id: PackageId,
 }
 
+impl Package {
+    pub fn root_file_id(self, db: &dyn salsa::Database) -> EditionedFileId {
+        let data = self.data(db);
+        EditionedFileId::new_unchecked(db, data.root_file_id, data.edition)
+    }
+}
+
 /// Package data unrelated to analysis.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExtraPackageData {

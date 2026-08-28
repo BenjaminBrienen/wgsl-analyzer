@@ -9,6 +9,7 @@ use crate::{
 use expect_test::{Expect, expect};
 use syntax::Edition;
 use test_fixture::WithFixture as _;
+use crate::name_resolution::package_modules_map;
 
 #[expect(clippy::needless_pass_by_value, reason = "matches expect! macro")]
 fn lower_and_print(
@@ -17,9 +18,9 @@ fn lower_and_print(
 ) {
     let db = TestDatabase::with_files(wa_fixture);
     let package = db.fetch_test_package();
-    let map = ModulesMap::of(&db, package).clone();
+    let map = package_modules_map(&db, package);
     let mut definitions = map
-        .modules
+        .inner
         .values()
         .map(|module| module.scope.declarations.clone());
     let mut out = String::new();

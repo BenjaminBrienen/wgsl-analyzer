@@ -162,6 +162,7 @@ impl ChangeFixture {
                 source_change.change_file(manifest_file_id, Some(String::new()));
 
                 let package = PackageData {
+                    root_file_id: manifest_file_id,
                     manifest_file_id,
                     root: root.clone(),
                     edition: meta.edition,

@@ -56,7 +56,7 @@ impl<'db> DotModuleGraph<'db> {
         modules_map: &ModulesMap,
     ) -> Self {
         let modules: Vec<_> = modules_map
-            .modules
+            .inner
             .iter()
             .map(|(mod_path, data)| ModuleData {
                 file_id: data.file,

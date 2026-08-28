@@ -13,7 +13,7 @@ fn render_modules_map_with_items(wa_fixture: &str) -> String {
     let package = db.fetch_test_package();
     let modules_map = ModulesMap::of(&db, package);
     let sorted_modules: Vec<_> = modules_map
-        .modules
+        .inner
         .iter()
         .sorted_by(|(path_a, _), (path_b, _)| path_a.cmp(path_b))
         .collect();

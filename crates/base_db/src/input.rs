@@ -209,9 +209,10 @@ impl PackageOrigin {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PackageData {
+    pub root_file_id: FileId,
     /// File id of the wesl.toml.
     pub manifest_file_id: FileId,
-    /// Root directory. May contain a `package.wesl`.
+    /// Root `package.wesl`.
     pub root: VfsPath,
     pub edition: Edition,
     /// A name used for UI. For purposes of analysis, packages are anonymous.

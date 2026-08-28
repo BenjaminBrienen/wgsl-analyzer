@@ -10,6 +10,7 @@ pub use collector::collect_module;
 pub use diagnostics::{DefDiagnostic, DefDiagnosticKind};
 use itertools::Itertools as _;
 pub use modules_map::{ModuleData, ModulesMap};
+pub use modules_map::package_modules_map;
 
 use crate::item_tree::Name;
 

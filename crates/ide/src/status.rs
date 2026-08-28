@@ -36,6 +36,7 @@ pub(crate) fn status(
 
         if let Some(package_id) = package {
             let PackageData {
+                root_file_id,
                 manifest_file_id,
                 root,
                 display_name,
