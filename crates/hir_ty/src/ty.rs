@@ -44,30 +44,6 @@ impl Type {
         }
     }
 
-    #[expect(clippy::doc_paragraphs_missing_punctuation, reason = "false positive")]
-    /// `T` -> `T`, `vecN<T>` -> `T`
-    #[must_use]
-    pub fn this_or_vec_inner(
-        self,
-        db: &dyn HirDatabase,
-    ) -> Self {
-        match self.kind(db) {
-            TypeKind::Vector(vector) => vector.component_type,
-            TypeKind::Reference(reference) => reference.inner.this_or_vec_inner(db),
-            TypeKind::Error
-            | TypeKind::Scalar(_)
-            | TypeKind::Atomic(_)
-            | TypeKind::Matrix(_)
-            | TypeKind::Struct(_)
-            | TypeKind::BuiltinStruct(_)
-            | TypeKind::Array(_)
-            | TypeKind::Texture(_)
-            | TypeKind::AccelerationStructure(_)
-            | TypeKind::Sampler(_)
-            | TypeKind::Pointer(_) => self,
-        }
-    }
-
     pub fn is_convertible_to(
         self,
         r#type: Self,
