@@ -176,6 +176,7 @@ pub fn validate_address_space<DiagnosticBuilder>(
                 TypeKind::Scalar(_)
                 | TypeKind::Atomic(_)
                 | TypeKind::Vector(_)
+                | TypeKind::SwizzleView(_)
                 | TypeKind::Matrix(_)
                 | TypeKind::Struct(_)
                 | TypeKind::BuiltinStruct(_)

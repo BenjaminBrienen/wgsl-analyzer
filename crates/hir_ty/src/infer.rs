@@ -38,8 +38,8 @@ use crate::{
         WgslTypeConverter, to_wgsl_binary_operator, to_wgsl_unary_operator,
     },
     ty::{
-        ArraySize, ArrayType, BuiltinStruct, MatrixType, Pointer, Reference, ScalarType, Type,
-        TypeKind, VectorType,
+        ArraySize, ArrayType, BuiltinStruct, IndexList, MatrixType, ParseIndexListError, Pointer,
+        Reference, ScalarType, SwizzleView, Type, TypeKind, VecIndex, VectorType,
     },
 };
 
@@ -1051,6 +1051,7 @@ impl<'db> InferenceContext<'db> {
                         },
                     );
                 }
+                // The base may be a vector, matrix, or fixed-size array type, or a memory view to a vector, matrix, fixed-size array, or runtime-sized array type.
                 match left_kind {
                     TypeKind::Reference(Reference {
                         address_space,
@@ -1189,6 +1190,7 @@ impl<'db> InferenceContext<'db> {
             | TypeKind::Scalar(_)
             | TypeKind::Atomic(_)
             | TypeKind::Vector(_)
+            | TypeKind::SwizzleView(_)
             | TypeKind::Matrix(_)
             | TypeKind::Struct(_)
             | TypeKind::BuiltinStruct(_)
@@ -1768,6 +1770,7 @@ impl<'db> InferenceContext<'db> {
             | TypeKind::Atomic(_)
             | TypeKind::BuiltinStruct(_)
             | TypeKind::AccelerationStructure(_)
+            | TypeKind::SwizzleView(_)
             | TypeKind::Reference(_) => {
                 debug_assert!(
                     !self.result.diagnostics.is_empty(),
