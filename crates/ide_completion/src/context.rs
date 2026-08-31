@@ -44,7 +44,7 @@ impl<'db> CompletionContext<'db> {
             determine_location(&semantics, file.syntax(), position.offset, &token);
 
         let module_info = ItemScope::of(db, file_id);
-        let mut resolver = Resolver::new(file_id, module_info);
+        let mut resolver = Resolver::module(file_id, module_info);
 
         let nearest_scope = token.parent().and_then(|node| nearest_scope(&node));
 

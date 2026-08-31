@@ -713,12 +713,12 @@ impl TypeLoweringContext<'_> {
                 Ok((Some(Instance::Literal(LiteralInstance::I32(number))), _))
                     if let Ok(validated) = u32::try_from(number).and_then(NonZeroU32::try_from) =>
                 {
-                    ArraySize::Constant(validated)
+                    ArraySize::Fixed(Either::Left(validated))
                 },
                 Ok((Some(Instance::Literal(LiteralInstance::U32(number))), _))
                     if let Ok(validated) = NonZeroU32::try_from(number) =>
                 {
-                    ArraySize::Constant(validated)
+                    ArraySize::Fixed(Either::Left(validated))
                 },
                 Ok((
                     Some(Instance::Literal(
@@ -727,13 +727,13 @@ impl TypeLoweringContext<'_> {
                     _,
                 )) if let Ok(validated) = u32::try_from(number).and_then(NonZeroU32::try_from) => {
                     // skips handling array<E, 1li>() or array<E, 99999999999999999999999999>()
-                    ArraySize::Constant(validated)
+                    ArraySize::Fixed(Either::Left(validated))
                 },
                 Ok((Some(Instance::Literal(LiteralInstance::U64(number))), _))
                     if let Ok(validated) = u32::try_from(number).and_then(NonZeroU32::try_from) =>
                 {
                     // skips handling array<E, 1uL>() or array<E, 99999999999999999999999999uL>()
-                    ArraySize::Constant(validated)
+                    ArraySize::Fixed(Either::Left(validated))
                 },
                 Ok((instance, expression)) => {
                     let error = TypeLoweringError {
@@ -764,8 +764,7 @@ impl TypeLoweringContext<'_> {
         let mut template_parameters = template_parameters.clone();
         match template_parameters.next_as_type() {
             Ok((r#type, expression)) => {
-                let type_kind = r#type.kind(self.db);
-                if matches!(type_kind, TypeKind::Scalar(_)) && !type_kind.is_abstract(self.db) {
+                if r#type.is_scalar(self.db) && !r#type.is_abstract(self.db) {
                     r#type
                 } else {
                     self.diagnostics.push(TypeLoweringError {
@@ -850,7 +849,7 @@ impl TypeLoweringContext<'_> {
             },
         };
         let inner = match template_parameters.next_as_type() {
-            Ok((inner, _)) if inner.kind(self.db).is_storable() => inner,
+            Ok((inner, _)) if inner.is_storable(self.db) => inner,
             Ok((non_storable, expression)) => {
                 self.diagnostics.push(TypeLoweringError {
                     container: TypeContainer::Expression(expression),

@@ -98,6 +98,7 @@ fn store_type_must_be_storable() {
     check_diagnostics(
         "fn foo() { var x = 1; var y = &x; }",
         expect![[r#"
+            30..32 wgsl-analyzer Error 5: expected constructible type, but got `ptr<i32>`
             30..32 wgsl-analyzer Error 32: store type must be storable, found ptr<i32>
         "#]],
     );
@@ -279,6 +280,7 @@ fn test() {
         expect![[r#"
             20..24 wgsl-analyzer Error 16: 'enum' is a reserved word in WGSL
             20..24 wgsl-analyzer Error 16: invalid syntax, expected: <identifier>
+            16..20 wgsl-analyzer Error 33: declaration is missing initializer
         "#]],
     );
 }
@@ -308,6 +310,7 @@ fn foo() { let _ = 1; }
         expect![[r#"
             3..4 wgsl-analyzer Error 16: invalid syntax, expected: <identifier>
             25..26 wgsl-analyzer Error 16: invalid syntax, expected: <identifier>
+            21..25 wgsl-analyzer Error 33: declaration is missing initializer
         "#]],
     );
 }
@@ -534,16 +537,25 @@ fn foo() {
 }
 ",
         expect![[r#"
-            79..92 wgsl-analyzer Error 6: type `array<bool>` is not constructible
-            128..140 wgsl-analyzer Error 6: type `array<i32>` is not constructible
-            178..190 wgsl-analyzer Error 6: type `array<u32>` is not constructible
-            217..229 wgsl-analyzer Error 6: type `array<f32>` is not constructible
-            256..268 wgsl-analyzer Error 6: type `array<f16>` is not constructible
-            306..319 wgsl-analyzer Error 6: type `atomic<i32>` is not constructible
-            358..371 wgsl-analyzer Error 6: type `atomic<u32>` is not constructible
-            394..399 wgsl-analyzer Error 6: type `Foo` is not constructible
-            420..446 wgsl-analyzer Error 6: type `ptr<u32>` is not constructible
-            513..553 wgsl-analyzer Error 6: type `texture_storage_2d<rgba16float,write>` is not constructible
+            79..92 wgsl-analyzer Error 5: expected constructible type, but got `array<bool>`
+            79..92 wgsl-analyzer Error 8: expression must be a pointer or a constructible type, got: `array<bool>`
+            128..140 wgsl-analyzer Error 5: expected constructible type, but got `array<i32>`
+            128..140 wgsl-analyzer Error 8: expression must be a pointer or a constructible type, got: `array<i32>`
+            178..190 wgsl-analyzer Error 5: expected constructible type, but got `array<u32>`
+            178..190 wgsl-analyzer Error 8: expression must be a pointer or a constructible type, got: `array<u32>`
+            217..229 wgsl-analyzer Error 5: expected constructible type, but got `array<f32>`
+            217..229 wgsl-analyzer Error 8: expression must be a pointer or a constructible type, got: `array<f32>`
+            256..268 wgsl-analyzer Error 5: expected constructible type, but got `array<f16>`
+            256..268 wgsl-analyzer Error 8: expression must be a pointer or a constructible type, got: `array<f16>`
+            306..319 wgsl-analyzer Error 5: expected constructible type, but got `atomic<i32>`
+            306..319 wgsl-analyzer Error 8: expression must be a pointer or a constructible type, got: `atomic<i32>`
+            358..371 wgsl-analyzer Error 5: expected constructible type, but got `atomic<u32>`
+            358..371 wgsl-analyzer Error 8: expression must be a pointer or a constructible type, got: `atomic<u32>`
+            394..399 wgsl-analyzer Error 5: expected constructible type, but got `Foo`
+            394..399 wgsl-analyzer Error 8: expression must be a pointer or a constructible type, got: `Foo`
+            420..446 wgsl-analyzer Error 5: expected constructible type, but got `ptr<u32>`
+            513..553 wgsl-analyzer Error 5: expected constructible type, but got `texture_storage_2d<rgba16float,write>`
+            513..553 wgsl-analyzer Error 8: expression must be a pointer or a constructible type, got: `texture_storage_2d<rgba16float,write>`
         "#]],
     );
 }

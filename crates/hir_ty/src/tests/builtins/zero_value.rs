@@ -171,24 +171,33 @@ fn foo() {
             420..446 'ptr<fu...ead>()': ptr<function, u32, read>
             537..540 'tex': texture_storage_2d<rgba16float,write>
             543..583 'textur...ite>()': texture_storage_2d<rgba16float,write>
-            594..600 '_array': array<[error]>
-            603..610 'array()': array<[error]>
+            594..600 '_array': array<[error], 1>
+            603..610 'array()': array<[error], 1>
             620..627 '_atomic': atomic<[error]>
             630..638 'atomic()': atomic<[error]>
             648..655 'pointer': [error]
             658..663 'ptr()': [error]
             733..736 'tex': [error]
             739..759 'textur...e_2d()': [error]
-            79..92 'array<bool>()': type `array<bool>` is not constructible
-            128..140 'array<i32>()': type `array<i32>` is not constructible
-            178..190 'array<u32>()': type `array<u32>` is not constructible
-            217..229 'array<f32>()': type `array<f32>` is not constructible
-            256..268 'array<f16>()': type `array<f16>` is not constructible
-            306..319 'atomic<i32>()': type `atomic<i32>` is not constructible
-            358..371 'atomic<u32>()': type `atomic<u32>` is not constructible
-            394..399 'Foo()': type `Foo` is not constructible
-            420..446 'ptr<fu...ead>()': type `ptr<function, u32, read>` is not constructible
-            543..583 'textur...ite>()': type `texture_storage_2d<rgba16float,write>` is not constructible
+            79..92 'array<bool>()': expected constructible type, but got `array<bool>`
+            79..92 'array<bool>()': expression must be a pointer or a constructible type, but got `array<bool>`
+            128..140 'array<i32>()': expected constructible type, but got `array<i32>`
+            128..140 'array<i32>()': expression must be a pointer or a constructible type, but got `array<i32>`
+            178..190 'array<u32>()': expected constructible type, but got `array<u32>`
+            178..190 'array<u32>()': expression must be a pointer or a constructible type, but got `array<u32>`
+            217..229 'array<f32>()': expected constructible type, but got `array<f32>`
+            217..229 'array<f32>()': expression must be a pointer or a constructible type, but got `array<f32>`
+            256..268 'array<f16>()': expected constructible type, but got `array<f16>`
+            256..268 'array<f16>()': expression must be a pointer or a constructible type, but got `array<f16>`
+            306..319 'atomic<i32>()': expected constructible type, but got `atomic<i32>`
+            306..319 'atomic<i32>()': expression must be a pointer or a constructible type, but got `atomic<i32>`
+            358..371 'atomic<u32>()': expected constructible type, but got `atomic<u32>`
+            358..371 'atomic<u32>()': expression must be a pointer or a constructible type, but got `atomic<u32>`
+            394..399 'Foo()': expected constructible type, but got `Foo`
+            394..399 'Foo()': expression must be a pointer or a constructible type, but got `Foo`
+            420..446 'ptr<fu...ead>()': expected constructible type, but got `ptr<function, u32, read>`
+            543..583 'textur...ite>()': expected constructible type, but got `texture_storage_2d<rgba16float,write>`
+            543..583 'textur...ite>()': expression must be a pointer or a constructible type, but got `texture_storage_2d<rgba16float,write>`
             603..610 'array()': no overload of function `array` found that takes no arguments
             630..638 'atomic()': expected 1 template arguments, but got 0
             630..638 'atomic()': missing template argument, expected a type
@@ -209,8 +218,8 @@ fn foo() {
 }
 ",
         expect![[r#"
-            19..28 'structure': array<[error]>
-            31..38 'array()': array<[error]>
+            19..28 'structure': array<[error], 1>
+            31..38 'array()': array<[error], 1>
             31..38 'array()': no overload of function `array` found that takes no arguments
         "#]],
     );
@@ -226,8 +235,9 @@ fn foo() {
 ",
         expect![[r#"
             21..22 'b': array<u32, 3>
-            40..47 'array()': array<[error]>
+            40..47 'array()': array<[error], 1>
             40..47 'array()': no overload of function `array` found that takes no arguments
+            40..47 'array()': expression is not a const-expression
         "#]],
     );
 }

@@ -6,7 +6,7 @@ use wgsl_types::syntax::{AccessMode, AddressSpace};
 
 use crate::{
     db::HirDatabase,
-    ty::{ArrayType, TypeKind},
+    ty::{ArrayType, Type, TypeKind},
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -31,7 +31,7 @@ impl fmt::Display for Scope {
 pub enum AddressSpaceError {
     AccessMode(SmallVec<[AccessMode; 2]>),
     Scope(Scope),
-    Constructable,
+    Constructible,
     HostShareable,
     /// Plain type, excluding runtime-sized arrays.
     WorkgroupCompatible,
@@ -57,7 +57,7 @@ impl fmt::Display for AddressSpaceError {
             Self::Scope(scope) => {
                 write!(formatter, "address space is only valid in {scope}-scope")
             },
-            Self::Constructable => formatter.write_str("type is not constructable"),
+            Self::Constructible => formatter.write_str("type is not constructible"),
             Self::HostShareable => formatter.write_str("type is not host-shareable"),
             Self::WorkgroupCompatible => formatter.write_str(""),
             Self::HandleOrTexture => {
@@ -76,14 +76,14 @@ pub fn validate_address_space<DiagnosticBuilder>(
     address_space: AddressSpace,
     access_mode: AccessMode,
     scope: Scope,
-    r#type: &TypeKind,
+    r#type: Type,
     db: &dyn HirDatabase,
     mut diagnostic_builder: DiagnosticBuilder,
 ) where
     DiagnosticBuilder: FnMut(AddressSpaceError),
 {
     // We only care about the inner type here
-    let r#type = r#type.unref(db);
+    let unref = r#type.unref(db);
     match address_space {
         AddressSpace::Function => {
             if !matches!(scope, Scope::Function) {
@@ -94,8 +94,8 @@ pub fn validate_address_space<DiagnosticBuilder>(
                     AccessMode::ReadWrite
                 ]));
             }
-            if !r#type.is_error() && !r#type.is_constructable() {
-                diagnostic_builder(AddressSpaceError::Constructable);
+            if !unref.is_error(db) && !unref.is_constructible(db) {
+                diagnostic_builder(AddressSpaceError::Constructible);
             }
         },
         AddressSpace::Private => {
@@ -107,8 +107,8 @@ pub fn validate_address_space<DiagnosticBuilder>(
                     AccessMode::ReadWrite
                 ]));
             }
-            if !r#type.is_error() && !r#type.is_constructable() {
-                diagnostic_builder(AddressSpaceError::Constructable);
+            if !unref.is_error(db) && !unref.is_constructible(db) {
+                diagnostic_builder(AddressSpaceError::Constructible);
             }
         },
         AddressSpace::Workgroup => {
@@ -120,7 +120,8 @@ pub fn validate_address_space<DiagnosticBuilder>(
                     AccessMode::ReadWrite
                 ]));
             }
-            if !r#type.is_error() && (!r#type.is_plain() || r#type.contains_runtime_sized_array(db))
+            if !unref.is_error(db)
+                && (!unref.is_plain(db) || unref.contains_runtime_sized_array(db))
             {
                 diagnostic_builder(AddressSpaceError::WorkgroupCompatible);
             }
@@ -134,11 +135,11 @@ pub fn validate_address_space<DiagnosticBuilder>(
                     AccessMode::ReadWrite
                 ]));
             }
-            if !r#type.is_error() && !r#type.is_host_shareable(db) {
+            if !unref.is_error(db) && !unref.is_host_shareable(db) {
                 diagnostic_builder(AddressSpaceError::HostShareable);
             }
-            if !r#type.is_error() && !r#type.is_constructable() {
-                diagnostic_builder(AddressSpaceError::Constructable);
+            if !unref.is_error(db) && !unref.is_constructible(db) {
+                diagnostic_builder(AddressSpaceError::Constructible);
             }
         },
         AddressSpace::Storage => {
@@ -150,7 +151,7 @@ pub fn validate_address_space<DiagnosticBuilder>(
                     AccessMode::ReadWrite
                 ]));
             }
-            if !r#type.is_error() && !r#type.is_host_shareable(db) {
+            if !unref.is_error(db) && !unref.is_host_shareable(db) {
                 diagnostic_builder(AddressSpaceError::HostShareable);
             }
         },
@@ -163,7 +164,7 @@ pub fn validate_address_space<DiagnosticBuilder>(
                     AccessMode::ReadWrite
                 ]));
             }
-            match r#type.as_ref() {
+            match unref.kind(db) {
                 // optimistic about using errors
                 TypeKind::Error
                 | TypeKind::Sampler(_)
@@ -202,7 +203,7 @@ pub fn validate_address_space<DiagnosticBuilder>(
             //         diagnostic_builder(AddressSpaceError::AccessMode(smallvec![AccessMode::Read]));
             //     }
             // }
-            if !r#type.is_error() && r#type.size_of(address_space, db) < Some(4) {
+            if !unref.is_error(db) && unref.size_of(address_space, db) < Some(4) {
                 diagnostic_builder(AddressSpaceError::TaskPayloadCompatible);
             }
         },

@@ -599,7 +599,7 @@ impl<'db> WgslTypeConverter<'db> {
                 Box::new(self.to_wgsl_types(inner)),
                 match size {
                     #[expect(clippy::as_conversions, reason = "externally defined")]
-                    ArraySize::Constant(size) => Some(size.get() as usize),
+                    ArraySize::Fixed(size) => Some(size.unwrap_left().get() as usize),
                     ArraySize::Dynamic => None,
                 },
             ),
@@ -611,7 +611,7 @@ impl<'db> WgslTypeConverter<'db> {
                 Box::new(self.to_wgsl_types(inner)),
                 match size {
                     #[expect(clippy::as_conversions, reason = "externally defined")]
-                    ArraySize::Constant(size) => Some(size.get() as usize),
+                    ArraySize::Fixed(size) => Some(size.unwrap_left().get() as usize),
                     ArraySize::Dynamic => None,
                 },
             ),
@@ -1048,7 +1048,7 @@ impl<'db> WgslTypeConverter<'db> {
 
 fn from_wgsl_array_size(size: Option<usize>) -> ArraySize {
     match size.map(|size| u32::try_from(size).map(NonZeroU32::try_from)) {
-        Some(Ok(Ok(size))) => ArraySize::Constant(size),
+        Some(Ok(Ok(size))) => ArraySize::Fixed(Either::Left(size)),
         None => ArraySize::Dynamic,
         Some(Ok(Err(error))) => {
             panic!("size cannot be 0, error: {error}, got: {size:?}");

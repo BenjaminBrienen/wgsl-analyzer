@@ -16,9 +16,9 @@ use base_db::{CapabilitiesInput, EditionedFileId, Intern as _, Lookup as _, Text
 use expect_test::Expect;
 use hir_def::{
     HasSource as _,
-    body::Body,
+    body::{Body, BodySourceMap},
     db::{DefinitionWithBodyId, Location, ModuleDefinitionId},
-    expression::ExpressionId,
+    expression::{ExpressionId, StatementId},
     expression_store::{
         ExpressionSourceMap, ExpressionStore, ExpressionStoreOwnerId, ExpressionStoreSource,
         SyntheticSyntax,
@@ -117,14 +117,14 @@ impl<'db> InferPrinter<'db> {
                     let (_, diagnostics) = &*self.db.field_types(id);
 
                     for diagnostic in diagnostics {
-                        self.print_diagnostic(diagnostic, signature_map, buffer);
+                        self.print_diagnostic(diagnostic, signature_map, None, buffer);
                     }
                 },
                 ModuleDefinitionId::TypeAlias(id) => {
                     let (_, signature_map) = TypeAliasSignature::with_source_map(self.db, id);
                     let (_, diagnostics) = &*self.db.type_alias_type(id);
                     for diagnostic in diagnostics {
-                        self.print_diagnostic(diagnostic, signature_map, buffer);
+                        self.print_diagnostic(diagnostic, signature_map, None, buffer);
                     }
                 },
             }
@@ -172,11 +172,16 @@ impl<'db> InferPrinter<'db> {
         }
 
         for diagnostic in inference_result.diagnostics() {
-            let source_map = match diagnostic.source {
+            let expression_source_map = match diagnostic.source {
                 ExpressionStoreSource::Body => body_source_map.expression_source_map(),
                 ExpressionStoreSource::Signature => signature_map,
             };
-            self.print_diagnostic(diagnostic, source_map, buffer);
+            self.print_diagnostic(
+                diagnostic,
+                expression_source_map,
+                Some(body_source_map),
+                buffer,
+            );
         }
     }
 
@@ -199,6 +204,7 @@ impl<'db> InferPrinter<'db> {
         &self,
         diagnostic: &InferenceDiagnostic,
         source_map: &ExpressionSourceMap,
+        body_source_map: Option<&BodySourceMap>,
         buffer: &mut String,
     ) {
         match &diagnostic.kind {
@@ -303,6 +309,20 @@ impl<'db> InferPrinter<'db> {
                 );
                 self.print_not_constructible(source_map, buffer, *expression, *r#type);
             },
+            InferenceDiagnosticKind::NotConcrete { expression, r#type } => {
+                debug_assert!(
+                    !r#type.is_err(self.db),
+                    "don't give a diagnostic for downstream issues"
+                );
+                self.print_not_concrete(source_map, buffer, *expression, *r#type);
+            },
+            InferenceDiagnosticKind::InvalidLetDeclaration { expression, r#type } => {
+                debug_assert!(
+                    !r#type.is_err(self.db),
+                    "don't give a diagnostic for downstream issues"
+                );
+                self.print_invalid_let_declaration(source_map, buffer, *expression, *r#type);
+            },
             InferenceDiagnosticKind::FunctionCallArgCountMismatch {
                 expression,
                 n_actual,
@@ -315,6 +335,15 @@ impl<'db> InferPrinter<'db> {
                     *n_actual,
                     *n_expected,
                 );
+            },
+            InferenceDiagnosticKind::MissingInitializer { statement } => {
+                self.print_missing_initializer(body_source_map.unwrap(), buffer, *statement);
+            },
+            InferenceDiagnosticKind::NotAConstantExpression { expression } => {
+                self.print_not_a_constant_expression(source_map, buffer, *expression);
+            },
+            InferenceDiagnosticKind::NotAnOverrideExpression { expression } => {
+                self.print_not_an_override_expression(source_map, buffer, *expression);
             },
         }
     }
@@ -618,7 +647,45 @@ impl<'db> InferPrinter<'db> {
         };
         writeln!(
             buffer,
-            "{range:?} '{}': type `{}` is not constructible",
+            "{range:?} '{}': expected constructible type, but got `{}`",
+            ellipsize(text, 15),
+            pretty_type_with_verbosity(self.db, r#type, self.verbosity),
+        )
+        .unwrap();
+    }
+
+    fn print_not_concrete(
+        &self,
+        source_map: &ExpressionSourceMap,
+        buffer: &mut String,
+        expression: ExpressionId,
+        r#type: Type,
+    ) {
+        let Some((range, text)) = self.get_expression_range_text(source_map, expression) else {
+            return;
+        };
+        writeln!(
+            buffer,
+            "{range:?} '{}': type concrete type, but got `{}`",
+            ellipsize(text, 15),
+            pretty_type_with_verbosity(self.db, r#type, self.verbosity),
+        )
+        .unwrap();
+    }
+
+    fn print_invalid_let_declaration(
+        &self,
+        source_map: &ExpressionSourceMap,
+        buffer: &mut String,
+        expression: ExpressionId,
+        r#type: Type,
+    ) {
+        let Some((range, text)) = self.get_expression_range_text(source_map, expression) else {
+            return;
+        };
+        writeln!(
+            buffer,
+            "{range:?} '{}': expression must be a pointer or a constructible type, but got `{}`",
             ellipsize(text, 15),
             pretty_type_with_verbosity(self.db, r#type, self.verbosity),
         )
@@ -639,6 +706,57 @@ impl<'db> InferPrinter<'db> {
         writeln!(
             buffer,
             "{range:?} '{}': expected `{n_expected}` arguments, but received `{n_actual}`",
+            ellipsize(text, 15),
+        )
+        .unwrap();
+    }
+
+    fn print_missing_initializer(
+        &self,
+        source_map: &BodySourceMap,
+        buffer: &mut String,
+        statement: StatementId,
+    ) {
+        let Some((range, text)) = self.get_statement_range_text(source_map, statement) else {
+            return;
+        };
+        writeln!(
+            buffer,
+            "{range:?} '{}': declaration is missing initializer",
+            ellipsize(text, 15),
+        )
+        .unwrap();
+    }
+
+    fn print_not_a_constant_expression(
+        &self,
+        source_map: &ExpressionSourceMap,
+        buffer: &mut String,
+        expression: ExpressionId,
+    ) {
+        let Some((range, text)) = self.get_expression_range_text(source_map, expression) else {
+            return;
+        };
+        writeln!(
+            buffer,
+            "{range:?} '{}': expression is not a const-expression",
+            ellipsize(text, 15),
+        )
+        .unwrap();
+    }
+
+    fn print_not_an_override_expression(
+        &self,
+        source_map: &ExpressionSourceMap,
+        buffer: &mut String,
+        expression: ExpressionId,
+    ) {
+        let Some((range, text)) = self.get_expression_range_text(source_map, expression) else {
+            return;
+        };
+        writeln!(
+            buffer,
+            "{range:?} '{}': expression is not an override-expression",
             ellipsize(text, 15),
         )
         .unwrap();
@@ -666,6 +784,22 @@ impl<'db> InferPrinter<'db> {
         r#type: TypeSpecifierId,
     ) -> Option<(base_db::TextRange, String)> {
         let node = match source_map.type_specifier_to_source(r#type) {
+            Ok(sp) => sp.to_node(&self.root).syntax().clone(),
+            Err(SyntheticSyntax) => return None,
+        };
+        let (range, text) = (
+            node.text_range(),
+            node.text().to_string().replace('\n', " "),
+        );
+        Some((range, text))
+    }
+
+    fn get_statement_range_text(
+        &self,
+        source: &BodySourceMap,
+        statement: StatementId,
+    ) -> Option<(base_db::TextRange, String)> {
+        let node = match &&source.statement_to_source(statement) {
             Ok(sp) => sp.to_node(&self.root).syntax().clone(),
             Err(SyntheticSyntax) => return None,
         };

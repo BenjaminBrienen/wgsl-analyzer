@@ -1,6 +1,7 @@
 use std::fmt::{self, Write as _};
 
 use base_db::{CapabilitiesInput, TextRange, TextSize};
+use either::Either;
 use hir_def::signature::StructSignature;
 use itertools::Itertools as _;
 use wgsl_types::ty::SamplerType;
@@ -261,7 +262,9 @@ fn write_type(
             }
             write_type(db, array_type.inner, formatter, verbosity)?;
             match array_type.size {
-                ArraySize::Constant(value) => write!(formatter, ", {value}")?,
+                ArraySize::Fixed(Either::Left(value)) => write!(formatter, ", {value}")?,
+                #[expect(unused, reason = "override eval")]
+                ArraySize::Fixed(Either::Right(value)) => todo!("override eval"),
                 ArraySize::Dynamic => {},
             }
             write!(formatter, ">")

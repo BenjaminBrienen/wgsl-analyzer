@@ -1,6 +1,7 @@
 //! <https://www.w3.org/TR/WGSL/#memory-layouts>
 //! .
 
+use base_db::Intern as _;
 use hir_def::signature::LocalFieldId;
 use la_arena::ArenaMap;
 use wgsl_types::syntax::AddressSpace;
@@ -26,8 +27,8 @@ impl ArrayType {
         db: &dyn HirDatabase,
     ) -> Option<Bytes> {
         let stride = round_up(
-            self.inner.align(address_space, db)?,
-            self.inner.size(address_space, db)?,
+            self.inner.align_of(address_space, db)?,
+            self.inner.size_of(address_space, db)?,
         );
         if address_space == AddressSpace::Uniform {
             Some(round_up(16, stride))
@@ -38,28 +39,10 @@ impl ArrayType {
 }
 
 impl Type {
-    pub fn align(
-        self,
-        address_space: AddressSpace,
-        db: &dyn HirDatabase,
-    ) -> Option<Bytes> {
-        self.kind(db).align_of(address_space, db)
-    }
-
-    pub fn size(
-        self,
-        address_space: AddressSpace,
-        db: &dyn HirDatabase,
-    ) -> Option<Bytes> {
-        self.kind(db).size_of(address_space, db)
-    }
-}
-
-impl TypeKind {
     #[expect(clippy::doc_paragraphs_missing_punctuation, reason = "false positive")]
     /// <https://www.w3.org/TR/WGSL/#alignof>
     pub fn align_of(
-        &self,
+        self,
         address_space: AddressSpace,
         db: &dyn HirDatabase,
     ) -> Option<Bytes> {
@@ -67,69 +50,70 @@ impl TypeKind {
             clippy::match_same_arms,
             reason = "a match arm corresponds to a table row in the specification"
         )]
-        match self {
+        match self.kind(db) {
             // <https://www.w3.org/TR/WGSL/#why-is-bool-4-bytes>
-            Self::Scalar(ScalarType::Bool) => Some(4),
-            Self::Scalar(ScalarType::I32 | ScalarType::U32 | ScalarType::F32) => Some(4),
+            TypeKind::Scalar(ScalarType::Bool) => Some(4),
+            TypeKind::Scalar(ScalarType::I32 | ScalarType::U32 | ScalarType::F32) => Some(4),
             // SHADER_INT64
-            Self::Scalar(ScalarType::I64 | ScalarType::U64) => Some(8),
-            Self::Scalar(ScalarType::F16) => Some(2),
-            Self::Atomic(_) => Some(4),
-            Self::Vector(VectorType {
+            TypeKind::Scalar(ScalarType::I64 | ScalarType::U64) => Some(8),
+            TypeKind::Scalar(ScalarType::F16) => Some(2),
+            TypeKind::Atomic(_) => Some(4),
+            TypeKind::Vector(VectorType {
                 size: VecSize::Two,
                 component_type,
             }) if matches!(
                 component_type.kind(db),
-                Self::Scalar(
+                TypeKind::Scalar(
                     ScalarType::Bool | ScalarType::I32 | ScalarType::U32 | ScalarType::F32
                 )
             ) =>
             {
                 Some(8)
             },
-            Self::Vector(VectorType {
+            TypeKind::Vector(VectorType {
                 size: VecSize::Two,
                 component_type,
-            }) if matches!(component_type.kind(db), Self::Scalar(ScalarType::F16)) => Some(4),
-            Self::Vector(VectorType {
+            }) if matches!(component_type.kind(db), TypeKind::Scalar(ScalarType::F16)) => Some(4),
+            TypeKind::Vector(VectorType {
                 size: VecSize::Three,
                 component_type,
             }) if matches!(
                 component_type.kind(db),
-                Self::Scalar(
+                TypeKind::Scalar(
                     ScalarType::Bool | ScalarType::I32 | ScalarType::U32 | ScalarType::F32
                 )
             ) =>
             {
                 Some(16)
             },
-            Self::Vector(VectorType {
+            TypeKind::Vector(VectorType {
                 size: VecSize::Three,
                 component_type,
-            }) if matches!(component_type.kind(db), Self::Scalar(ScalarType::F16)) => Some(8),
-            Self::Vector(VectorType {
+            }) if matches!(component_type.kind(db), TypeKind::Scalar(ScalarType::F16)) => Some(8),
+            TypeKind::Vector(VectorType {
                 size: VecSize::Four,
                 component_type,
             }) if matches!(
                 component_type.kind(db),
-                Self::Scalar(
+                TypeKind::Scalar(
                     ScalarType::Bool | ScalarType::I32 | ScalarType::U32 | ScalarType::F32
                 )
             ) =>
             {
                 Some(16)
             },
-            Self::Vector(VectorType {
+            TypeKind::Vector(VectorType {
                 size: VecSize::Four,
                 component_type,
-            }) if matches!(component_type.kind(db), Self::Scalar(ScalarType::F16)) => Some(8),
-            Self::Matrix(matrix_type) => Self::Vector(VectorType {
+            }) if matches!(component_type.kind(db), TypeKind::Scalar(ScalarType::F16)) => Some(8),
+            TypeKind::Matrix(matrix_type) => TypeKind::Vector(VectorType {
                 size: matrix_type.rows,
                 component_type: matrix_type.inner,
             })
+            .intern(db)
             .align_of(address_space, db),
-            Self::Struct(r#struct) => {
-                let fields = &db.field_types(*r#struct).0;
+            TypeKind::Struct(r#struct) => {
+                let fields = &db.field_types(r#struct).0;
                 let (align, _) =
                     struct_member_layout(fields, db, AddressSpace::Storage, |_, _, _| {})?;
                 Some(if address_space == AddressSpace::Uniform {
@@ -138,24 +122,24 @@ impl TypeKind {
                     align
                 })
             },
-            Self::Array(array) => {
-                let inner_align = array.inner.align(address_space, db)?;
+            TypeKind::Array(array) => {
+                let inner_align = array.inner.align_of(address_space, db)?;
                 Some(if address_space == AddressSpace::Uniform {
                     round_up(16, inner_align)
                 } else {
                     inner_align
                 })
             },
-            Self::Error
-            | Self::Scalar(ScalarType::AbstractFloat | ScalarType::AbstractInt)
-            | Self::Vector(_)
-            | Self::SwizzleView(_)
-            | Self::BuiltinStruct(_)
-            | Self::Texture(_)
-            | Self::Sampler(_)
-            | Self::AccelerationStructure(_)
-            | Self::Reference(_)
-            | Self::Pointer(_) => None,
+            TypeKind::Error
+            | TypeKind::Scalar(ScalarType::AbstractFloat | ScalarType::AbstractInt)
+            | TypeKind::Vector(_)
+            | TypeKind::SwizzleView(_)
+            | TypeKind::BuiltinStruct(_)
+            | TypeKind::Texture(_)
+            | TypeKind::Sampler(_)
+            | TypeKind::AccelerationStructure(_)
+            | TypeKind::Reference(_)
+            | TypeKind::Pointer(_) => None,
         }
     }
 
@@ -166,7 +150,7 @@ impl TypeKind {
     ///
     /// Panics if the size of the array exceeds u32.
     pub fn size_of(
-        &self,
+        self,
         address_space: AddressSpace,
         db: &dyn HirDatabase,
     ) -> Option<Bytes> {
@@ -174,89 +158,90 @@ impl TypeKind {
             clippy::match_same_arms,
             reason = "a match arm corresponds to a table row in the specification"
         )]
-        match self {
-            Self::Scalar(ScalarType::Bool) => Some(4),
-            Self::Scalar(ScalarType::I32 | ScalarType::U32 | ScalarType::F32) => Some(4),
+        match self.kind(db) {
+            TypeKind::Scalar(ScalarType::Bool) => Some(4),
+            TypeKind::Scalar(ScalarType::I32 | ScalarType::U32 | ScalarType::F32) => Some(4),
             // SHADER_INT64
-            Self::Scalar(ScalarType::I64 | ScalarType::U64) => Some(8),
-            Self::Scalar(ScalarType::F16) => Some(2),
-            Self::Atomic(_) => Some(4),
-            Self::Vector(VectorType {
+            TypeKind::Scalar(ScalarType::I64 | ScalarType::U64) => Some(8),
+            TypeKind::Scalar(ScalarType::F16) => Some(2),
+            TypeKind::Atomic(_) => Some(4),
+            TypeKind::Vector(VectorType {
                 size: VecSize::Two,
                 component_type,
             }) if matches!(
                 component_type.kind(db),
-                Self::Scalar(
+                TypeKind::Scalar(
                     ScalarType::Bool | ScalarType::I32 | ScalarType::U32 | ScalarType::F32
                 )
             ) =>
             {
                 Some(8)
             },
-            Self::Vector(VectorType {
+            TypeKind::Vector(VectorType {
                 size: VecSize::Two,
                 component_type,
-            }) if matches!(component_type.kind(db), Self::Scalar(ScalarType::F16)) => Some(4),
-            Self::Vector(VectorType {
+            }) if matches!(component_type.kind(db), TypeKind::Scalar(ScalarType::F16)) => Some(4),
+            TypeKind::Vector(VectorType {
                 size: VecSize::Three,
                 component_type,
             }) if matches!(
                 component_type.kind(db),
-                Self::Scalar(
+                TypeKind::Scalar(
                     ScalarType::Bool | ScalarType::I32 | ScalarType::U32 | ScalarType::F32
                 )
             ) =>
             {
                 Some(12)
             },
-            Self::Vector(VectorType {
+            TypeKind::Vector(VectorType {
                 size: VecSize::Four,
                 component_type,
-            }) if matches!(component_type.kind(db), Self::Scalar(ScalarType::F16)) => Some(6),
-            Self::Vector(VectorType {
+            }) if matches!(component_type.kind(db), TypeKind::Scalar(ScalarType::F16)) => Some(6),
+            TypeKind::Vector(VectorType {
                 size: VecSize::Four,
                 component_type,
             }) if matches!(
                 component_type.kind(db),
-                Self::Scalar(
+                TypeKind::Scalar(
                     ScalarType::Bool | ScalarType::I32 | ScalarType::U32 | ScalarType::F32
                 )
             ) =>
             {
                 Some(16)
             },
-            Self::Vector(VectorType {
+            TypeKind::Vector(VectorType {
                 size: VecSize::Three,
                 component_type,
-            }) if matches!(component_type.kind(db), Self::Scalar(ScalarType::F16)) => Some(8),
-            Self::Matrix(matrix_type) => Self::Vector(VectorType {
+            }) if matches!(component_type.kind(db), TypeKind::Scalar(ScalarType::F16)) => Some(8),
+            TypeKind::Matrix(matrix_type) => TypeKind::Vector(VectorType {
                 size: matrix_type.rows,
                 component_type: matrix_type.inner,
             })
+            .intern(db)
             .size_of(address_space, db),
-            Self::Struct(r#struct) => {
-                let fields = &db.field_types(*r#struct).0;
+            TypeKind::Struct(r#struct) => {
+                let fields = &db.field_types(r#struct).0;
                 let (_, size) =
                     struct_member_layout(fields, db, AddressSpace::Storage, |_, _, _| {})?;
                 Some(size)
             },
-            Self::Array(array) => match array.size {
-                ArraySize::Constant(size) => {
+            TypeKind::Array(array) => match array.size {
+                ArraySize::Fixed(size) => {
                     let stride = array.stride(address_space, db)?;
-                    Some(size.get().checked_mul(stride).unwrap())
+                    Some(size.unwrap_left().get().checked_mul(stride).unwrap())
                 },
                 ArraySize::Dynamic => None,
             },
-            Self::Error
-            | Self::Scalar(ScalarType::AbstractFloat | ScalarType::AbstractInt)
-            | Self::BuiltinStruct(_)
-            | Self::Vector(_)
-            | Self::SwizzleView(_)
-            | Self::Texture(_)
-            | Self::Sampler(_)
-            | Self::AccelerationStructure(_)
-            | Self::Reference(_)
-            | Self::Pointer(_) => None,
+            TypeKind::Error
+            | TypeKind::Scalar(ScalarType::AbstractFloat | ScalarType::AbstractInt)
+            | TypeKind::BuiltinStruct(_)
+            | TypeKind::Vector(_)
+            | TypeKind::SwizzleView(_)
+            | TypeKind::Texture(_)
+            | TypeKind::Sampler(_)
+            | TypeKind::AccelerationStructure(_)
+            | TypeKind::Reference(_)
+            | TypeKind::Pointer(_) => None,
         }
     }
 }
@@ -288,8 +273,8 @@ where
         let custom_align = None;
         let custom_size = None;
 
-        let align = custom_align.or_else(|| field.align(address_space, db))?;
-        let size = custom_size.or_else(|| field.size(address_space, db))?;
+        let align = custom_align.or_else(|| field.align_of(address_space, db))?;
+        let size = custom_size.or_else(|| field.size_of(address_space, db))?;
 
         struct_align = struct_align.max(align);
 

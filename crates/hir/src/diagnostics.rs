@@ -4,6 +4,7 @@ pub mod precedence;
 use base_db::{EditionedFileId, FileRange, TextRange};
 use hir_def::{
     HasSource as _, InFile,
+    body::BodySourceMap,
     expression::BinaryOperation,
     expression_store::{ExpressionSourceMap, path::Path},
     item_tree::Name,
@@ -70,6 +71,14 @@ pub enum AnyDiagnostic {
         r#type: Type,
     },
     NotConstructible {
+        expression: InFile<AstPointer<ast::Expression>>,
+        r#type: Type,
+    },
+    NotConcrete {
+        expression: InFile<AstPointer<ast::Expression>>,
+        r#type: Type,
+    },
+    InvalidLetDeclaration {
         expression: InFile<AstPointer<ast::Expression>>,
         r#type: Type,
     },
@@ -151,6 +160,15 @@ pub enum AnyDiagnostic {
         expression: InFile<AstPointer<ast::Expression>>,
         actual: Type,
     },
+    MissingInitializer {
+        statement: InFile<AstPointer<ast::Statement>>,
+    },
+    NotAConstantExpression {
+        expression: InFile<AstPointer<ast::Expression>>,
+    },
+    NotAnOverrideExpression {
+        expression: InFile<AstPointer<ast::Expression>>,
+    },
 }
 
 #[derive(Clone, Copy)]
@@ -174,6 +192,8 @@ impl AnyDiagnostic {
             | Self::NoSuchField { expression, name: _, r#type: _  }
             | Self::ArrayAccessInvalidType { expression, r#type: _  }
             | Self::NotConstructible { expression, r#type: _ }
+            | Self::NotConcrete { expression, r#type: _ }
+            | Self::InvalidLetDeclaration { expression, r#type: _ }
             | Self::FunctionCallArgCountMismatch { expression, n_expected: _, n_actual: _  }
             | Self::StoreTypeMustBeStorable { expression, actual: _  }
             | Self::NoConstructor { expression, r#type: _, parameters: _  }
@@ -183,6 +203,8 @@ impl AnyDiagnostic {
             | Self::WgslError { expression, message: _ }
             | Self::InvalidIdentExpression { expression, error: _ }
             | Self::UnexpectedReturnValue { expression, actual: _ }
+            | Self::NotAConstantExpression { expression }
+            | Self::NotAnOverrideExpression { expression }
             | Self::ExpectedLoweredKind { expression, actual: _, expected: _, path: _  } => {
                 expression.file_id
             },
@@ -215,6 +237,7 @@ impl AnyDiagnostic {
             Self::NameConflict { item, name: _ } => {
                 item.file_id
             },
+            Self::MissingInitializer { statement } => statement.file_id,
         }
     }
 }
@@ -223,6 +246,7 @@ impl AnyDiagnostic {
 pub(crate) fn to_any_diagnostic(
     infer_diagnostic: &InferenceDiagnosticKind,
     source_map: &ExpressionSourceMap,
+    body_source_map: Option<&BodySourceMap>,
     file_id: EditionedFileId,
 ) -> Option<AnyDiagnostic> {
     Some(match infer_diagnostic {
@@ -272,6 +296,22 @@ pub(crate) fn to_any_diagnostic(
             let pointer = source_map.expression_to_source(*expression).ok()?.clone();
             let source = InFile::new(file_id, pointer);
             AnyDiagnostic::NotConstructible {
+                expression: source,
+                r#type: *r#type,
+            }
+        },
+        InferenceDiagnosticKind::NotConcrete { expression, r#type } => {
+            let pointer = source_map.expression_to_source(*expression).ok()?.clone();
+            let source = InFile::new(file_id, pointer);
+            AnyDiagnostic::NotConcrete {
+                expression: source,
+                r#type: *r#type,
+            }
+        },
+        InferenceDiagnosticKind::InvalidLetDeclaration { expression, r#type } => {
+            let pointer = source_map.expression_to_source(*expression).ok()?.clone();
+            let source = InFile::new(file_id, pointer);
+            AnyDiagnostic::InvalidLetDeclaration {
                 expression: source,
                 r#type: *r#type,
             }
@@ -389,6 +429,25 @@ pub(crate) fn to_any_diagnostic(
                 expression: source,
                 actual: *actual,
             }
+        },
+        InferenceDiagnosticKind::MissingInitializer { statement } => {
+            let pointer = body_source_map
+                .unwrap()
+                .statement_to_source(*statement)
+                .ok()?
+                .clone();
+            let source = InFile::new(file_id, pointer);
+            AnyDiagnostic::MissingInitializer { statement: source }
+        },
+        InferenceDiagnosticKind::NotAConstantExpression { expression } => {
+            let pointer = source_map.expression_to_source(*expression).ok()?.clone();
+            let source = InFile::new(file_id, pointer);
+            AnyDiagnostic::NotAConstantExpression { expression: source }
+        },
+        InferenceDiagnosticKind::NotAnOverrideExpression { expression } => {
+            let pointer = source_map.expression_to_source(*expression).ok()?.clone();
+            let source = InFile::new(file_id, pointer);
+            AnyDiagnostic::NotAnOverrideExpression { expression: source }
         },
     })
 }

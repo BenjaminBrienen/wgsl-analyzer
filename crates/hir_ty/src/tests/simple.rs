@@ -1,10 +1,7 @@
 use expect_test::expect;
 use syntax::Capabilities;
 
-use crate::{
-    tests::{check_infer, check_infer_with_capabilities, check_infer_with_verbosity},
-    ty::pretty::TypeVerbosity,
-};
+use crate::tests::{check_infer, check_infer_with_capabilities};
 
 #[test]
 fn type_alias_in_struct() {
@@ -280,6 +277,7 @@ fn store_type_must_be_storable() {
             36..43 'bar_ptr': ref<function, [error], read_write>
             46..50 '&bar': ptr<function, i32, read_write>
             47..50 'bar': ref<function, i32, read_write>
+            46..50 '&bar': expected constructible type, but got `ptr<function, i32, read_write>`
             46..50 '&bar': expected storable type but got `ptr<function, i32, read_write>`
         "#]],
     );
@@ -1447,6 +1445,7 @@ fn array_index_is_ref_i32() {
             61..64 'arr': array<i32>
             61..71 'arr[index]': i32
             65..70 'index': ref<function, i32, read_write>
+            61..71 'arr[index]': expression is not a const-expression
         "#]],
     );
 }
@@ -1469,6 +1468,7 @@ fn array_index_is_not_ref_f32() {
             63..73 'arr[index]': i32
             67..72 'index': ref<function, f32, read_write>
             67..72 'index': expected i32 or u32 but got f32
+            63..73 'arr[index]': expression is not a const-expression
         "#]],
     );
 }
@@ -2181,7 +2181,6 @@ fn foo() {
         expect![[r#"
             67..68 'x': Foo
             71..76 'Foo()': Foo
-            71..76 'Foo()': type `Foo` is not constructible
         "#]],
     );
 }
@@ -2305,8 +2304,8 @@ fn foo() {
 }
         ",
         expect![[r#"
-            19..20 'y': array<[error]>
-            23..30 'array()': array<[error]>
+            19..20 'y': array<[error], 1>
+            23..30 'array()': array<[error], 1>
             23..30 'array()': no overload of function `array` found that takes no arguments
         "#]],
     );
@@ -2528,13 +2527,13 @@ fn array_missing_template() {
     check_infer(
         "
 fn foo() {
-    let x = array<1>(1);
+    let x = array<1, 1>(1);
 }
         ",
         expect![[r#"
-            19..20 'x': array<[error]>
-            23..34 'array<1>(1)': array<[error]>
-            32..33 '1': integer
+            19..20 'x': array<[error], 1>
+            23..37 'array<1, 1>(1)': array<[error], 1>
+            35..36 '1': integer
             29..30 '1': unexpected template argument, expected a type, actual: 1
         "#]],
     );

@@ -19,24 +19,24 @@ pub fn collect<Function>(
     Function: FnMut(GlobalVariableDiagnostic),
 {
     let inference = InferenceResult::of(db, DefinitionWithBodyId::GlobalVariable(variable));
-    let type_kind = inference.return_type().kind(db);
+    let r#type = inference.return_type();
 
     if let TypeKind::Reference(Reference {
         address_space,
         access_mode,
         inner: _,
-    }) = type_kind
+    }) = r#type.kind(db)
     {
         hir_ty::validate::validate_address_space(
             address_space,
             access_mode,
             hir_ty::validate::Scope::Module,
-            &type_kind,
+            r#type,
             db,
             |error| diagnostic_builder(GlobalVariableDiagnostic::AddressSpaceError(error)),
         );
     } else if !matches!(
-        type_kind,
+        r#type.kind(db),
         TypeKind::Error
             | TypeKind::Sampler(_)
             | TypeKind::Texture(_)

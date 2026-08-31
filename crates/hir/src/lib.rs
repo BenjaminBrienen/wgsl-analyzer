@@ -183,12 +183,12 @@ impl<'db> Semantics<'db> {
                 | ChildContainer::TypeAliasId(_) => {
                     let file_id = definition.file_id(self.db);
                     let module_info = ItemScope::of(self.db, file_id);
-                    Resolver::new(file_id, module_info)
+                    Resolver::module(file_id, module_info)
                 },
             }
         } else {
             let module_info = ItemScope::of(self.db, file_id);
-            Resolver::new(file_id, module_info)
+            Resolver::module(file_id, module_info)
         }
     }
 
@@ -798,6 +798,7 @@ impl Module {
         validate_identifiers(self.file_id, db, accumulator);
 
         for item in self.items(db) {
+            // TODO add lowering for all variants
             match item {
                 ModuleDef::Function(_) => {},
                 ModuleDef::GlobalVariable(variable) => {
@@ -823,8 +824,12 @@ impl Module {
                             );
                             continue;
                         }
-                        match diagnostics::to_any_diagnostic(&diagnostic.kind, signature_map, file)
-                        {
+                        match diagnostics::to_any_diagnostic(
+                            &diagnostic.kind,
+                            signature_map,
+                            None,
+                            file,
+                        ) {
                             Some(diagnostic) => accumulator.push(diagnostic),
                             None => {
                                 tracing::warn!("could not create diagnostic from {:?}", diagnostic);
@@ -844,8 +849,12 @@ impl Module {
                             );
                             continue;
                         }
-                        match diagnostics::to_any_diagnostic(&diagnostic.kind, signature_map, file)
-                        {
+                        match diagnostics::to_any_diagnostic(
+                            &diagnostic.kind,
+                            signature_map,
+                            None,
+                            file,
+                        ) {
                             Some(diagnostic) => accumulator.push(diagnostic),
                             None => {
                                 tracing::warn!("could not create diagnostic from {:?}", diagnostic);
@@ -934,15 +943,17 @@ fn check_type_errors(
         let file = definition.file_id(db);
         let (_, signature_map) =
             ExpressionStore::with_source_map(db, ExpressionStoreOwnerId::Signature(definition));
-        let (_, source_map) = Body::with_source_map(db, definition);
+        let (_, body_source_map) = Body::with_source_map(db, definition);
         let infer = InferenceResult::of(db, definition);
         for diagnostic in infer.diagnostics() {
+            let expression_source_map = match diagnostic.source {
+                ExpressionStoreSource::Body => body_source_map.expression_source_map(),
+                ExpressionStoreSource::Signature => signature_map,
+            };
             match diagnostics::to_any_diagnostic(
                 &diagnostic.kind,
-                match diagnostic.source {
-                    ExpressionStoreSource::Body => source_map.expression_source_map(),
-                    ExpressionStoreSource::Signature => signature_map,
-                },
+                expression_source_map,
+                Some(body_source_map),
                 file,
             ) {
                 Some(diagnostic) => accumulator.push(diagnostic),
@@ -955,7 +966,7 @@ fn check_type_errors(
         diagnostics::precedence::collect(db, definition, |diagnostic| {
             match diagnostics::any_diag_from_shift(
                 &diagnostic,
-                source_map.expression_source_map(),
+                body_source_map.expression_source_map(),
                 file,
             ) {
                 Some(diagnostic) => accumulator.push(diagnostic),

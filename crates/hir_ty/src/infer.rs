@@ -4,6 +4,7 @@ use base_db::{Intern as _, Lookup as _};
 use either::Either;
 use hir_def::{
     HasSource as _,
+    attributes::{AttributeDefId, AttributesWithOwner},
     body::{BindingId, Body, scope::ExprScopes},
     db::{DefinitionWithBodyId, ModuleDefinitionId, StructId},
     expression::{
@@ -12,7 +13,7 @@ use hir_def::{
     },
     expression_store::{ExpressionStore, ExpressionStoreSource},
     item_tree::Name,
-    resolver::Resolver,
+    resolver::{ResolveKind, Resolver, Scope, VariableOrValueDeclaration},
     signature::{
         ConstantSignature, FieldId, FunctionSignature, OverrideSignature, StructSignature,
         TypeAliasSignature, VariableSignature,
@@ -35,11 +36,12 @@ use crate::{
     lower::{
         ConstructibleTypeGenerator, Lowered, LoweredKind, ResolvedCall, TemplateParameter,
         TemplateParameters, TypeContainer, TypeLoweringContext, TypeLoweringError,
-        WgslTypeConverter, to_wgsl_binary_operator, to_wgsl_unary_operator,
+        TypeLoweringErrorKind, WgslTypeConverter, to_wgsl_binary_operator, to_wgsl_unary_operator,
     },
     ty::{
         ArraySize, ArrayType, BuiltinStruct, IndexList, MatrixType, ParseIndexListError, Pointer,
         Reference, ScalarType, SwizzleView, Type, TypeKind, VecIndex, VectorType,
+        pretty::pretty_type,
     },
 };
 
@@ -69,23 +71,23 @@ fn infer_query(
         DefinitionWithBodyId::Function(function) => {
             let data = FunctionSignature::of(db, function);
             let return_type = context.collect_fn(data, body);
-            context.infer_body(body, return_type, AbstractHandling::Concretize);
+            context.infer_body(body, return_type);
         },
         DefinitionWithBodyId::GlobalVariable(variable) => {
             let data = VariableSignature::of(db, variable);
             let return_type = context.collect_global_variable(data, body);
-            context.infer_body(body, return_type, AbstractHandling::Concretize);
+            context.infer_body(body, return_type);
             context.infer_global_variable(data, body);
         },
         DefinitionWithBodyId::GlobalConstant(constant) => {
             let data = ConstantSignature::of(db, constant);
             let return_type = context.collect_global_constant(data, body);
-            context.infer_body(body, return_type, AbstractHandling::Abstract);
+            context.infer_body(body, return_type);
         },
         DefinitionWithBodyId::Override(override_declaration) => {
             let data = OverrideSignature::of(db, override_declaration);
             let return_type = context.collect_override(data, body);
-            context.infer_body(body, return_type, AbstractHandling::Concretize);
+            context.infer_body(body, return_type);
         },
         DefinitionWithBodyId::GlobalAssertStatement(_global_assert_statement) => {
             let expression = body.root.and_then(Either::right);
@@ -516,15 +518,13 @@ impl<'db> InferenceContext<'db> {
         &mut self,
         body: &Body,
         return_type: Option<Type>,
-        abstract_handling: AbstractHandling,
     ) {
         match body.root {
             Some(Either::Left(statement)) => {
                 self.infer_statement(statement, body, return_type);
             },
             Some(Either::Right(expression)) => {
-                let r#type =
-                    self.infer_initializer(body, Some(expression), return_type, abstract_handling);
+                let r#type = self.infer_initializer(body, Some(expression), return_type);
 
                 if return_type.is_none() {
                     self.bind_return_type(Some(r#type), body);
@@ -592,11 +592,20 @@ impl<'db> InferenceContext<'db> {
                 initializer,
                 template_parameters,
             } => {
+                let (address_space, access_mode) =
+                    self.infer_variable_template(template_parameters, body);
                 // The store type is the effective-value-type of the variable’s declaration.
-                let mut r#type =
-                    self.get_effective_value_type(body, &resolver, *type_ref, *initializer);
+                let mut r#type = self.infer_variable_or_value_declaration(
+                    body,
+                    resolver.scopes().next().unwrap(),
+                    statement,
+                    VariableOrValueDeclaration::Variable(address_space, access_mode),
+                    &resolver,
+                    *type_ref,
+                    *initializer,
+                );
                 if let Some(initializer_expression) = initializer
-                    && !r#type.kind(self.db).is_storable()
+                    && !r#type.is_storable(self.db)
                     && !r#type.is_err(self.db)
                 {
                     self.push_diagnostic(
@@ -610,8 +619,6 @@ impl<'db> InferenceContext<'db> {
                     r#type = TypeKind::Error.intern(self.db);
                 }
 
-                let (address_space, access_mode) =
-                    self.infer_variable_template(template_parameters, body);
                 if address_space != AddressSpace::Function {
                     // Only function address space is allowed
                     self.push_diagnostic(
@@ -629,24 +636,32 @@ impl<'db> InferenceContext<'db> {
                 type_ref,
                 initializer,
             } => {
-                let r#type = type_ref.map(|r#type| self.lower_type(r#type, &resolver, body));
-                let r#type =
-                    self.infer_initializer(body, *initializer, r#type, AbstractHandling::Abstract);
-                self.set_binding_type(*binding_id, r#type);
+                let effective_value_type = self.infer_variable_or_value_declaration(
+                    body,
+                    resolver.scopes().next().unwrap(),
+                    statement,
+                    VariableOrValueDeclaration::Constant,
+                    &resolver,
+                    *type_ref,
+                    *initializer,
+                );
+                self.set_binding_type(*binding_id, effective_value_type);
             },
             Statement::Let {
                 binding_id,
                 type_ref,
                 initializer,
             } => {
-                let r#type = type_ref.map(|r#type| self.lower_type(r#type, &resolver, body));
-                let r#type = self.infer_initializer(
+                let effective_value_type = self.infer_variable_or_value_declaration(
                     body,
+                    resolver.scopes().next().unwrap(),
+                    statement,
+                    VariableOrValueDeclaration::Let,
+                    &resolver,
+                    *type_ref,
                     *initializer,
-                    r#type,
-                    AbstractHandling::Concretize,
                 );
-                self.set_binding_type(*binding_id, r#type);
+                self.set_binding_type(*binding_id, effective_value_type);
             },
 
             Statement::Return { expression } => match (expression, return_type) {
@@ -677,7 +692,7 @@ impl<'db> InferenceContext<'db> {
                 left_side,
                 right_side,
             } => {
-                let left_type = self.infer_expression(*left_side, body);
+                let left_type = self.infer_expression(body, *left_side);
                 let left_loaded = match left_type.kind(self.db) {
                     // apply the load rule
                     TypeKind::Reference(reference) => reference.inner,
@@ -719,7 +734,7 @@ impl<'db> InferenceContext<'db> {
                 right_side,
                 operator,
             } => {
-                let left_type = self.infer_expression(*left_side, body);
+                let left_type = self.infer_expression(body, *left_side);
 
                 let left_kind = left_type.kind(self.db);
                 let left_inner = if let TypeKind::Reference(reference) = left_kind {
@@ -760,13 +775,13 @@ impl<'db> InferenceContext<'db> {
                 }
             },
             Statement::PhonyAssignment { right_side } => {
-                self.infer_expression(*right_side, body);
+                self.infer_expression(body, *right_side);
             },
             Statement::IncrDecr {
                 expression,
                 operator: _,
             } => {
-                let left_type = self.infer_expression(*expression, body);
+                let left_type = self.infer_expression(body, *expression);
 
                 let left_kind = left_type.kind(self.db);
                 let left_inner = if let TypeKind::Reference(reference) = left_kind {
@@ -830,7 +845,7 @@ impl<'db> InferenceContext<'db> {
                 expression,
                 case_blocks,
             } => {
-                let r#type = self.infer_expression(*expression, body).loaded(self.db);
+                let r#type = self.infer_expression(body, *expression).loaded(self.db);
 
                 for (selectors, case) in case_blocks {
                     for selector in selectors {
@@ -888,7 +903,7 @@ impl<'db> InferenceContext<'db> {
                 );
             },
             Statement::FunctionCall { expression } => {
-                self.infer_expression(*expression, body);
+                self.infer_expression(body, *expression);
                 // check must_use and report diagnostic here
             },
         }
@@ -904,27 +919,552 @@ impl<'db> InferenceContext<'db> {
     ///   - For a override, let, or var declaration, the effective-value-type is the concretization of T.
     ///
     /// Each kind of value or variable declaration may place additional constraints on the form of the initializer expression, if present, and on the effective-value-type.
-    fn get_effective_value_type(
+    fn infer_variable_or_value_declaration(
         &mut self,
         body: &Body,
+        scope: &Scope<'_>,
+        statement: StatementId,
+        declaration: VariableOrValueDeclaration,
         resolver: &Resolver<'db>,
-        type_ref: Option<la_arena::Idx<hir_def::type_specifier::TypeSpecifier>>,
+        type_ref: Option<TypeSpecifierId>,
         initializer: Option<ExpressionId>,
     ) -> Type {
-        let r#type = type_ref.map(|r#type| self.lower_type(r#type, resolver, body));
-        let r#type =
-            self.infer_initializer(body, initializer, r#type, AbstractHandling::Concretize);
-        r#type.loaded(self.db).concretize(self.db)
+        #[expect(
+            clippy::match_same_arms,
+            reason = "corresponds to rows in the spec table"
+        )]
+        match (declaration, scope) {
+            // Constructible (Concrete or abstract)
+            (VariableOrValueDeclaration::Constant, _) => {
+                let type_in_signature =
+                    type_ref.map(|r#type| self.lower_type(r#type, resolver, body));
+                let initializer_type = self.infer_initializer(body, initializer, type_in_signature);
+                if let Some(initializer) = initializer
+                    && !initializer_type.is_constructible(self.db)
+                {
+                    self.push_diagnostic(
+                        body.store_source,
+                        InferenceDiagnosticKind::NotConstructible {
+                            expression: initializer,
+                            r#type: initializer_type,
+                        },
+                    );
+                }
+                if let Some(type_ref) = type_ref
+                    && !type_in_signature.unwrap().is_constructible(self.db)
+                {
+                    self.push_diagnostic(
+                        body.store_source,
+                        InferenceDiagnosticKind::InvalidType {
+                            error: TypeLoweringError {
+                                container: TypeContainer::TypeSpecifier(type_ref),
+                                kind: TypeLoweringErrorKind::WgslError(
+                                    "not a constructible type".to_owned(),
+                                ),
+                            },
+                        },
+                    );
+                }
+                let Some(initializer) = initializer else {
+                    self.push_diagnostic(
+                        body.store_source,
+                        InferenceDiagnosticKind::MissingInitializer { statement },
+                    );
+                    return initializer_type;
+                };
+                if !self.is_constant_expression(body, initializer) {
+                    self.push_diagnostic(
+                        body.store_source,
+                        InferenceDiagnosticKind::NotAConstantExpression {
+                            expression: initializer,
+                        },
+                    );
+                }
+                initializer_type
+            },
+            // Concrete scalar
+            (VariableOrValueDeclaration::Override, Scope::Module(_)) => {
+                let type_in_signature =
+                    type_ref.map(|r#type| self.lower_type(r#type, resolver, body));
+                let inferred_type = self
+                    .infer_initializer(body, initializer, type_in_signature)
+                    .concretize(self.db);
+                if let Some(initializer) = initializer
+                    && !self.is_override_expression(body, initializer)
+                {
+                    self.push_diagnostic(
+                        body.store_source,
+                        InferenceDiagnosticKind::NotAnOverrideExpression {
+                            expression: initializer,
+                        },
+                    );
+                }
+                if let Some(initializer) = initializer
+                    && !self
+                        .infer_expression(body, initializer)
+                        .is_constructible(self.db)
+                {
+                    self.push_diagnostic(
+                        body.store_source,
+                        InferenceDiagnosticKind::NotConstructible {
+                            expression: initializer,
+                            r#type: inferred_type,
+                        },
+                    );
+                }
+                if let Some(type_ref) = type_ref
+                    && !type_in_signature.unwrap().is_constructible(self.db)
+                {
+                    self.push_diagnostic(
+                        body.store_source,
+                        InferenceDiagnosticKind::InvalidType {
+                            error: TypeLoweringError {
+                                container: TypeContainer::TypeSpecifier(type_ref),
+                                kind: TypeLoweringErrorKind::WgslError(
+                                    "not a constructible type".to_owned(),
+                                ),
+                            },
+                        },
+                    );
+                }
+                debug_assert!(inferred_type.is_scalar(self.db));
+                inferred_type
+            },
+            // Concrete constructible or pointer type.
+            // Additionally, if the `texture_and_sampler_let` feature is supported, texture or sampler types.
+            (VariableOrValueDeclaration::Let, Scope::Function(_)) => {
+                let type_in_signature =
+                    type_ref.map(|r#type| self.lower_type(r#type, resolver, body));
+                let r#type = self
+                    .infer_initializer(body, initializer, type_in_signature)
+                    .concretize(self.db);
+                let Some(initializer) = initializer else {
+                    self.push_diagnostic(
+                        body.store_source,
+                        InferenceDiagnosticKind::MissingInitializer { statement },
+                    );
+                    return type_in_signature.unwrap_or_else(|| self.error_type());
+                };
+                // TODO: gate behind `texture_and_sampler_let` enable extension
+                let texture_and_sampler_let =
+                    || r#type.is_texture(self.db) || r#type.is_sampler(self.db);
+                if !r#type.is_err(self.db)
+                    && !r#type.is_pointer(self.db)
+                    && !r#type.is_constructible(self.db)
+                    || texture_and_sampler_let()
+                {
+                    self.push_diagnostic(
+                        body.store_source,
+                        InferenceDiagnosticKind::InvalidLetDeclaration {
+                            expression: initializer,
+                            r#type,
+                        },
+                    );
+                }
+                r#type
+            },
+            (
+                VariableOrValueDeclaration::Variable(AddressSpace::Storage, AccessMode::Read),
+                Scope::Module(_),
+            ) => {
+                let type_in_signature =
+                    type_ref.map(|r#type| self.lower_type(r#type, resolver, body));
+                debug_assert!(type_in_signature.is_some());
+                let r#type = type_in_signature.unwrap();
+                debug_assert!(
+                    r#type.is_concrete(self.db),
+                    "{}",
+                    pretty_type(self.db, r#type)
+                );
+                debug_assert!(
+                    r#type.is_host_shareable(self.db),
+                    "{}",
+                    pretty_type(self.db, r#type)
+                );
+                debug_assert!(initializer.is_none());
+                r#type
+            },
+            (
+                VariableOrValueDeclaration::Variable(AddressSpace::Storage, AccessMode::ReadWrite),
+                Scope::Module(_),
+            ) => {
+                let type_in_signature =
+                    type_ref.map(|r#type| self.lower_type(r#type, resolver, body));
+                debug_assert!(type_in_signature.is_some());
+                let r#type = type_in_signature.unwrap();
+                debug_assert!(
+                    r#type.is_concrete(self.db),
+                    "{}",
+                    pretty_type(self.db, r#type)
+                );
+                debug_assert!(
+                    r#type.is_host_shareable(self.db),
+                    "{}",
+                    pretty_type(self.db, r#type)
+                );
+                debug_assert!(initializer.is_none());
+                r#type
+            },
+            (
+                VariableOrValueDeclaration::Variable(AddressSpace::Uniform, AccessMode::Read),
+                Scope::Module(_),
+            ) => {
+                let type_in_signature =
+                    type_ref.map(|r#type| self.lower_type(r#type, resolver, body));
+                let r#type = type_in_signature.unwrap();
+                let uniform = || {
+                    r#type.is_concrete(self.db)
+                        && r#type.is_constructible(self.db)
+                        && r#type.is_host_shareable(self.db)
+                };
+                let r#type = r#type.concretize(self.db);
+                debug_assert!(
+                    r#type.is_fixed_size_buffer(self.db) || uniform(),
+                    "{}",
+                    pretty_type(self.db, r#type)
+                );
+                debug_assert!(initializer.is_none());
+                r#type
+            },
+            (
+                VariableOrValueDeclaration::Variable(AddressSpace::Immediate, AccessMode::Read),
+                Scope::Module(_),
+            ) => {
+                let type_in_signature =
+                    type_ref.map(|r#type| self.lower_type(r#type, resolver, body));
+                debug_assert!(type_in_signature.is_some());
+                let r#type = type_in_signature.unwrap();
+                debug_assert!(
+                    r#type.is_concrete(self.db)
+                        && r#type.is_constructible(self.db)
+                        && r#type.is_host_shareable(self.db)
+                        && !r#type.is_or_contains_array(self.db)
+                );
+                debug_assert!(initializer.is_none());
+                r#type
+            },
+            (
+                VariableOrValueDeclaration::Variable(AddressSpace::Handle, AccessMode::Read),
+                Scope::Module(_),
+            ) if let Some(type_in_signature) =
+                type_ref.map(|r#type| self.lower_type(r#type, resolver, body))
+                && type_in_signature.is_texture(self.db) =>
+            {
+                debug_assert!(initializer.is_none());
+                type_in_signature
+            },
+            (
+                VariableOrValueDeclaration::Variable(AddressSpace::Handle, AccessMode::Read),
+                Scope::Module(_),
+            ) if let Some(type_in_signature) =
+                type_ref.map(|r#type| self.lower_type(r#type, resolver, body))
+                && type_in_signature.is_sampler(self.db) =>
+            {
+                debug_assert!(initializer.is_none());
+                r#type_in_signature
+            },
+            (
+                VariableOrValueDeclaration::Variable(
+                    AddressSpace::Workgroup,
+                    AccessMode::ReadWrite,
+                ),
+                Scope::Module(_),
+            ) => {
+                let type_in_signature =
+                    type_ref.map(|r#type| self.lower_type(r#type, resolver, body));
+                debug_assert!(type_in_signature.is_some());
+                let r#type = type_in_signature.unwrap();
+                let r#type = r#type.concretize(self.db);
+                let cptwff = || {
+                    r#type.is_concrete(self.db)
+                        && r#type.is_plain(self.db)
+                        && self.is_fixed_footprint(body, r#type)
+                };
+                let fsb = || r#type.is_fixed_size_buffer(self.db);
+                debug_assert!(cptwff() || fsb(), "{}", pretty_type(self.db, r#type));
+                debug_assert!(initializer.is_none());
+                r#type
+            },
+            (
+                VariableOrValueDeclaration::Variable(AddressSpace::Private, AccessMode::ReadWrite),
+                Scope::Module(_),
+            ) => {
+                let type_in_signature =
+                    type_ref.map(|r#type| self.lower_type(r#type, resolver, body));
+                _ = self.infer_initializer(body, initializer, type_in_signature);
+                debug_assert!(type_in_signature.is_some());
+                let r#type = type_in_signature.unwrap().concretize(self.db);
+
+                if let Some(initializer) = initializer
+                    && !self.is_override_expression(body, initializer)
+                {
+                    self.push_diagnostic(
+                        body.store_source,
+                        InferenceDiagnosticKind::NotAnOverrideExpression {
+                            expression: initializer,
+                        },
+                    );
+                }
+                debug_assert!(
+                    r#type.is_concrete(self.db) && r#type.is_constructible(self.db),
+                    "{}",
+                    pretty_type(self.db, r#type)
+                );
+                r#type
+            },
+            (
+                VariableOrValueDeclaration::Variable(AddressSpace::Function, AccessMode::ReadWrite),
+                Scope::Function(_),
+            ) => match (type_ref, initializer) {
+                (Some(type_ref), Some(initializer)) => {
+                    let type_in_signature = self.lower_type(type_ref, resolver, body);
+                    let initializer_type = self.infer_expression(body, initializer);
+                    if self.expect_type_inner(
+                        initializer_type,
+                        TypeExpectationInner::Exact(type_in_signature),
+                    ) != Ok(())
+                    {
+                        self.push_diagnostic(
+                            body.store_source,
+                            InferenceDiagnosticKind::TypeMismatch {
+                                expression: initializer,
+                                actual: initializer_type,
+                                expected: TypeExpectation::from_type(type_in_signature),
+                            },
+                        );
+                    }
+                    if !initializer_type
+                        .concretize(self.db)
+                        .is_constructible(self.db)
+                    {
+                        self.push_diagnostic(
+                            body.store_source,
+                            InferenceDiagnosticKind::NotConstructible {
+                                expression: initializer,
+                                r#type: initializer_type.concretize(self.db),
+                            },
+                        );
+                    }
+                    type_in_signature.concretize(self.db)
+                },
+                (Some(type_ref), None) => {
+                    let type_in_signature = self.lower_type(type_ref, resolver, body);
+                    if !type_in_signature.is_concrete(self.db)
+                        || !type_in_signature.is_constructible(self.db)
+                    {
+                        self.push_diagnostic(
+                            body.store_source,
+                            InferenceDiagnosticKind::InvalidType {
+                                error: TypeLoweringError {
+                                    container: TypeContainer::TypeSpecifier(type_ref),
+                                    kind: TypeLoweringErrorKind::WgslError(
+                                        "not a conrete constructible type".to_owned(),
+                                    ),
+                                },
+                            },
+                        );
+                    }
+                    type_in_signature
+                },
+                (None, Some(initializer)) => {
+                    let initializer_type =
+                        self.infer_expression(body, initializer).concretize(self.db);
+                    if !initializer_type.is_constructible(self.db) {
+                        self.push_diagnostic(
+                            body.store_source,
+                            InferenceDiagnosticKind::NotConstructible {
+                                expression: initializer,
+                                r#type: initializer_type,
+                            },
+                        );
+                    }
+                    initializer_type
+                },
+                (None, None) => self.error_type(),
+            },
+            (variable_or_value_declaration, _scope) => {
+                debug_assert!(
+                    false,
+                    "invalid var declaration: {variable_or_value_declaration:?}"
+                );
+                self.error_type()
+            },
+        }
+    }
+
+    /// Expressions that can be evaluated at pipeline creation time are called override-expressions.
+    /// An expression is an override-expression if all its identifiers resolve to:
+    /// - override-declarations, or
+    /// - const-declarations, or
+    /// - const-functions, or
+    /// - type aliases, or
+    /// - structure names.
+    fn is_override_expression(
+        &self,
+        store: &ExpressionStore,
+        expression: ExpressionId,
+    ) -> bool {
+        self.is_constant_expression(store, expression)
+            || match &store[expression] {
+                Expression::UnaryOperator {
+                    expression,
+                    operator: _,
+                }
+                | Expression::Field {
+                    expression,
+                    name: _,
+                } => {
+                    self.is_constant_expression(store, *expression)
+                        || self.is_override_expression(store, *expression)
+                },
+                #[expect(unused, reason = "simple attributes")]
+                Expression::Call {
+                    ident_expression,
+                    arguments,
+                } => {
+                    let resolver = self.resolver_for_expression(expression);
+                    let const_function = match resolver
+                        .as_ref()
+                        .unwrap_or(&self.resolver)
+                        .resolve(self.db, &ident_expression.path)
+                    {
+                        Ok(ResolveKind::Function(function)) => {
+                            let function_type = self.db.function_type(function);
+                            AttributesWithOwner::of(self.db, AttributeDefId::Function(function))
+                                .attribute_list
+                                .has("const")
+                        },
+                        // TODO: wgsl-types doesn't have constness info
+                        Ok(ResolveKind::BuiltinFunction(name)) => true,
+                        Err(_) => true,
+                        _ => false,
+                    };
+                    const_function
+                        && arguments.iter().all(|expression| {
+                            self.is_constant_expression(store, *expression)
+                                || self.is_override_expression(store, *expression)
+                        })
+                },
+                Expression::BinaryOperation {
+                    left_side,
+                    right_side,
+                    operation: _,
+                }
+                | Expression::Index {
+                    left_side,
+                    index: right_side,
+                } => {
+                    (self.is_constant_expression(store, *left_side)
+                        || self.is_override_expression(store, *left_side))
+                        && (self.is_constant_expression(store, *right_side)
+                            || self.is_override_expression(store, *right_side))
+                },
+                Expression::IdentExpression(ident_expression) => {
+                    let resolver = self.resolver_for_expression(expression);
+                    let mut context = TypeLoweringContext::new(
+                        self.db,
+                        resolver.as_ref().unwrap_or(&self.resolver),
+                        store,
+                    );
+                    let Ok(lowered) = context.lower_expression(
+                        TypeContainer::Expression(expression),
+                        &ident_expression.path,
+                        &ident_expression.template_parameters,
+                    ) else {
+                        return true;
+                    };
+                    matches!(lowered, Lowered::GlobalConstant(_) | Lowered::Override(_))
+                },
+                Expression::Missing | Expression::Literal(_) => true,
+            }
+    }
+
+    /// Expressions that can be evaluated at shader-creation time are called const-expressions.
+    /// An expression is a const-expression if all its identifiers resolve to:
+    /// - const-declarations, or
+    /// - const-functions, or
+    /// - type aliases, or
+    /// - structure names.
+    fn is_constant_expression(
+        &self,
+        store: &ExpressionStore,
+        expression: ExpressionId,
+    ) -> bool {
+        match &store[expression] {
+            Expression::UnaryOperator {
+                expression,
+                operator: _,
+            }
+            | Expression::Field {
+                expression,
+                name: _,
+            } => self.is_constant_expression(store, *expression),
+            #[expect(unused, reason = "simple attributes")]
+            Expression::Call {
+                ident_expression,
+                arguments,
+            } => {
+                let resolver = self.resolver_for_expression(expression);
+                let const_function = match resolver
+                    .as_ref()
+                    .unwrap_or(&self.resolver)
+                    .resolve(self.db, &ident_expression.path)
+                {
+                    Ok(ResolveKind::Function(function)) => {
+                        let function_type = self.db.function_type(function);
+                        AttributesWithOwner::of(self.db, AttributeDefId::Function(function))
+                            .attribute_list
+                            .has("const")
+                    },
+                    // TODO: wgsl-types doesn't have constness info
+                    Ok(ResolveKind::BuiltinFunction(name)) => true,
+                    Err(_) => true,
+                    _ => false,
+                };
+                const_function
+                    && arguments
+                        .iter()
+                        .all(|expression| self.is_constant_expression(store, *expression))
+            },
+            Expression::BinaryOperation {
+                left_side,
+                right_side,
+                operation: _,
+            }
+            | Expression::Index {
+                left_side,
+                index: right_side,
+            } => {
+                self.is_constant_expression(store, *left_side)
+                    && self.is_constant_expression(store, *right_side)
+            },
+            Expression::Missing | Expression::Literal(_) => true,
+            Expression::IdentExpression(ident_expression) => {
+                let resolver = self.resolver_for_expression(expression);
+                let mut context = TypeLoweringContext::new(
+                    self.db,
+                    resolver.as_ref().unwrap_or(&self.resolver),
+                    store,
+                );
+                let Ok(lowered) = context.lower_expression(
+                    TypeContainer::Expression(expression),
+                    &ident_expression.path,
+                    &ident_expression.template_parameters,
+                ) else {
+                    return true;
+                };
+                matches!(lowered, Lowered::GlobalConstant(_))
+            },
+        }
     }
 
     fn infer_initializer(
         &mut self,
         store: &ExpressionStore,
         initializer: Option<ExpressionId>,
-        r#type: Option<Type>,
-        abstract_handling: AbstractHandling,
+        expected_type: Option<Type>,
     ) -> Type {
-        match (r#type, initializer) {
+        match (expected_type, initializer) {
             (Some(r#type), Some(initializer)) => {
                 self.infer_expression_expect(
                     initializer,
@@ -934,14 +1474,7 @@ impl<'db> InferenceContext<'db> {
                 r#type
             },
             (Some(r#type), None) => r#type,
-            (None, Some(initializer)) => {
-                let r#type = self.infer_expression(initializer, store).loaded(self.db);
-                if abstract_handling == AbstractHandling::Concretize {
-                    r#type.concretize(self.db)
-                } else {
-                    r#type
-                }
-            },
+            (None, Some(initializer)) => self.infer_expression(store, initializer),
             (None, None) => self.error_type(),
         }
     }
@@ -962,20 +1495,14 @@ impl<'db> InferenceContext<'db> {
                 }
             },
             TypeExpectationInner::IntegerScalar => {
-                if let TypeKind::Scalar(
-                    ScalarType::I32 | ScalarType::U32 | ScalarType::I64 | ScalarType::U64,
-                ) = r#type.kind(self.db).unref(self.db).as_ref()
-                {
+                if r#type.unref(self.db).as_ref().is_integer_scalar(self.db) {
                     Ok(())
                 } else {
                     Err(())
                 }
             },
             TypeExpectationInner::IntegerIndex => {
-                if let TypeKind::Scalar(
-                    ScalarType::I32 | ScalarType::U32 | ScalarType::AbstractInt,
-                ) = r#type.kind(self.db).unref(self.db).as_ref()
-                {
+                if r#type.unref(self.db).as_ref().is_integer_index(self.db) {
                     Ok(())
                 } else {
                     Err(())
@@ -990,7 +1517,7 @@ impl<'db> InferenceContext<'db> {
         expected: TypeExpectation,
         store: &ExpressionStore,
     ) -> Type {
-        let r#type = self.infer_expression(expression, store);
+        let r#type = self.infer_expression(store, expression);
         match expected {
             TypeExpectation::Type(expected_type) => {
                 if !r#type.is_err(self.db)
@@ -1014,8 +1541,8 @@ impl<'db> InferenceContext<'db> {
     #[expect(clippy::too_many_lines, reason = "match with many small cases")]
     fn infer_expression(
         &mut self,
-        expression: ExpressionId,
         store: &ExpressionStore,
+        expression: ExpressionId,
     ) -> Type {
         let r#type = match &store[expression] {
             Expression::Missing => self.error_type(), // this would be a parser error
@@ -1041,19 +1568,16 @@ impl<'db> InferenceContext<'db> {
                     .map(|&argument| {
                         (
                             argument,
-                            self.infer_expression(argument, store).loaded(self.db),
+                            self.infer_expression(store, argument).loaded(self.db),
                         )
                     })
                     .collect();
                 self.infer_function_call(expression, ident_expression, &arguments, store)
             },
             Expression::Index { left_side, index } => {
-                let left_side = self.infer_expression(*left_side, store);
-                let left_kind = left_side.kind(self.db);
-                let index_type = self.infer_expression(*index, store).loaded(self.db);
-                let index_kind = index_type.kind(self.db);
-                let index_inner = index_kind.unref(self.db);
-                if !index_inner.is_index() {
+                let left_side = self.infer_expression(store, *left_side);
+                let index_type = self.infer_expression(store, *index).loaded(self.db);
+                if !index_type.unref(self.db).is_index(self.db) {
                     self.push_diagnostic(
                         store.store_source,
                         InferenceDiagnosticKind::TypeMismatch {
@@ -1064,7 +1588,7 @@ impl<'db> InferenceContext<'db> {
                     );
                 }
                 // The base may be a vector, matrix, or fixed-size array type, or a memory view to a vector, matrix, fixed-size array, or runtime-sized array type.
-                match left_kind {
+                match left_side.kind(self.db) {
                     TypeKind::Reference(Reference {
                         address_space,
                         inner,
@@ -1202,7 +1726,7 @@ impl<'db> InferenceContext<'db> {
         field_expression: ExpressionId,
         name: &Name,
     ) -> Type {
-        let expression_type = self.infer_expression(field_expression, store);
+        let expression_type = self.infer_expression(store, field_expression);
         if expression_type.is_err(self.db) {
             // the problem is upstream, so do not push a superfluous diagnostic
             // no more useful type to return here
@@ -1342,7 +1866,7 @@ impl<'db> InferenceContext<'db> {
         operator: UnaryOperator,
         store: &ExpressionStore,
     ) -> Type {
-        let operand_type = self.infer_expression(operand, store);
+        let operand_type = self.infer_expression(store, operand);
         if operand_type.is_err(self.db) {
             return self.error_type();
         }
@@ -1378,8 +1902,8 @@ impl<'db> InferenceContext<'db> {
         operation: BinaryOperation,
         store: &ExpressionStore,
     ) -> Type {
-        let left_type = self.infer_expression(left_side, store);
-        let right_type = self.infer_expression(right_side, store);
+        let left_type = self.infer_expression(store, left_side);
+        let right_type = self.infer_expression(store, right_side);
 
         if left_type.is_err(self.db) || right_type.is_err(self.db) {
             // debug_assert!(
@@ -1919,19 +2443,107 @@ impl<'db> InferenceContext<'db> {
             clippy::as_conversions,
             reason = "constructing an array with too many parameters is an error anyway"
         )]
-        if let ArraySize::Constant(size) = array_type.size
-            && arguments.len() != size.get() as usize
+        if let ArraySize::Fixed(size) = array_type.size
+            && arguments.len() != self.infer_array_fixed_size(size).unwrap().get() as usize
         {
             self.push_diagnostic(
                 store.store_source,
                 InferenceDiagnosticKind::FunctionCallArgCountMismatch {
                     expression,
-                    n_expected: size.get() as usize,
+                    n_expected: self.infer_array_fixed_size(size).unwrap().get() as usize,
                     n_actual: arguments.len(),
                 },
             );
         }
         r#type
+    }
+
+    #[expect(clippy::doc_paragraphs_missing_punctuation, reason = "false positive")]
+    /// A type has a creation-fixed footprint if its concretization has a size that is fully determined at shader creation time.
+    ///
+    /// <https://www.w3.org/TR/WGSL/#creation-fixed-footprint>
+    #[must_use]
+    pub fn is_creation_fixed_footprint(
+        &self,
+        store: &ExpressionStore,
+        r#type: Type,
+    ) -> bool {
+        match r#type.kind(self.db) {
+            TypeKind::Array(ArrayType {
+                inner: _,
+                binding_array: false,
+                size: ArraySize::Fixed(Either::Right(expression)),
+            }) if self.is_constant_expression(store, expression) => true,
+            TypeKind::Array(ArrayType {
+                inner: _,
+                binding_array: true,
+                size: ArraySize::Fixed(Either::Right(expression)),
+            }) if self.is_constant_expression(store, expression) => true,
+            TypeKind::Scalar(_)
+            | TypeKind::Vector(_)
+            | TypeKind::Matrix(_)
+            | TypeKind::Atomic(_)
+            | TypeKind::Array(ArrayType {
+                inner: _,
+                binding_array: false | true,
+                size: ArraySize::Fixed(Either::Left(_)),
+            })
+            | TypeKind::Error => true,
+            TypeKind::Struct(struct_id) => self
+                .db
+                .field_types(struct_id)
+                .0
+                .iter()
+                .all(|(_, field)| self.is_creation_fixed_footprint(store, *field)),
+            TypeKind::BuiltinStruct(builtin_struct) => builtin_struct
+                .fields
+                .iter()
+                .all(|(_, field)| self.is_creation_fixed_footprint(store, *field)),
+            TypeKind::Texture(_)
+            | TypeKind::Sampler(_)
+            | TypeKind::Reference(_)
+            | TypeKind::Pointer(_)
+            | TypeKind::SwizzleView(_)
+            | TypeKind::AccelerationStructure(_)
+            | TypeKind::Array(_) => false,
+        }
+    }
+
+    #[expect(clippy::doc_paragraphs_missing_punctuation, reason = "false positive")]
+    /// A type has a fixed footprint if its size is fully determined at pipeline creation time.
+    ///
+    /// <https://www.w3.org/TR/WGSL/#fixed-footprint>
+    #[must_use]
+    pub fn is_fixed_footprint(
+        &self,
+        store: &ExpressionStore,
+        r#type: Type,
+    ) -> bool {
+        self.is_creation_fixed_footprint(store, r#type)
+            || matches!(
+                r#type.kind(self.db),
+                TypeKind::Array(ArrayType {
+                    inner: _,
+                    binding_array: false | true,
+                    size: ArraySize::Fixed(_)
+                })
+            )
+    }
+
+    #[expect(
+        clippy::missing_const_for_fn,
+        clippy::unused_self,
+        unused,
+        reason = "TODO: override eval"
+    )]
+    fn infer_array_fixed_size(
+        &self,
+        fixed_size: Either<NonZeroU32, ExpressionId>,
+    ) -> Result<NonZeroU32, ()> {
+        match fixed_size {
+            Either::Left(literal) => Ok(literal),
+            Either::Right(expression) => Err(()),
+        }
     }
 
     fn infer_vector_constructor(
@@ -2035,7 +2647,15 @@ impl<'db> InferenceContext<'db> {
         arguments: &[(ExpressionId, Type)],
         array_type: &ArrayType,
     ) -> Type {
-        let incomplete_type = || TypeKind::Array(array_type.clone()).intern(self.db);
+        let incomplete_type = || {
+            // returning dynamic size hurts diagnostics
+            TypeKind::Array(ArrayType {
+                inner: array_type.inner,
+                binding_array: array_type.binding_array,
+                size: ArraySize::Fixed(Either::Left(NonZeroU32::new(1).unwrap())),
+            })
+            .intern(self.db)
+        };
         let Some((_, mut first_argument_type)) = arguments.first().copied() else {
             self.push_diagnostic(
                 store.store_source,
@@ -2074,7 +2694,7 @@ impl<'db> InferenceContext<'db> {
             TypeKind::Array(ArrayType {
                 inner: first_argument_type,
                 binding_array: false,
-                size: ArraySize::Constant(array_size),
+                size: ArraySize::Fixed(Either::Left(array_size)),
             })
             .intern(self.db)
         } else {
@@ -2090,7 +2710,7 @@ impl<'db> InferenceContext<'db> {
             TypeKind::Array(ArrayType {
                 inner: first_argument_type,
                 binding_array: false,
-                size: ArraySize::Constant(ArraySize::MAX),
+                size: ArraySize::Fixed(Either::Left(ArraySize::MAX)),
             })
             .intern(self.db)
         }
@@ -2292,12 +2912,6 @@ impl<'db> InferenceContext<'db> {
         self.push_lowering_diagnostics(context.diagnostics, store);
         r#type
     }
-}
-
-#[derive(PartialEq, Eq, Copy, Clone)]
-enum AbstractHandling {
-    Concretize,
-    Abstract,
 }
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
