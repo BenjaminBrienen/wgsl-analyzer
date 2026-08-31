@@ -56,7 +56,7 @@ impl DefinitionWithBodyId {
         db: &dyn SourceDatabase,
     ) -> Resolver<'_> {
         let file_id = self.file_id(db);
-        Resolver::new(db, file_id)
+        Resolver::module(db, file_id)
     }
 }
 
@@ -95,7 +95,7 @@ impl ModuleDefinitionId {
         db: &dyn SourceDatabase,
     ) -> Resolver<'_> {
         let file_id = self.file_id(db);
-        Resolver::new(db, file_id)
+        Resolver::module(db, file_id)
     }
 
     #[must_use]

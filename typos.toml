@@ -75,3 +75,4 @@ extend-ignore-identifiers-re = [
 "sharable" = "shareable"
 "via" = "using"
 "tho" = "though"  # sorry, English sucks
+"constructable" = "constructible"

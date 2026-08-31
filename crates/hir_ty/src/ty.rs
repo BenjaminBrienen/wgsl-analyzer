@@ -3,14 +3,15 @@ pub mod pretty;
 use std::{borrow::Cow, fmt, hash, num::NonZeroU32};
 
 use base_db::{Intern as _, Lookup as _, impl_intern_key, impl_intern_lookup};
-use hir_def::{db::StructId, item_tree::Name};
+use either::Either;
+use hir_def::{db::StructId, expression::ExpressionId, item_tree::Name};
 use wgsl_types::{
     syntax::{AccessMode, AddressSpace, TexelFormat},
     tplt::AccelerationStructureTags,
     ty::SamplerType,
 };
 
-use crate::db::HirDatabase;
+use crate::{db::HirDatabase, ty::pretty::pretty_type};
 
 impl_intern_key!(Type, TypeKind);
 impl_intern_lookup!(Type, TypeKind);
@@ -51,7 +52,7 @@ impl Type {
         r#type: Self,
         db: &dyn HirDatabase,
     ) -> bool {
-        self.kind(db).is_convertible_to(&r#type.kind(db), db)
+        conversion_rank(&self.kind(db), &r#type.kind(db), db).is_some()
     }
 
     #[expect(clippy::doc_paragraphs_missing_punctuation, reason = "false positive")]
@@ -70,10 +71,87 @@ impl Type {
         self,
         db: &dyn HirDatabase,
     ) -> Self {
-        match self.kind(db).concretize(db) {
-            Some(type_kind) => type_kind.intern(db),
-            None => self,
-        }
+        self.concretize_inner(db).unwrap_or(self)
+    }
+
+    /// Abstract types will be mapped to the corresponding default concrete type.
+    fn concretize_inner(
+        self,
+        db: &dyn HirDatabase,
+    ) -> Option<Self> {
+        Some(match self.kind(db) {
+            TypeKind::Scalar(ScalarType::AbstractInt) => {
+                TypeKind::Scalar(ScalarType::I32).intern(db)
+            },
+            TypeKind::Scalar(ScalarType::AbstractFloat) => {
+                TypeKind::Scalar(ScalarType::F32).intern(db)
+            },
+            TypeKind::Array(ArrayType {
+                inner,
+                binding_array,
+                size,
+            }) => TypeKind::Array(ArrayType {
+                inner: inner.concretize_inner(db)?,
+                binding_array,
+                size,
+            })
+            .intern(db),
+            TypeKind::Vector(VectorType {
+                size,
+                component_type,
+            }) => TypeKind::Vector(VectorType {
+                size,
+                component_type: component_type.concretize_inner(db)?,
+            })
+            .intern(db),
+            TypeKind::SwizzleView(swizzle_view) => {
+                // `S` is a concrete scalar type
+                debug_assert!(
+                    swizzle_view.component_type.is_scalar(db),
+                    "{}",
+                    pretty_type(db, swizzle_view.component_type)
+                );
+                debug_assert!(
+                    swizzle_view.component_type.is_concrete(db),
+                    "{}",
+                    pretty_type(db, swizzle_view.component_type)
+                );
+                TypeKind::Vector(VectorType {
+                    size: swizzle_view.vector_size,
+                    component_type: swizzle_view.component_type,
+                })
+                .intern(db)
+            },
+            TypeKind::Matrix(MatrixType {
+                columns,
+                rows,
+                inner,
+            }) => TypeKind::Matrix(MatrixType {
+                columns,
+                rows,
+                inner: inner.concretize_inner(db)?,
+            })
+            .intern(db),
+            TypeKind::Reference(Reference {
+                address_space: _,
+                inner,
+                access_mode: _,
+            }) => {
+                debug_assert!(inner.is_storable(db), "{}", pretty_type(db, inner));
+                debug_assert!(inner.is_concrete(db), "{}", pretty_type(db, inner));
+                return Some(inner);
+            },
+            TypeKind::Error
+            | TypeKind::Scalar(_)
+            | TypeKind::Atomic(_)
+            | TypeKind::Struct(_)
+            | TypeKind::BuiltinStruct(_)
+            | TypeKind::Texture(_)
+            | TypeKind::Sampler(_)
+            | TypeKind::AccelerationStructure(_)
+            | TypeKind::RayQuery(_)
+            | TypeKind::Pointer(_) => return None,
+        })
     }
 
     #[expect(clippy::doc_paragraphs_missing_punctuation, reason = "false positive")]
@@ -97,14 +175,6 @@ impl Type {
             self
         }
     }
-
-    pub fn contains_struct(
-        self,
-        db: &dyn HirDatabase,
-        r#struct: StructId,
-    ) -> bool {
-        self.kind(db).contains_struct(db, r#struct)
-    }
 }
 
 #[salsa::tracked]
@@ -112,7 +182,7 @@ impl Type {
     /// Apply the load rule.
     ///
     /// Reference: <https://www.w3.org/TR/WGSL/#load-rule>
-    #[salsa::tracked(cycle_result = |_, _, _| false)]
+    #[salsa::tracked(returns(clone), cycle_result = |_, _, _| true)]
     pub fn is_constructible(
         self,
         db: &dyn HirDatabase,
@@ -125,7 +195,7 @@ impl Type {
                 .field_types(struct_id)
                 .0
                 .iter()
-                .all(|(_, field_type)| *field_type.is_constructible(db)),
+                .all(|(_, field_type)| field_type.is_constructible(db)),
             TypeKind::BuiltinStruct(builtin_struct) => {
                 // This implementation matches naga.
                 // Builtin structs like __atomic_compare_exchange_result are "not constructible" because they are impossible to write in source code.
@@ -133,7 +203,7 @@ impl Type {
                 builtin_struct
                     .fields
                     .iter()
-                    .all(|(_, field_type)| *field_type.is_constructible(db))
+                    .all(|(_, field_type)| field_type.is_constructible(db))
             },
             TypeKind::Array(array_type) => array_type.is_constructible(db),
             TypeKind::Atomic(_)
@@ -146,6 +216,357 @@ impl Type {
             | TypeKind::AccelerationStructure(_) => false,
         }
     }
+
+    pub fn is_fixed_size_buffer(
+        self,
+        db: &dyn HirDatabase,
+    ) -> bool {
+        matches!(
+            self.kind(db),
+            TypeKind::Array(ArrayType {
+                inner: _,
+                binding_array: true,
+                size: ArraySize::Fixed(_)
+            })
+        )
+    }
+
+    pub fn is_or_contains_array(
+        self,
+        db: &dyn HirDatabase,
+    ) -> bool {
+        match self.kind(db) {
+            TypeKind::Array(_) => true,
+            TypeKind::Struct(r#struct) => db
+                .field_types(r#struct)
+                .0
+                .iter()
+                .any(|(_, r#type)| r#type.is_or_contains_array(db)),
+            TypeKind::BuiltinStruct(builtin_struct) => builtin_struct
+                .fields
+                .iter()
+                .any(|(_, r#type)| r#type.is_or_contains_array(db)),
+            TypeKind::Error
+            | TypeKind::Scalar(_)
+            | TypeKind::Atomic(_)
+            | TypeKind::Vector(_)
+            | TypeKind::SwizzleView(_)
+            | TypeKind::Matrix(_)
+            | TypeKind::Texture(_)
+            | TypeKind::Sampler(_)
+            | TypeKind::Reference(_)
+            | TypeKind::AccelerationStructure(_)
+            | TypeKind::RayQuery(_)
+            | TypeKind::Pointer(_) => false,
+        }
+    }
+
+    pub fn is_host_shareable(
+        self,
+        db: &dyn HirDatabase,
+    ) -> bool {
+        match self.kind(db) {
+            TypeKind::Scalar(scalar) => scalar.is_numeric(),
+            TypeKind::Vector(vec) => vec.component_type.is_numeric_scalar(db),
+            // Error types are treated as optimistically compatible to avoid
+            // irrelevant diagnostics (for example, when a struct is not yet defined).
+            TypeKind::Matrix(_) | TypeKind::Atomic(_) | TypeKind::Error => true,
+            TypeKind::Array(array) => array.inner.is_host_shareable(db),
+            TypeKind::Struct(r#struct) => db
+                .field_types(r#struct)
+                .0
+                .iter()
+                .all(|(_, r#type)| r#type.is_host_shareable(db)),
+            TypeKind::BuiltinStruct(_)
+            | TypeKind::Texture(_)
+            | TypeKind::Sampler(_)
+            | TypeKind::Reference(_)
+            | TypeKind::Pointer(_)
+            | TypeKind::SwizzleView(_)
+            | TypeKind::AccelerationStructure(_)
+            | TypeKind::RayQuery(_) => false,
+        }
+    }
+
+    #[must_use]
+    pub fn is_scalar(
+        self,
+        db: &dyn HirDatabase,
+    ) -> bool {
+        matches!(self.kind(db), TypeKind::Scalar(_) | TypeKind::Error)
+    }
+
+    #[must_use]
+    pub fn is_integer_scalar(
+        self,
+        db: &dyn HirDatabase,
+    ) -> bool {
+        matches!(
+            self.kind(db),
+            TypeKind::Scalar(ScalarType::I32 | ScalarType::U32 | ScalarType::I64 | ScalarType::U64)
+                | TypeKind::Error
+        )
+    }
+
+    #[must_use]
+    pub fn is_integer_index(
+        self,
+        db: &dyn HirDatabase,
+    ) -> bool {
+        matches!(
+            self.kind(db),
+            TypeKind::Scalar(ScalarType::I32 | ScalarType::U32 | ScalarType::AbstractInt)
+                | TypeKind::Error
+        )
+    }
+
+    #[must_use]
+    pub fn is_storable(
+        self,
+        db: &dyn HirDatabase,
+    ) -> bool {
+        matches!(
+            self.kind(db),
+            TypeKind::Scalar(_)
+                | TypeKind::Vector(_)
+                | TypeKind::Matrix(_)
+                | TypeKind::Atomic(_)
+                | TypeKind::Array(_)
+                | TypeKind::Struct(_)
+                | TypeKind::Texture(_)
+                | TypeKind::Sampler(_)
+                | TypeKind::Error
+        )
+    }
+
+    #[must_use]
+    pub fn is_concrete(
+        self,
+        db: &dyn HirDatabase,
+    ) -> bool {
+        !self.is_abstract(db)
+    }
+
+    pub fn unref(
+        &self,
+        db: &dyn HirDatabase,
+    ) -> Cow<'_, Self> {
+        match self.kind(db) {
+            TypeKind::Reference(reference) => Cow::Owned(reference.inner),
+            TypeKind::Error
+            | TypeKind::Scalar(_)
+            | TypeKind::Atomic(_)
+            | TypeKind::Vector(_)
+            | TypeKind::SwizzleView(_)
+            | TypeKind::Matrix(_)
+            | TypeKind::Struct(_)
+            | TypeKind::BuiltinStruct(_)
+            | TypeKind::Array(_)
+            | TypeKind::Texture(_)
+            | TypeKind::AccelerationStructure(_)
+            | TypeKind::RayQuery(_)
+            | TypeKind::Sampler(_)
+            | TypeKind::Pointer(_) => Cow::Borrowed(self),
+        }
+    }
+
+    #[must_use]
+    pub fn is_numeric_scalar(
+        self,
+        db: &dyn HirDatabase,
+    ) -> bool {
+        match self.kind(db) {
+            TypeKind::Scalar(scalar) => scalar.is_numeric(),
+            TypeKind::Error
+            | TypeKind::Atomic(_)
+            | TypeKind::Vector(_)
+            | TypeKind::SwizzleView(_)
+            | TypeKind::Matrix(_)
+            | TypeKind::Struct(_)
+            | TypeKind::BuiltinStruct(_)
+            | TypeKind::Array(_)
+            | TypeKind::Texture(_)
+            | TypeKind::Sampler(_)
+            | TypeKind::Reference(_)
+            | TypeKind::AccelerationStructure(_)
+            | TypeKind::RayQuery(_)
+            | TypeKind::Pointer(_) => false,
+        }
+    }
+
+    /// The index expression must be of integer scalar type.
+    #[must_use]
+    pub fn is_index(
+        self,
+        db: &dyn HirDatabase,
+    ) -> bool {
+        match self.kind(db) {
+            TypeKind::Scalar(scalar) => scalar.is_index(),
+            TypeKind::Error => true,
+            TypeKind::Atomic(_)
+            | TypeKind::BuiltinStruct(_)
+            | TypeKind::Vector(_)
+            | TypeKind::SwizzleView(_)
+            | TypeKind::Matrix(_)
+            | TypeKind::Struct(_)
+            | TypeKind::Array(_)
+            | TypeKind::Texture(_)
+            | TypeKind::Sampler(_)
+            | TypeKind::Reference(_)
+            | TypeKind::AccelerationStructure(_)
+            | TypeKind::RayQuery(_)
+            | TypeKind::Pointer(_) => false,
+        }
+    }
+    #[must_use]
+    pub fn is_abstract(
+        self,
+        db: &dyn HirDatabase,
+    ) -> bool {
+        match self.kind(db) {
+            TypeKind::Scalar(ScalarType::AbstractInt | ScalarType::AbstractFloat) => true,
+            TypeKind::Array(ArrayType {
+                inner,
+                binding_array: _,
+                size: _,
+            })
+            | TypeKind::Vector(VectorType {
+                component_type: inner,
+                size: _,
+            })
+            | TypeKind::Matrix(MatrixType {
+                inner,
+                columns: _,
+                rows: _,
+            }) => inner.is_abstract(db),
+            TypeKind::Scalar(_)
+            | TypeKind::Atomic(_)
+            | TypeKind::Struct(_)
+            | TypeKind::BuiltinStruct(_)
+            | TypeKind::Texture(_)
+            | TypeKind::Sampler(_)
+            | TypeKind::Reference(_)
+            | TypeKind::Pointer(_)
+            | TypeKind::SwizzleView(_) // S is a concrete scalar type,
+            | TypeKind::AccelerationStructure(_)
+            | TypeKind::RayQuery(_)
+            | TypeKind::Error => false,
+        }
+    }
+
+    #[must_use]
+    pub fn is_error(
+        self,
+        db: &dyn HirDatabase,
+    ) -> bool {
+        matches!(self.kind(db), TypeKind::Error)
+    }
+
+    #[must_use]
+    pub fn is_plain(
+        self,
+        db: &dyn HirDatabase,
+    ) -> bool {
+        matches!(
+            self.kind(db),
+            TypeKind::Scalar(_)
+                | TypeKind::Vector(_)
+                | TypeKind::Matrix(_)
+                | TypeKind::Atomic(_)
+                | TypeKind::Array(_)
+                | TypeKind::Struct(_)
+                | TypeKind::BuiltinStruct(_)
+        )
+    }
+
+    pub fn is_texture(
+        self,
+        db: &dyn HirDatabase,
+    ) -> bool {
+        matches!(self.kind(db), TypeKind::Texture(_))
+    }
+
+    pub fn is_sampler(
+        self,
+        db: &dyn HirDatabase,
+    ) -> bool {
+        matches!(self.kind(db), TypeKind::Sampler(_))
+    }
+
+    pub fn is_pointer(
+        self,
+        db: &dyn HirDatabase,
+    ) -> bool {
+        matches!(self.kind(db), TypeKind::Pointer(_))
+    }
+
+    pub fn contains_runtime_sized_array(
+        self,
+        db: &dyn HirDatabase,
+    ) -> bool {
+        match self.kind(db) {
+            TypeKind::Array(ArrayType {
+                size: ArraySize::Dynamic,
+                inner: _,
+                binding_array: _,
+            }) => true,
+            TypeKind::Struct(r#struct) => db
+                .field_types(r#struct)
+                .0
+                .iter()
+                .any(|(_, r#type)| r#type.contains_runtime_sized_array(db)),
+            TypeKind::BuiltinStruct(BuiltinStruct { name: _, fields }) => fields
+                .iter()
+                .any(|(_, r#type)| r#type.contains_runtime_sized_array(db)),
+            TypeKind::Error
+            | TypeKind::Scalar(_)
+            | TypeKind::Atomic(_)
+            | TypeKind::Vector(_)
+            | TypeKind::SwizzleView(_)
+            | TypeKind::Matrix(_)
+            | TypeKind::Array(_)
+            | TypeKind::Texture(_)
+            | TypeKind::Sampler(_)
+            | TypeKind::Reference(_)
+            | TypeKind::Pointer(_)
+            | TypeKind::RayQuery(_)
+            | TypeKind::AccelerationStructure(_) => false,
+        }
+    }
+
+    pub fn contains_struct(
+        self,
+        db: &dyn HirDatabase,
+        r#struct: StructId,
+    ) -> bool {
+        match self.kind(db) {
+            TypeKind::Atomic(atomic) => atomic.inner.contains_struct(db, r#struct),
+            TypeKind::Struct(id) => {
+                if id == r#struct {
+                    return true;
+                }
+                db.field_types(id)
+                    .0
+                    .values()
+                    .any(|r#type| r#type.contains_struct(db, r#struct))
+            },
+            TypeKind::BuiltinStruct(BuiltinStruct { name: _, fields }) => fields
+                .iter()
+                .any(|(_, r#type)| r#type.contains_struct(db, r#struct)),
+            TypeKind::Array(array) => array.inner.contains_struct(db, r#struct),
+            TypeKind::Reference(reference) => reference.inner.contains_struct(db, r#struct),
+            TypeKind::Pointer(pointer) => pointer.inner.contains_struct(db, r#struct),
+            TypeKind::Error
+            | TypeKind::Scalar(_)
+            | TypeKind::Vector(_)
+            | TypeKind::SwizzleView(_)
+            | TypeKind::Matrix(_)
+            | TypeKind::Sampler(_)
+            | TypeKind::Texture(_)
+            | TypeKind::AccelerationStructure(_)
+            | TypeKind::RayQuery(_) => false,
+        }
+    }
 }
 
 /// A struct type returned by builtin functions.
@@ -155,30 +576,25 @@ pub struct BuiltinStruct {
     pub fields: Vec<(String, Type)>,
 }
 
-#[expect(clippy::doc_paragraphs_missing_punctuation, reason = "false positive")]
-/// <https://www.w3.org/TR/WGSL/#types>
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TypeKind {
-    #[expect(clippy::doc_paragraphs_missing_punctuation, reason = "false positive")]
-    /// <https://www.w3.org/TR/WGSL/#scalar-types>
+    Error,
     Scalar(ScalarType),
+    Atomic(AtomicType),
     #[expect(clippy::doc_paragraphs_missing_punctuation, reason = "false positive")]
     /// <https://www.w3.org/TR/WGSL/#vector-types>
     Vector(VectorType),
     Matrix(MatrixType),
-    Atomic(AtomicType),
-    Array(ArrayType),
     Struct(StructId),
     BuiltinStruct(BuiltinStruct),
+    Array(ArrayType),
     Texture(TextureType),
     Sampler(SamplerType),
     Reference(Reference),
     Pointer(Pointer),
     SwizzleView(SwizzleView),
-    RayQuery(Option<AccelerationStructureTags>),
     AccelerationStructure(Option<AccelerationStructureTags>),
-    // internal
-    Error,
+    RayQuery(Option<AccelerationStructureTags>),
 }
 
 impl hash::Hash for TypeKind {
@@ -189,355 +605,6 @@ impl hash::Hash for TypeKind {
         Hasher: hash::Hasher,
     {
         core::mem::discriminant(self).hash(state);
-    }
-}
-
-impl TypeKind {
-    pub fn is_convertible_to(
-        &self,
-        r#type: &Self,
-        db: &dyn HirDatabase,
-    ) -> bool {
-        conversion_rank(self, r#type, db).is_some()
-    }
-
-    pub fn unref(
-        &self,
-        db: &dyn HirDatabase,
-    ) -> Cow<'_, Self> {
-        match self {
-            Self::Reference(reference) => Cow::Owned(reference.inner.kind(db)),
-            Self::Error
-            | Self::Scalar(_)
-            | Self::Atomic(_)
-            | Self::Vector(_)
-            | Self::SwizzleView(_)
-            | Self::Matrix(_)
-            | Self::Struct(_)
-            | Self::BuiltinStruct(_)
-            | Self::Array(_)
-            | Self::Texture(_)
-            | Self::RayQuery(_)
-            | Self::AccelerationStructure(_)
-            | Self::Sampler(_)
-            | Self::Pointer(_) => Cow::Borrowed(self),
-        }
-    }
-
-    /// Abstract types will be mapped to the corresponding default concrete type.
-    pub fn concretize(
-        &self,
-        db: &dyn HirDatabase,
-    ) -> Option<Self> {
-        Some(match self {
-            Self::Scalar(ScalarType::AbstractInt) => Self::Scalar(ScalarType::I32),
-            Self::Scalar(ScalarType::AbstractFloat) => Self::Scalar(ScalarType::F32),
-            Self::Array(ArrayType {
-                inner,
-                binding_array,
-                size,
-            }) => Self::Array(ArrayType {
-                inner: inner.kind(db).concretize(db)?.intern(db),
-                binding_array: *binding_array,
-                size: size.clone(),
-            }),
-            Self::Vector(VectorType {
-                size,
-                component_type,
-            }) => Self::Vector(VectorType {
-                size: *size,
-                component_type: component_type.kind(db).concretize(db)?.intern(db),
-            }),
-            Self::Matrix(MatrixType {
-                columns,
-                rows,
-                inner,
-            }) => Self::Matrix(MatrixType {
-                columns: *columns,
-                rows: *rows,
-                inner: inner.kind(db).concretize(db)?.intern(db),
-            }),
-            Self::SwizzleView(swizzle_view) => swizzle_view.loaded(),
-            Self::Error
-            | Self::Scalar(_)
-            | Self::Atomic(_)
-            | Self::Struct(_)
-            | Self::BuiltinStruct(_)
-            | Self::Texture(_)
-            | Self::Sampler(_)
-            | Self::Reference(_)
-            | Self::Pointer(_)
-            | Self::RayQuery(_)
-            | Self::AccelerationStructure(_) => return None,
-        })
-    }
-
-    #[must_use]
-    pub const fn is_numeric_scalar(&self) -> bool {
-        match self {
-            Self::Scalar(scalar) => scalar.is_numeric(),
-            // be optimistic about errors
-            Self::Error => true,
-            Self::Atomic(_)
-            | Self::Vector(_)
-            | Self::SwizzleView(_)
-            | Self::Matrix(_)
-            | Self::Struct(_)
-            | Self::BuiltinStruct(_)
-            | Self::Array(_)
-            | Self::Texture(_)
-            | Self::Sampler(_)
-            | Self::Reference(_)
-            | Self::Pointer(_)
-            | Self::RayQuery(_)
-            | Self::AccelerationStructure(_) => false,
-        }
-    }
-
-    /// The index expression must be of integer scalar type.
-    #[must_use]
-    pub const fn is_index(&self) -> bool {
-        match self {
-            Self::Scalar(scalar) => scalar.is_index(),
-            // be optimistic about errors
-            Self::Error => true,
-            Self::Pointer(_)
-            | Self::Atomic(_)
-            | Self::BuiltinStruct(_)
-            | Self::Vector(_)
-            | Self::SwizzleView(_)
-            | Self::Matrix(_)
-            | Self::Struct(_)
-            | Self::Array(_)
-            | Self::Texture(_)
-            | Self::Sampler(_)
-            | Self::Reference(_)
-            | Self::RayQuery(_)
-            | Self::AccelerationStructure(_) => false,
-        }
-    }
-
-    #[must_use]
-    pub fn is_abstract(
-        &self,
-        db: &dyn HirDatabase,
-    ) -> bool {
-        match self {
-            Self::Scalar(ScalarType::AbstractInt | ScalarType::AbstractFloat) => true,
-            Self::Array(ArrayType {
-                inner,
-                binding_array: _,
-                size: _,
-            })
-            | Self::Vector(VectorType {
-                component_type: inner,
-                size: _,
-            })
-            | Self::Matrix(MatrixType {
-                inner,
-                columns: _,
-                rows: _,
-            }) => inner.kind(db).is_abstract(db),
-            Self::Scalar(_)
-            | Self::Atomic(_)
-            | Self::Struct(_)
-            | Self::BuiltinStruct(_)
-            | Self::Texture(_)
-            | Self::Sampler(_)
-            | Self::Reference(_)
-            | Self::Pointer(_)
-            | Self::RayQuery(_)
-            | Self::SwizzleView(_)
-            | Self::AccelerationStructure(_)
-            | Self::Error => false,
-        }
-    }
-
-    #[must_use]
-    pub const fn is_error(&self) -> bool {
-        matches!(self, Self::Error)
-    }
-
-    #[must_use]
-    pub const fn is_plain(&self) -> bool {
-        matches!(
-            self,
-            Self::Scalar(_)
-                | Self::Vector(_)
-                | Self::Matrix(_)
-                | Self::Atomic(_)
-                | Self::Array(_)
-                | Self::Struct(_)
-                | Self::BuiltinStruct(_)
-        )
-    }
-
-    #[must_use]
-    pub const fn is_constructable(&self) -> bool {
-        matches!(
-            self,
-            Self::Scalar(_)
-                | Self::Vector(_)
-                | Self::Matrix(_)
-                | Self::Array(ArrayType {
-                    size: ArraySize::Constant(_),
-                    inner: _,
-                    binding_array: _
-                })
-                | Self::Struct(_)
-        )
-    }
-
-    #[must_use]
-    pub const fn is_storable(&self) -> bool {
-        matches!(
-            self,
-            Self::Scalar(_)
-                | Self::Vector(_)
-                | Self::Matrix(_)
-                | Self::Atomic(_)
-                | Self::Array(_)
-                | Self::Struct(_)
-                | Self::BuiltinStruct(_)
-                | Self::Texture(_)
-                | Self::Sampler(_)
-        )
-    }
-
-    pub fn is_host_shareable(
-        &self,
-        db: &dyn HirDatabase,
-    ) -> bool {
-        match self {
-            Self::Scalar(scalar) => scalar.is_numeric(),
-            Self::Vector(vec) => vec.component_type.kind(db).is_numeric_scalar(),
-            // Error types are treated as optimistically compatible to avoid
-            // irrelevant diagnostics (for example, when a struct is not yet defined).
-            Self::Matrix(_) | Self::Atomic(_) | Self::Error => true,
-            Self::Array(array) => array.inner.kind(db).is_host_shareable(db),
-            Self::Struct(r#struct) => db
-                .field_types(*r#struct)
-                .0
-                .iter()
-                .all(|(_, r#type)| r#type.kind(db).is_host_shareable(db)),
-            Self::BuiltinStruct(_)
-            | Self::Texture(_)
-            | Self::Sampler(_)
-            | Self::Reference(_)
-            | Self::Pointer(_)
-            | Self::SwizzleView(_)
-            | Self::RayQuery(_)
-            | Self::AccelerationStructure(_) => false,
-        }
-    }
-
-    pub fn is_or_contains_array(
-        &self,
-        db: &dyn HirDatabase,
-    ) -> bool {
-        match self {
-            Self::Array(_) => true,
-            Self::Struct(r#struct) => db
-                .field_types(*r#struct)
-                .0
-                .iter()
-                .any(|(_, r#type)| r#type.kind(db).is_or_contains_array(db)),
-            Self::BuiltinStruct(r#struct) => r#struct
-                .fields
-                .iter()
-                .any(|(_, r#type)| r#type.kind(db).is_or_contains_array(db)),
-            Self::Scalar(_)
-            | Self::Vector(_)
-            | Self::Matrix(_)
-            | Self::Atomic(_)
-            | Self::Texture(_)
-            | Self::Sampler(_)
-            | Self::Reference(_)
-            | Self::Pointer(_)
-            | Self::SwizzleView(_)
-            | Self::RayQuery(_)
-            | Self::AccelerationStructure(_)
-            | Self::Error => false,
-        }
-    }
-
-    pub fn contains_runtime_sized_array(
-        &self,
-        db: &dyn HirDatabase,
-    ) -> bool {
-        match self {
-            Self::Array(ArrayType {
-                size: ArraySize::Dynamic,
-                inner: _,
-                binding_array: _,
-            }) => true,
-            Self::Struct(r#struct) => db
-                .field_types(*r#struct)
-                .0
-                .iter()
-                .any(|(_, r#type)| r#type.kind(db).contains_runtime_sized_array(db)),
-
-            Self::Scalar(_)
-            | Self::Atomic(_)
-            | Self::Vector(_)
-            | Self::SwizzleView(_)
-            | Self::Matrix(_)
-            | Self::Array(_)
-            | Self::BuiltinStruct(_)
-            | Self::Texture(_)
-            | Self::Sampler(_)
-            | Self::Reference(_)
-            | Self::Pointer(_)
-            | Self::RayQuery(_)
-            | Self::AccelerationStructure(_)
-            | Self::Error => false,
-        }
-    }
-
-    pub fn contains_struct(
-        &self,
-        db: &dyn HirDatabase,
-        r#struct: StructId,
-    ) -> bool {
-        match self {
-            Self::Atomic(atomic) => atomic.inner.contains_struct(db, r#struct),
-            Self::BuiltinStruct(BuiltinStruct { name: _, fields }) => fields
-                .iter()
-                .any(|(_, r#type)| r#type.contains_struct(db, r#struct)),
-            Self::Struct(id) => {
-                if *id == r#struct {
-                    return true;
-                }
-                db.field_types(*id)
-                    .0
-                    .values()
-                    .any(|r#type| r#type.contains_struct(db, r#struct))
-            },
-            Self::Array(ArrayType {
-                inner,
-                binding_array: _,
-                size: _,
-            })
-            | Self::Reference(Reference {
-                address_space: _,
-                inner,
-                access_mode: _,
-            })
-            | Self::Pointer(Pointer {
-                address_space: _,
-                inner,
-                access_mode: _,
-            }) => inner.contains_struct(db, r#struct),
-            Self::Scalar(_)
-            | Self::Vector(_)
-            | Self::SwizzleView(_)
-            | Self::Matrix(_)
-            | Self::Sampler(_)
-            | Self::Texture(_)
-            | Self::RayQuery(_)
-            | Self::AccelerationStructure(_)
-            | Self::Error => false,
-        }
     }
 }
 
@@ -863,13 +930,13 @@ impl ArrayType {
         &self,
         db: &dyn HirDatabase,
     ) -> bool {
-        self.size != ArraySize::Dynamic && *self.inner.is_constructible(db)
+        self.size != ArraySize::Dynamic && self.inner.is_constructible(db)
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ArraySize {
-    Constant(NonZeroU32),
+    Fixed(Either<NonZeroU32, ExpressionId>),
     Dynamic,
 }
 

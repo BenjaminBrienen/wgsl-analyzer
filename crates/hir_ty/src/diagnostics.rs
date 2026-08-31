@@ -1,5 +1,5 @@
 use hir_def::{
-    expression::ExpressionId,
+    expression::{ExpressionId, StatementId},
     expression_store::{ExpressionStoreSource, path::Path},
     item_tree::Name,
 };
@@ -40,6 +40,14 @@ pub enum InferenceDiagnosticKind {
         r#type: Type,
     },
     NotConstructible {
+        expression: ExpressionId,
+        r#type: Type,
+    },
+    NotConcrete {
+        expression: ExpressionId,
+        r#type: Type,
+    },
+    InvalidLetDeclaration {
         expression: ExpressionId,
         r#type: Type,
     },
@@ -87,6 +95,15 @@ pub enum InferenceDiagnosticKind {
         actual: Type,
     },
     InvalidAddressOf {
+        expression: ExpressionId,
+    },
+    MissingInitializer {
+        statement: StatementId,
+    },
+    NotAConstantExpression {
+        expression: ExpressionId,
+    },
+    NotAnOverrideExpression {
         expression: ExpressionId,
     },
 }

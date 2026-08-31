@@ -2,6 +2,7 @@ use base_db::{
     EditionedFileId, Package, SourceDatabase, builtin_package, file_package, input::PackageId,
 };
 use triomphe::Arc;
+use wgsl_types::syntax::{AccessMode, AddressSpace};
 
 use crate::{
     body::{
@@ -24,15 +25,23 @@ use crate::{
 #[derive(Clone)]
 pub enum Scope<'db> {
     /// Local bindings.
-    Expression(ExpressionScope<'db>),
+    Function(FunctionScope<'db>),
     /// The items inside a module.
     Module(ModuleScope),
     /// Predeclared WGSL items.
     Builtin,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum VariableOrValueDeclaration {
+    Constant,
+    Override,
+    Let,
+    Variable(AddressSpace, AccessMode),
+}
+
 #[derive(Clone)]
-pub struct ExpressionScope<'db> {
+pub struct FunctionScope<'db> {
     owner: FunctionId,
     expression_scopes: &'db ExprScopes,
     scope_id: ScopeId,
@@ -103,7 +112,15 @@ pub struct Resolver<'db> {
 
 impl<'db> Resolver<'db> {
     #[must_use]
-    pub fn new(
+    pub fn builtin(file_id: EditionedFileId) -> Self {
+        Self {
+            file_id,
+            scopes: vec![Scope::Builtin],
+        }
+    }
+
+    #[must_use]
+    pub fn module(
         db: &'db dyn SourceDatabase,
         file_id: EditionedFileId,
     ) -> Self {
@@ -149,7 +166,7 @@ impl<'db> Resolver<'db> {
         expression_scopes: &'db ExprScopes,
         scope_id: ScopeId,
     ) -> Self {
-        self.scopes.push(Scope::Expression(ExpressionScope {
+        self.scopes.push(Scope::Function(FunctionScope {
             owner,
             expression_scopes,
             scope_id,
@@ -164,7 +181,7 @@ impl<'db> Resolver<'db> {
     #[must_use]
     pub fn body_owner(&self) -> Option<FunctionId> {
         self.scopes().find_map(|scope| match scope {
-            Scope::Expression(scope) => Some(scope.owner),
+            Scope::Function(scope) => Some(scope.owner),
             Scope::Module(_) | Scope::Builtin => None,
         })
     }
@@ -177,7 +194,7 @@ impl<'db> Resolver<'db> {
         Callback: FnMut(&Name, ScopeDef),
     {
         self.scopes().for_each(|scope| match scope {
-            Scope::Expression(expression_scope) => {
+            Scope::Function(expression_scope) => {
                 expression_scope
                     .expression_scopes
                     .scope_chain(Some(expression_scope.scope_id))
@@ -329,7 +346,7 @@ impl<'db> Resolver<'db> {
     ) -> Result<ResolveKind, ResolutionDiagnostic> {
         self.scopes()
             .find_map(|scope| match scope {
-                Scope::Expression(scope) => {
+                Scope::Function(scope) => {
                     let entry = scope
                         .expression_scopes
                         .resolve_name_in_scope(scope.scope_id, name)?;

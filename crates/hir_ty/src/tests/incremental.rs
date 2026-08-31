@@ -53,6 +53,7 @@ fn foo() {
                 "FunctionSignature::of_",
                 "FunctionSignature::with_source_map_",
                 "ExprScopes::of_",
+                "Type::is_constructible_",
             ]
         "#]],
     );

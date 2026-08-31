@@ -324,9 +324,8 @@ fn foo() {
         expect![[r#"
             61..66 'robuf': ref<storage, vec4<u32>, read>
             91..96 'robuf': ref<storage, vec4<u32>, read>
-            91..99 'robuf.xz': vec2<u32>
+            91..99 'robuf.xz': ref<storage, vec2<u32>, read>
             102..109 'vec2u()': vec2<u32>
-            91..99 'robuf.xz': cannot assign to non-reference `vec2<u32>`
         "#]],
     );
 }

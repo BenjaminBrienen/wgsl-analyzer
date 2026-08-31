@@ -39,6 +39,7 @@ pub enum NagaVersion {
 }
 
 #[derive(Clone, Debug)]
+// TODO: type verbosity
 pub struct DiagnosticsConfig {
     /// Whether native diagnostics are enabled.
     pub enabled: bool,
@@ -296,8 +297,19 @@ pub fn diagnostics(
                     let r#type = ty::pretty::pretty_type(db, r#type);
                     let frange = original_file_range(db, expression.file_id, source.syntax());
                     Diagnostic::new(
+                        DiagnosticCode("5"),
+                        format!("expected constructible type, but got `{type}`"),
+                        frange.range,
+                    )
+                },
+                AnyDiagnostic::NotConcrete { expression, r#type } => {
+                    debug_assert!(!r#type.is_err(db));
+                    let source = expression.value.to_node(&root);
+                    let r#type = ty::pretty::pretty_type(db, r#type);
+                    let frange = original_file_range(db, expression.file_id, source.syntax());
+                    Diagnostic::new(
                         DiagnosticCode("6"),
-                        format!("type `{type}` is not constructible"),
+                        format!("expected concrete type, but got `{type}`"),
                         frange.range,
                     )
                 },
@@ -311,6 +323,17 @@ pub fn diagnostics(
                     Diagnostic::new(
                         DiagnosticCode("7"),
                         format!("expected {n_expected} parameters, found {n_actual}"),
+                        frange.range,
+                    )
+                },
+                AnyDiagnostic::InvalidLetDeclaration { expression, r#type } => {
+                    debug_assert!(!r#type.is_err(db));
+                    let source = expression.value.to_node(&root);
+                    let r#type = ty::pretty::pretty_type(db, r#type);
+                    let frange = original_file_range(db, expression.file_id, source.syntax());
+                    Diagnostic::new(
+                        DiagnosticCode("8"),
+                        format!("expression must be a pointer or a constructible type, got: `{type}`"),
                         frange.range,
                     )
                 },
@@ -585,6 +608,33 @@ pub fn diagnostics(
                     Diagnostic::new(
                         DiagnosticCode("34"),
                         "cannot take the address of a vector component".to_owned(),
+                        frange.range,
+                    )
+                },
+                AnyDiagnostic::MissingInitializer { statement } => {
+                    let source = statement.value.to_node(&root);
+                    let frange = original_file_range(db, statement.file_id, source.syntax());
+                    Diagnostic::new(
+                        DiagnosticCode("33"),
+                        "declaration is missing initializer".to_owned(),
+                        frange.range,
+                    )
+                },
+                AnyDiagnostic::NotAConstantExpression { expression } => {
+                    let source = expression.value.to_node(&root);
+                    let frange = original_file_range(db, expression.file_id, source.syntax());
+                    Diagnostic::new(
+                        DiagnosticCode("33"),
+                        "expression is not a const-expression".to_owned(),
+                        frange.range,
+                    )
+                },
+                AnyDiagnostic::NotAnOverrideExpression { expression } => {
+                    let source = expression.value.to_node(&root);
+                    let frange = original_file_range(db, expression.file_id, source.syntax());
+                    Diagnostic::new(
+                        DiagnosticCode("33"),
+                        "expression is not an override-expression".to_owned(),
                         frange.range,
                     )
                 },

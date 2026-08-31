@@ -313,7 +313,7 @@ pub(crate) fn lower_type_alias(
 
     let mut collector = ExprCollector::new(db, ExpressionStoreSource::Signature);
     let r#type = collector.collect_type_specifier_opt(type_alias.value.type_declaration());
-
+    // TODO missing body diagnostic here?
     let (store, source_map) = collector.finish();
     let specifier = TypeAliasSignature {
         name,
@@ -344,7 +344,7 @@ pub(crate) fn lower_variable(
         } else {
             Vec::new()
         };
-
+    // TODO missing initializer goes here
     let (store, source_map) = collector.finish();
     let specifier = VariableSignature {
         name,
@@ -366,7 +366,7 @@ pub(crate) fn lower_constant(
         .value
         .r#type()
         .map(|r#type| collector.collect_type_specifier(&r#type));
-
+    // TODO missing initializer goes here
     let (store, source_map) = collector.finish();
     let specifier = ConstantSignature {
         name,
@@ -383,6 +383,7 @@ pub(crate) fn lower_global_assert_statement(
     let collector = ExprCollector::new(db, ExpressionStoreSource::Signature);
 
     let (store, source_map) = collector.finish();
+    // TODO missing body diagnostic here?
     let specifier = AssertStatementSignature {
         store: Arc::new(store),
     };
@@ -400,7 +401,7 @@ pub(crate) fn lower_override(
         .value
         .r#type()
         .map(|r#type| collector.collect_type_specifier(&r#type));
-
+    // TODO missing initializer goes here
     let (store, source_map) = collector.finish();
     let specifier = OverrideSignature {
         name,
